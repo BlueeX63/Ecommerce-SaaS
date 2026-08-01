@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-02-24.acacia', // using latest stable or default apiVersion for stripe sdk
+  apiVersion: '2026-07-29.dahlia', // using latest stable or default apiVersion for stripe sdk
 });
 
 const plansData: Record<string, any> = {

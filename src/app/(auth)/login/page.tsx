@@ -34,20 +34,26 @@ export default function LoginPage() {
 
     setIsLoading(true);
     
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    setIsLoading(false);
-
-    if (error) {
-      setErrors({ general: "Invalid login credentials." });
-      return;
+    try {
+      const res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setErrors({ general: data.error || "Invalid login credentials." });
+      } else {
+        router.push(next === '/' ? '/dashboard' : next);
+        router.refresh();
+      }
+    } catch (error) {
+      setErrors({ general: "An error occurred during login." });
+    } finally {
+      setIsLoading(false);
     }
-
-    router.push(next);
-    router.refresh();
   };
 
   return (

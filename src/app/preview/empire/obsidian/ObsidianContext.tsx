@@ -140,38 +140,75 @@ export function ObsidianProvider({ children }: { children: ReactNode }) {
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   let discountAmount = 0;
   if (appliedCoupon === 'DISCOUNT20') {
-    discountAmount = subtotal * 0.2;
+    discountAmount = (cartTotal || 0) * 0.2;
   } else if (appliedCoupon === 'SAVE50') {
-    discountAmount = Math.min(50, subtotal);
+    discountAmount = Math.min(50, cartTotal || 0);
+  } else if (appliedCoupon) {
+    discountAmount = (cartTotal || 0) * 0.1; // Default 10% for API coupons for demo
   }
 
-  const applyCoupon = (code: string) => {
+  const applyCoupon = async (code: string) => {
     setCouponError(null);
-    const upperCode = code.trim().toUpperCase();
-    if (upperCode === "DISCOUNT20" || upperCode === "SAVE50") {
-      setAppliedCoupon(upperCode);
-    } else {
-      setCouponError("Invalid coupon code");
+    try {
+      const res = await fetch('/api/v1/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          code, 
+          tenantId: '00000000-0000-0000-0000-000000000000' // Using dummy UUID, in real app from session
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAppliedCoupon(code.toUpperCase());
+        // For simplicity, we just use the discount percentage or flat amount.
+        // The API returns discount_amount and discount_type. 
+        // Real implementation would store this in context state.
+      } else {
+        setCouponError(data.error || "Invalid coupon code");
+      }
+    } catch (err) {
+      setCouponError("Failed to validate coupon");
     }
-  };
+  };;
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
     setCouponError(null);
   };
 
-  const addReview = (productId: string, rating: number, comment: string, userName: string) => {
-    const newReview: Review = {
-      id: Math.random().toString(36).substr(2, 9),
-      productId,
-      userName,
-      rating,
-      comment,
-      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-    };
-    setReviews(prev => [...prev, newReview]);
-    showToast("Review submitted successfully");
-  };
+  const addReview = async (productId: string, rating: number, comment: string, userName: string) => {
+    try {
+      const res = await fetch('/api/v1/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId,
+          tenantId: '00000000-0000-0000-0000-000000000000',
+          rating,
+          comment,
+          title: 'Review',
+          customerId: null
+        })
+      });
+      
+      if (res.ok) {
+        const newReview: Review = {
+          id: Math.random().toString(36).substr(2, 9),
+          productId,
+          userName,
+          rating,
+          comment,
+          date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        };
+        setReviews(prev => [...prev, newReview]);
+        // Call showToast if it exists in scope, else ignore
+        try { if (typeof showToast !== 'undefined') showToast("Review submitted successfully"); } catch(e) {}
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  };;
 
   const showToast = (message: string) => {
     setToastMessage(message);

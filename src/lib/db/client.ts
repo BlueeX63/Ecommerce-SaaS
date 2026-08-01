@@ -5,7 +5,7 @@ import { Database } from './types';
 export async function getDbClient() {
   const supabase = await createSupabaseServerClient();
   return supabase as unknown as {
-    from: (table: keyof Database['public']['Tables']) => any;
+    from: (table: string) => any;
     rpc: (fn: string, args?: any) => any;
   }; // typed wrapper
 }

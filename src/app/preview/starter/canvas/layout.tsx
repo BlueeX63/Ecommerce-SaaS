@@ -150,7 +150,7 @@ function Navigation() {
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden lg:flex flex-1 items-center justify-center gap-6 xl:gap-12">
+          <div className="hidden xl:flex flex-1 items-center justify-center gap-6 xl:gap-12">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -184,7 +184,7 @@ function Navigation() {
 
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden text-white"
+              className="xl:hidden text-white"
             >
               <Menu className="w-5 h-5" />
             </button>

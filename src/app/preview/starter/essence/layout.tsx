@@ -20,12 +20,12 @@ function Header() {
         <div className="max-w-[1600px] mx-auto px-6 md:px-12 h-24 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <button 
-              className="lg:hidden text-[#4A3F35]"
+              className="xl:hidden text-[#4A3F35]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <Menu className="w-5 h-5" />
             </button>
-            <nav className="hidden lg:flex items-center gap-4 xl:gap-10 text-[11px] xl:text-[13px] font-medium tracking-[0.2em] uppercase text-[#4A3F35]/70">
+            <nav className="hidden xl:flex items-center gap-4 xl:gap-10 text-[11px] xl:text-[13px] font-medium tracking-[0.2em] uppercase text-[#4A3F35]/70">
               <Link href="/preview/starter/essence" className={`hover:text-[#4A3F35] transition-colors ${pathname === '/preview/starter/essence' ? 'text-[#4A3F35]' : ''}`}>Home</Link>
               <Link href="/preview/starter/essence/products" className={`hover:text-[#4A3F35] transition-colors ${pathname === '/preview/starter/essence/products' ? 'text-[#4A3F35]' : ''}`}>Shop</Link>
               <Link href="/preview/starter/essence/about" className={`hover:text-[#4A3F35] transition-colors ${pathname === '/preview/starter/essence/about' ? 'text-[#4A3F35]' : ''}`}>About</Link>
@@ -121,7 +121,7 @@ function Header() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-40 bg-[#F3EDE2] pt-32 px-8 flex flex-col lg:hidden"
+            className="fixed inset-0 z-40 bg-[#F3EDE2] pt-32 px-8 flex flex-col xl:hidden"
           >
             <nav className="flex flex-col gap-8 text-2xl font-serif text-[#4A3F35]">
               <Link href="/preview/starter/essence" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>

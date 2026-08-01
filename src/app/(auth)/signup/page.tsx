@@ -45,30 +45,30 @@ export default function SignupPage() {
 
     setIsLoading(true);
     
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-        },
-        emailRedirectTo: `${location.origin}/api/auth/callback`,
-      },
-    });
+    const parts = name.trim().split(" ");
+    const firstName = parts[0];
+    const lastName = parts.length > 1 ? parts.slice(1).join(" ") : "-";
+    const tenantName = `${firstName}'s Store`;
 
-    setIsLoading(false);
-
-    if (error) {
-      setErrors({ general: error.message });
-      return;
+    try {
+      const res = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, password, tenantName })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setErrors({ general: data.error || "Registration failed." });
+      } else {
+        setIsSuccess(true);
+      }
+    } catch (error) {
+      setErrors({ general: "An error occurred during registration." });
+    } finally {
+      setIsLoading(false);
     }
-
-    if (data?.user?.identities?.length === 0) {
-      setErrors({ general: "User already exists. Please log in." });
-      return;
-    }
-
-    setIsSuccess(true);
   };
 
   if (isSuccess) {

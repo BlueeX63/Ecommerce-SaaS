@@ -8,7 +8,9 @@ import { FloatingLabelInput } from "@/components/auth/FloatingLabelInput";
 import { SubmitButton, GoogleButton } from "@/components/auth/Buttons";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+import { Suspense } from "react";
+
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/';
@@ -46,7 +48,7 @@ export default function LoginPage() {
       if (!res.ok) {
         setErrors({ general: data.error || "Invalid login credentials." });
       } else {
-        router.push(next === '/' ? '/dashboard' : next);
+        router.push(next);
         router.refresh();
       }
     } catch (error) {
@@ -125,5 +127,13 @@ export default function LoginPage() {
         </p>
       </div>
     </motion.div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

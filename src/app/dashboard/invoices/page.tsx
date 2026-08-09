@@ -16,7 +16,13 @@ type Invoice = {
   orders: { order_number: string } | null;
 };
 
+import { useCurrency } from "@/components/dashboard/CurrencyProvider";
+import { useRouter, useSearchParams } from "next/navigation";
+
 export default function InvoicesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { formatCurrency } = useCurrency();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -109,8 +115,8 @@ export default function InvoicesPage() {
                       {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="font-medium text-primary">${inv.grand_total}</p>
-                      {inv.amount_due > 0 && <p className="text-xs text-secondary mt-0.5">${inv.amount_due} due</p>}
+                      <p className="font-medium text-primary">{formatCurrency(inv.grand_total)}</p>
+                      {inv.amount_due > 0 && <p className="text-xs text-secondary mt-0.5">{formatCurrency(inv.amount_due)} due</p>}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${

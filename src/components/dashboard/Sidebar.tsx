@@ -8,7 +8,8 @@ import {
   Users, 
   BarChart3, 
   Settings,
-  Store
+  Store,
+  Home
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -20,10 +21,14 @@ function cn(...inputs: ClassValue[]) {
 
 const navItems = [
   { name: "Overview", href: "/dashboard", icon: LayoutGrid },
-  { name: "Products", href: "/dashboard/products", icon: ShoppingBag },
+  { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+  { name: "Products", href: "/dashboard/products", icon: Store },
+  { name: "Coupons", href: "/dashboard/coupons", icon: BarChart3 },
   { name: "Customers", href: "/dashboard/customers", icon: Users },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { name: "Delivery Settings", href: "/dashboard/settings/delivery", icon: Settings },
   { name: "Store Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Back to Home", href: "/", icon: Home },
 ];
 
 export function Sidebar() {

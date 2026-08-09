@@ -11,7 +11,7 @@ import {
   Package, Settings2, LayoutTemplate, Command
 } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -68,16 +68,22 @@ export default function CheckoutPage() {
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const [isAnnual, setIsAnnual] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     async function getUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      try {
+        const res = await fetch("/api/v1/auth/session");
+        const data = await res.json();
+        if (data.isLoggedIn && data.user) {
+          setUser(data.user);
+        }
+      } catch (e) {
+        setUser(null);
+      }
     }
     getUser();
-  }, [supabase]);
+  }, []);
 
   const plan = plansData[planId];
 

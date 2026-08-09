@@ -10,6 +10,7 @@ export function SmoothScroll() {
       smoothWheel: true,
       wheelMultiplier: 1,
     });
+    (window as any).lenis = lenis;
 
     function raf(time: number) {
       lenis.raf(time);
@@ -19,6 +20,7 @@ export function SmoothScroll() {
     requestAnimationFrame(raf);
 
     return () => {
+      (window as any).lenis = undefined;
       lenis.destroy();
     };
   }, []);

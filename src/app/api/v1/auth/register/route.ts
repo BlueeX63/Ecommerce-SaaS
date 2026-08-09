@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getDbClient } from '@/lib/db/client';
+import { getAdminClient } from '@/lib/supabase/admin';
 import { hashPassword } from '@/lib/auth/password';
 import { rateLimit } from '@/lib/auth/rate-limiter';
 
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-    const limit = rateLimit(`register_${ip}`, 3, 60000 * 60); // 3 registrations per hour per IP
+    const limit = await rateLimit(`register_${ip}`, 3, 60000 * 60); // 3 registrations per hour per IP
     
     if (!limit.success) {
       return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const db = await getDbClient();
+    const db = getAdminClient();
     
     // Check if user already exists
     const { data: existingUser } = await db.from('users').select('user_id').eq('email', email).single();

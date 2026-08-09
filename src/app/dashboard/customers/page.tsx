@@ -41,10 +41,6 @@ export default function CustomersPage() {
           <h1 className="font-heading text-3xl text-primary mb-1">Customers</h1>
           <p className="text-secondary text-sm">Manage your B2C customers and B2B clients.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-black/90 transition-colors text-sm font-medium">
-          <Plus className="w-4 h-4" />
-          Add Customer
-        </button>
       </div>
 
       <div className="bg-surface rounded-2xl border border-black/[0.04] shadow-sm overflow-hidden">

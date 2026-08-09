@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDbClient } from '@/lib/db/client';
+import { getAdminClient } from '@/lib/supabase/admin';
 import { getSession } from '@/lib/auth/session';
 
 export async function GET() {
@@ -7,13 +7,66 @@ export async function GET() {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const db = await getDbClient();
+    const db = getAdminClient();
     const { data: categories, error } = await db.from('categories')
       .select('*')
       .eq('tenant_id', session.tenantId)
       .order('sort_order', { ascending: true });
 
     if (error) throw error;
+    
+    // Auto-seed categories from customization settings if empty
+    if (categories && categories.length === 0) {
+      const { data: settingsData } = await db.from('tenant_settings')
+        .select('setting_value')
+        .eq('tenant_id', session.tenantId)
+        .eq('setting_key', 'customization')
+        .maybeSingle();
+        
+      if (settingsData && settingsData.setting_value) {
+        let customData: any = {};
+        try {
+          // Handle possible double-stringified JSON depending on how it was saved
+          customData = typeof settingsData.setting_value === 'string' 
+            ? JSON.parse(settingsData.setting_value) 
+            : settingsData.setting_value;
+          if (typeof customData === 'string') {
+            customData = JSON.parse(customData);
+          }
+        } catch (e) {
+          console.error('Error parsing customization settings', e);
+        }
+
+        const shopCategories = customData?.shopCategories || "";
+        if (shopCategories) {
+          const catsToInsert = shopCategories
+            .split(',')
+            .map((c: string) => c.trim())
+            .filter((c: string) => c && c.toLowerCase() !== 'all');
+            
+          if (catsToInsert.length > 0) {
+            const insertData = catsToInsert.map((c: string, index: number) => ({
+              tenant_id: session.tenantId,
+              category_name: c,
+              slug: c.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+              sort_order: index,
+              created_by: session.userId
+            }));
+
+            const { data: insertedCats, error: insertError } = await db.from('categories')
+              .insert(insertData)
+              .select('*')
+              .order('sort_order', { ascending: true });
+
+            if (!insertError && insertedCats) {
+              return NextResponse.json({ data: insertedCats });
+            }
+          }
+        }
+      }
+    }
+
+    console.log("Categories returning:", categories);
     return NextResponse.json({ data: categories });
   } catch (error) {
     console.error('Fetch categories error:', error);
@@ -29,7 +82,7 @@ export async function POST(req: Request) {
     const { categoryName, slug, description, parentCategoryId } = await req.json();
     if (!categoryName || !slug) return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
 
-    const db = await getDbClient();
+    const db = getAdminClient();
     
     const { data: category, error } = await db.from('categories')
       .insert({

@@ -219,9 +219,19 @@ export function PricingCards() {
                     </button>
                     
                     <button 
-                      onClick={() => {
+                      onClick={async () => {
                         setShowModal(false);
-                        router.push('/checkout/pro');
+                        try {
+                          const res = await fetch('/api/v1/auth/session');
+                          const data = await res.json();
+                          if (!data.isLoggedIn) {
+                            router.push('/login?next=/onboarding/checkout');
+                          } else {
+                            router.push('/onboarding/checkout');
+                          }
+                        } catch (e) {
+                          router.push('/login?next=/onboarding/checkout');
+                        }
                       }}
                       className="flex-1 group relative flex items-center justify-center gap-3 py-5 px-6 rounded-2xl bg-[#FF4D00] text-white overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,77,0,0.3)] hover:scale-[1.02] active:scale-[0.98]"
                     >

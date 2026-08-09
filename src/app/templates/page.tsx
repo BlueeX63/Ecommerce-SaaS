@@ -7,22 +7,23 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { TransitionLink } from "@/components/TransitionLink";
 import { useRouter } from "next/navigation";
+import { ProfileDropdown } from "@/components/ProfileDropdown";
 
 const templates = [
-  { id: "starter-minimalist", name: "Minimalist", category: "Fashion", img: "/screenshots/starter_minimalist.png", delay: 0.1, href: "/preview/starter/minimalist" },
-  { id: "starter-essence", name: "Essence", category: "Clean Skincare", img: "/screenshots/starter_essence.png", delay: 0.2, href: "/preview/starter/essence" },
-  { id: "starter-origin", name: "Origin", category: "Soft Ceramics", img: "/screenshots/starter_origin.png", delay: 0.3, href: "/preview/starter/origin" },
-  { id: "starter-canvas", name: "Canvas", category: "Editorial Furniture", img: "/screenshots/starter_canvas.png", delay: 0.4, href: "/preview/starter/canvas" },
-  { id: "growth-nexus-pro", name: "Nexus Pro", category: "Tech & Gadgets", img: "/screenshots/growth_nexus_pro.png", delay: 0.1, href: "/preview/growth/nexus-pro" },
-  { id: "growth-velocity", name: "Velocity", category: "Dark Cyberpunk", img: "/screenshots/growth_velocity.png", delay: 0.2, href: "/preview/growth/velocity" },
-  { id: "growth-quantum", name: "Quantum", category: "Animated", img: "/screenshots/growth_quantum.png", delay: 0.3, href: "/preview/growth/quantum" },
-  { id: "growth-horizon", name: "Horizon", category: "Digital", img: "/screenshots/growth_horizon.png", delay: 0.4, href: "/preview/growth/horizon" }
+  { id: "starter-minimalist", name: "Minimalist", category: "Fashion", img: "/screenshots/starter_minimalist.png", delay: 0.1, href: "/templates/minimalist" },
+  { id: "starter-essence", name: "Essence", category: "Clean Skincare", img: "/screenshots/starter_essence.png", delay: 0.2, href: "/templates/essence" },
+  { id: "starter-origin", name: "Origin", category: "Soft Ceramics", img: "/screenshots/starter_origin.png", delay: 0.3, href: "/templates/origin" },
+  { id: "starter-canvas", name: "Canvas", category: "Editorial Furniture", img: "/screenshots/starter_canvas.png", delay: 0.4, href: "/templates/canvas" },
+  { id: "growth-nexus-pro", name: "Nexus Pro", category: "Tech & Gadgets", img: "/screenshots/growth_nexus_pro.png", delay: 0.1, href: "/templates/nexus-pro" },
+  { id: "growth-velocity", name: "Velocity", category: "Dark Cyberpunk", img: "/screenshots/growth_velocity.png", delay: 0.2, href: "/templates/velocity" },
+  { id: "growth-quantum", name: "Quantum", category: "Animated", img: "/screenshots/growth_quantum.png", delay: 0.3, href: "/templates/quantum" },
+  { id: "growth-horizon", name: "Horizon", category: "Digital", img: "/screenshots/growth_horizon.png", delay: 0.4, href: "/templates/horizon" }
 ];
 
 export default function TemplatesPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const { isLoggedIn } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { isLoggedIn, user, logout } = useAuth();
   const router = useRouter();
 
   const [hasPlan, setHasPlan] = useState(false);
@@ -55,10 +56,16 @@ export default function TemplatesPage() {
         {/* Links & Profile (Hidden on mobile, Left on desktop) */}
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-secondary order-2 md:order-1">
           {isLoggedIn && (
-            <div className="flex items-center mr-2">
-              <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-black/5 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform">
-                <User className="w-5 h-5 text-primary" />
+            <div className="flex items-center mr-2 relative">
+              <div 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+              >
+                <span className="text-sm font-bold text-accent">
+                  {user ? `${user.first_name?.[0] || ''}${user.last_name !== '-' ? user.last_name?.[0] || '' : ''}`.toUpperCase() : 'U'}
+                </span>
               </div>
+              <ProfileDropdown isOpen={isDropdownOpen} setIsOpen={setIsDropdownOpen} user={user} logout={logout} />
             </div>
           )}
           <TransitionLink href="/#home" text="Home" className="hover:text-primary transition-colors cursor-pointer">Home</TransitionLink>
@@ -67,13 +74,22 @@ export default function TemplatesPage() {
           <TransitionLink href="/templates" text="Templates" className="text-primary font-bold hover:text-primary transition-colors cursor-pointer">Templates</TransitionLink>
           <TransitionLink href="/#about" text="Mission" className="hover:text-primary transition-colors cursor-pointer">Mission</TransitionLink>
           <TransitionLink href="/#pricing" text="Pricing" className="hover:text-primary transition-colors cursor-pointer">Pricing</TransitionLink>
+          <Link href="/dashboard" className="hover:text-primary transition-colors cursor-pointer">Dashboard</Link>
         </div>
 
         {/* Mobile Menu Icon & Profile (Hidden on desktop) */}
         <div className="flex md:hidden items-center gap-3 order-2">
           {isLoggedIn && (
-            <div className="w-9 h-9 rounded-full bg-white shadow-sm border border-black/5 flex items-center justify-center cursor-pointer active:scale-95 transition-transform">
-              <User className="w-4 h-4 text-primary" />
+            <div className="relative">
+              <div 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-9 h-9 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+              >
+                <span className="text-sm font-bold text-accent">
+                  {user ? `${user.first_name?.[0] || ''}${user.last_name !== '-' ? user.last_name?.[0] || '' : ''}`.toUpperCase() : 'U'}
+                </span>
+              </div>
+              <ProfileDropdown isOpen={isDropdownOpen} setIsOpen={setIsDropdownOpen} user={user} logout={logout} isMobile={true} />
             </div>
           )}
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-primary focus:outline-none">
@@ -103,6 +119,7 @@ export default function TemplatesPage() {
             <TransitionLink href="/templates" text="Templates" onClick={() => setIsMobileMenuOpen(false)}>Templates</TransitionLink>
             <TransitionLink href="/#about" text="Mission" onClick={() => setIsMobileMenuOpen(false)}>Mission</TransitionLink>
             <TransitionLink href="/#pricing" text="Pricing" onClick={() => setIsMobileMenuOpen(false)}>Pricing</TransitionLink>
+            <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
           </div>
         </motion.div>
       )}
@@ -159,11 +176,7 @@ export default function TemplatesPage() {
               <div 
                 key={tpl.id} 
                 onClick={() => {
-                  if (hasPlan) {
-                    setSelectedTemplate(tpl.id);
-                  } else {
-                    window.open(tpl.href || "#", "_blank");
-                  }
+                  if (tpl.href) router.push(tpl.href);
                 }}
               >
                 <motion.div
@@ -175,7 +188,7 @@ export default function TemplatesPage() {
                 >
                 
                 {/* Image Container with Browser Frame */}
-                <div className={`relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-[#EAE8E4] border shadow-sm transition-all duration-500 ${selectedTemplate === tpl.id ? 'border-[#FF4D00] shadow-[0_10px_40px_rgba(255,77,0,0.2)] ring-4 ring-[#FF4D00]/20' : 'border-black/5 group-hover:shadow-2xl'}`}>
+                <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-[#EAE8E4] border shadow-sm transition-all duration-500 border-black/5 group-hover:shadow-2xl">
                   {/* Mac style dots */}
                   <div className="absolute top-0 left-0 w-full h-8 bg-black/[0.03] border-b border-black/5 flex items-center px-4 gap-1.5 z-20 backdrop-blur-sm">
                      <div className="w-2 h-2 rounded-full bg-black/15" />
@@ -255,42 +268,6 @@ export default function TemplatesPage() {
           </div>
         </div>
       </footer>
-
-      {/* Floating Action Bar */}
-      <AnimatePresence>
-        {selectedTemplate && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: "spring", damping: 20, stiffness: 200 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-6 px-6 py-4 bg-white/90 backdrop-blur-xl border border-black/10 rounded-full shadow-[0_20px_40px_rgba(0,0,0,0.1)]"
-          >
-            <div className="flex flex-col">
-              <span className="text-xs font-accent uppercase tracking-widest text-black/50">Selected Template</span>
-              <span className="font-heading font-medium text-lg text-black whitespace-nowrap">{templates.find(t => t.id === selectedTemplate)?.name}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => {
-                  const href = templates.find(t => t.id === selectedTemplate)?.href;
-                  if (href) window.open(href, '_blank');
-                }}
-                className="hidden sm:flex items-center justify-center px-6 py-3 rounded-full border border-black/10 bg-white text-black hover:bg-black/5 transition-all duration-300 whitespace-nowrap"
-              >
-                <span className="font-accent font-bold uppercase tracking-widest text-xs">Preview</span>
-              </button>
-              <button 
-                onClick={() => router.push(`/customize/${selectedTemplate}`)}
-                className="flex items-center justify-center gap-3 px-6 sm:px-8 py-3 rounded-full bg-[#FF4D00] text-white overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,77,0,0.3)] hover:scale-[1.02] active:scale-[0.98] group whitespace-nowrap"
-              >
-                <span className="font-accent font-bold uppercase tracking-widest text-xs">Proceed</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </main>
   );
 }

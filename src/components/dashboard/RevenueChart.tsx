@@ -11,17 +11,16 @@ import {
   ResponsiveContainer 
 } from "recharts";
 
-const data = [
-  { name: 'Mon', revenue: 4000 },
-  { name: 'Tue', revenue: 3000 },
-  { name: 'Wed', revenue: 5000 },
-  { name: 'Thu', revenue: 4500 },
-  { name: 'Fri', revenue: 6000 },
-  { name: 'Sat', revenue: 8000 },
-  { name: 'Sun', revenue: 7500 },
-];
+import { useCurrency } from "@/components/dashboard/CurrencyProvider";
 
-export function RevenueChart() {
+type RevenueChartProps = {
+  data: { name: string; revenue: number }[];
+  totalRevenue: number;
+};
+
+export function RevenueChart({ data, totalRevenue }: RevenueChartProps) {
+  const { formatCurrency, currencySymbol } = useCurrency();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -31,7 +30,7 @@ export function RevenueChart() {
     >
       <div className="mb-6">
         <h3 className="text-secondary font-body text-sm mb-1">Total Revenue</h3>
-        <p className="font-heading text-3xl text-primary">$38,000.00</p>
+        <p className="font-heading text-3xl text-primary">{formatCurrency(totalRevenue)}</p>
       </div>
       
       <div className="flex-1 w-full min-h-0">
@@ -58,7 +57,7 @@ export function RevenueChart() {
               axisLine={false} 
               tickLine={false} 
               tick={{ fill: '#6B6B6B', fontSize: 12, fontFamily: 'var(--font-body)' }}
-              tickFormatter={(value) => `$${value/1000}k`}
+              tickFormatter={(value) => `${currencySymbol}${value/1000}k`}
             />
             <Tooltip 
               contentStyle={{ 

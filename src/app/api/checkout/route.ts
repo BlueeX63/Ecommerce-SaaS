@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth/session';
+import { getAdminClient } from '@/lib/supabase/admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2026-07-29.dahlia', // using latest stable or default apiVersion for stripe sdk
@@ -16,12 +17,14 @@ const plansData: Record<string, any> = {
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const session = await getSession();
 
-    if (!user) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const db = getAdminClient();
+    const { data: user } = await db.from('users').select('email').eq('user_id', session.userId).single();
 
     const { planId, isAnnual } = await req.json();
     const plan = plansData[planId];
@@ -35,7 +38,7 @@ export async function POST(req: Request) {
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      customer_email: user.email,
+      customer_email: user?.email,
       line_items: [
         {
           price_data: {
@@ -54,7 +57,7 @@ export async function POST(req: Request) {
       success_url: `${req.headers.get('origin')}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get('origin')}/checkout/${planId}?canceled=true`,
       metadata: {
-        userId: user.id,
+        userId: session.userId,
         planId: planId,
         isAnnual: isAnnual ? 'true' : 'false'
       },

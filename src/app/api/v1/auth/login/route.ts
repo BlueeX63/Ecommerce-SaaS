@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDbClient } from '@/lib/db/client';
+import { getAdminClient } from '@/lib/supabase/admin';
 import { comparePassword } from '@/lib/auth/password';
 import { createSession } from '@/lib/auth/session';
 import { rateLimit } from '@/lib/auth/rate-limiter';
@@ -7,7 +7,7 @@ import { rateLimit } from '@/lib/auth/rate-limiter';
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-    const limit = rateLimit(`login_${ip}`, 10, 60000 * 5); // 10 logins per 5 minutes
+    const limit = await rateLimit(`login_${ip}`, 10, 60000 * 5); // 10 logins per 5 minutes
     
     if (!limit.success) {
       return NextResponse.json({ error: 'Too many login attempts. Please try again later.' }, { status: 429 });
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
     }
 
-    const db = await getDbClient();
+    const db = getAdminClient();
     
     const { data: user, error } = await db.from('users')
       .select('user_id, tenant_id, password_hash, status')

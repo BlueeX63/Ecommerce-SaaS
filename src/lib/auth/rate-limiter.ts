@@ -1,43 +1,42 @@
-// Simple in-memory rate limiter for Next.js API routes
-// Note: In a production multi-instance environment, replace this with Redis (e.g. Upstash)
+import { Redis } from '@upstash/redis';
 
-type RateLimitStore = {
-  [key: string]: {
-    count: number;
-    resetTime: number;
-  };
-};
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+});
 
-const store: RateLimitStore = {};
-
-export function rateLimit(
+export async function rateLimit(
   identifier: string,
   limit: number = 5,
   windowMs: number = 60000 // 1 minute default
-): { success: boolean; remaining: number; reset: number } {
-  const now = Date.now();
-  
-  if (!store[identifier]) {
-    store[identifier] = {
-      count: 1,
-      resetTime: now + windowMs
+): Promise<{ success: boolean; remaining: number; reset: number }> {
+  try {
+    // If Redis is not configured, bypass rate limiting (fail open)
+    // This is helpful for local development if the user hasn't set up Upstash yet
+    if (!process.env.UPSTASH_REDIS_REST_URL) {
+      return { success: true, remaining: limit - 1, reset: Date.now() + windowMs };
+    }
+
+    const key = `rate_limit:${identifier}`;
+    
+    const currentCount = await redis.incr(key);
+    
+    // Set expiry on the first increment (new window)
+    if (currentCount === 1) {
+      await redis.pexpire(key, windowMs);
+    }
+
+    const remaining = Math.max(0, limit - currentCount);
+    const reset = Date.now() + windowMs; // Approximate reset time
+    
+    return {
+      success: currentCount <= limit,
+      remaining,
+      reset
     };
-    return { success: true, remaining: limit - 1, reset: store[identifier].resetTime };
+  } catch (error) {
+    console.error('Rate limiting error:', error);
+    // Fail open if Redis is down or error occurs
+    return { success: true, remaining: 1, reset: Date.now() + windowMs };
   }
-  
-  const record = store[identifier];
-  
-  if (now > record.resetTime) {
-    record.count = 1;
-    record.resetTime = now + windowMs;
-    return { success: true, remaining: limit - 1, reset: record.resetTime };
-  }
-  
-  record.count += 1;
-  
-  if (record.count > limit) {
-    return { success: false, remaining: 0, reset: record.resetTime };
-  }
-  
-  return { success: true, remaining: limit - record.count, reset: record.resetTime };
 }

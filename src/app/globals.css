@@ -45,3 +45,8 @@ html.lenis body {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Force pointer on clickable elements globally */
+button, a, [role="button"], input[type="submit"], select {
+  cursor: pointer !important;
+}

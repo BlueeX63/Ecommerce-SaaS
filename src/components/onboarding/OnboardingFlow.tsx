@@ -23,14 +23,40 @@ export function OnboardingFlow() {
   const [isBuilding, setIsBuilding] = useState(false);
   const router = useRouter();
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStepIndex === steps.length - 2) {
       // Move to completion step
       setCurrentStepIndex(currentStepIndex + 1);
       setIsBuilding(true);
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 4000); // Simulated build time
+
+      try {
+        const response = await fetch('/api/v1/tenant/provision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            templateId: 'starter-minimalist', // Or fetch from query/localstorage
+            formData: {
+              brandName: formData.brandName,
+              tagline: formData.tagline,
+              industry: formData.industry,
+            }
+          })
+        });
+
+        if (!response.ok) {
+          console.error("Failed to provision store");
+        }
+
+        // Wait for the cinematic wipe animation to mostly finish before redirecting
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 4000);
+      } catch (error) {
+        console.error("Error provisioning store:", error);
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 4000);
+      }
     } else {
       setCurrentStepIndex(currentStepIndex + 1);
     }

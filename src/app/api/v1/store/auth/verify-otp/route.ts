@@ -4,9 +4,11 @@ import { redis } from '@/lib/redis';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 'your-256-bit-secret'
-);
+const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('FATAL: JWT_SECRET or SUPABASE_JWT_SECRET must be set for store auth.');
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecret);
 
 export async function POST(req: Request) {
   try {
@@ -80,10 +82,9 @@ export async function POST(req: Request) {
       path: '/',
     });
 
-    // Provide the token and customer data
+    // Token is set in httpOnly cookie above; do NOT include it in the response body
     return NextResponse.json({
       message: 'Verified successfully',
-      token,
       customer
     }, { status: 200 });
 

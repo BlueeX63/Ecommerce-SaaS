@@ -4,6 +4,13 @@ import { comparePassword } from '@/lib/auth/password';
 import { createSession } from '@/lib/auth/session';
 import { rateLimit } from '@/lib/auth/rate-limiter';
 
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(1, 'Password is required'),
+});
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
@@ -13,11 +20,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Too many login attempts. Please try again later.' }, { status: 429 });
     }
 
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const parseResult = loginSchema.safeParse(body);
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
+    if (!parseResult.success) {
+      return NextResponse.json({ 
+        error: 'Validation failed', 
+        details: parseResult.error.errors.map(e => e.message) 
+      }, { status: 400 });
     }
+
+    const { email, password } = parseResult.data;
 
     const db = getAdminClient();
     
@@ -32,6 +45,10 @@ export async function POST(req: Request) {
 
     if (user.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'Account is disabled or pending verification' }, { status: 403 });
+    }
+
+    if (user.password_hash === 'OAUTH_PROVIDER') {
+      return NextResponse.json({ error: 'This account was created with Google. Please log in with Google first to set a password.' }, { status: 401 });
     }
 
     const isMatch = await comparePassword(password, user.password_hash);

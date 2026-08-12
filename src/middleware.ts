@@ -5,16 +5,38 @@ import { getSession } from '@/lib/auth/session';
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * Match all request paths except for:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - static assets (images)
      */
-    '/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
+
+/**
+ * Routes that do NOT require authentication.
+ * Everything else is protected by default (default-deny).
+ */
+const PUBLIC_ROUTES = [
+  '/',
+  '/login',
+  '/signup',
+  '/pricing',
+  '/privacy',
+  '/terms',
+  '/api/v1/auth/login',
+  '/api/v1/auth/register',
+  '/api/v1/auth/session',
+  '/api/v1/store/',       // All store-facing APIs (storefront is public/has its own auth)
+  '/api/auth/callback',   // OAuth callback
+  '/api/webhooks/',       // Webhooks have their own signature verification
+];
+
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route));
+}
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
@@ -42,28 +64,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.rewrite(new URL(`/store/${currentHost}${url.pathname}`, request.url));
   }
 
-  // 2. Handle SaaS Authentication for non-store routes
-  const isDashboardRoute = url.pathname.startsWith('/dashboard');
-  const isApiRoute = url.pathname.startsWith('/api/v1') && !url.pathname.startsWith('/api/v1/auth') && !url.pathname.startsWith('/api/v1/store');
-
-  if (isDashboardRoute || isApiRoute) {
-    const session = await getSession();
-    
-    if (!session) {
-      if (isApiRoute) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    // Add security headers
-    const response = NextResponse.next();
-    response.headers.set('X-Frame-Options', 'DENY');
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
-    return response;
+  // 2. Check if the route is public
+  if (isPublicRoute(url.pathname)) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // 3. All other routes require authentication (default-deny)
+  const session = await getSession();
+  
+  if (!session) {
+    if (url.pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // Add security headers to authenticated responses
+  const response = NextResponse.next();
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  return response;
 }
+

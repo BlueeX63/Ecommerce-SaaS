@@ -1,7 +1,10 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'fallback_secret_for_development_only_123';
+const SECRET_KEY = process.env.JWT_SECRET;
+if (!SECRET_KEY) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not set. Cannot sign or verify session tokens.');
+}
 const encodedKey = new TextEncoder().encode(SECRET_KEY);
 
 type SessionPayload = {

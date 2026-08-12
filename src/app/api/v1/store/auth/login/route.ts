@@ -3,13 +3,22 @@ import { getAdminClient } from '@/lib/supabase/admin';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
+import { rateLimit } from '@/lib/auth/rate-limiter';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 'your-256-bit-secret'
-);
+const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('FATAL: JWT_SECRET or SUPABASE_JWT_SECRET must be set for store auth.');
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecret);
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
+    const limit = await rateLimit(`store_login_${ip}`, 10, 5 * 60000); // 10 attempts per 5 mins
+    if (!limit.success) {
+      return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 });
+    }
+
     const body = await req.json();
     const { slug, phone, password } = body;
 
@@ -85,9 +94,26 @@ export async function POST(req: Request) {
     // Exclude password_hash from response
     const { password_hash, ...customerData } = customer;
 
+    // Check for assigned catalog
+    const { data: assignedCatalog } = await supabase
+      .from('catalog_customers')
+      .select('catalogs!inner(slug, is_active)')
+      .eq('customer_id', customer.customer_id)
+      .eq('catalogs.is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    let catalogSlug = undefined;
+    if (assignedCatalog?.catalogs && !Array.isArray(assignedCatalog.catalogs) && assignedCatalog.catalogs.slug) {
+      catalogSlug = assignedCatalog.catalogs.slug;
+    } else if (Array.isArray(assignedCatalog?.catalogs) && assignedCatalog.catalogs[0]?.slug) {
+       catalogSlug = assignedCatalog.catalogs[0].slug;
+    }
+
     return NextResponse.json({
       message: 'Logged in successfully',
-      customer: customerData
+      customer: customerData,
+      catalogSlug
     }, { status: 200 });
 
   } catch (error) {

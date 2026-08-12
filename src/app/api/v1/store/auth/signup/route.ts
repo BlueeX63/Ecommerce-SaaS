@@ -4,13 +4,22 @@ import { adminAuth } from '@/lib/firebase-admin';
 import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
+import { rateLimit } from '@/lib/auth/rate-limiter';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 'your-256-bit-secret'
-);
+const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('FATAL: JWT_SECRET or SUPABASE_JWT_SECRET must be set for store auth.');
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecret);
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
+    const limit = await rateLimit(`store_signup_${ip}`, 3, 60 * 60000); // 3 attempts per hour
+    if (!limit.success) {
+      return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 });
+    }
+
     const body = await req.json();
     const { slug, idToken, fullName, password, phoneNumber } = body;
 

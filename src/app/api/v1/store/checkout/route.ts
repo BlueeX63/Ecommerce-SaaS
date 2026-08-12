@@ -1,12 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { withStoreAuth } from '@/lib/auth/store-auth';
+import { rateLimit } from '@/lib/auth/rate-limiter';
 
 export async function POST(req: Request) {
   return withStoreAuth(req, async (req, session) => {
     try {
       const body = await req.json();
       const { address_id, notes, coupon_code } = body;
+
+      const customerId = session.customerId || session.sub;
+      const limit = await rateLimit(`checkout_${customerId}`, 5, 60000);
+      if (!limit.success) {
+        return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
 
       if (!address_id) {
         return NextResponse.json({ error: 'Address required' }, { status: 400 });

@@ -114,13 +114,32 @@ export async function DELETE(req: Request) {
     }
 
     const supabase = getAdminClient();
-    const { error } = await supabase
+    const customerId = session.customerId || session.sub;
+
+    // First verify the item belongs to this customer's cart
+    const { data: cart } = await supabase
+      .from('carts')
+      .select('cart_id')
+      .eq('tenant_id', session.tenantId)
+      .eq('customer_id', customerId)
+      .maybeSingle();
+
+    if (!cart) {
+      return NextResponse.json({ error: 'Cart not found' }, { status: 404 });
+    }
+
+    const { error, count } = await supabase
       .from('cart_items')
-      .delete()
-      .eq('cart_item_id', cart_item_id);
+      .delete({ count: 'exact' })
+      .eq('cart_item_id', cart_item_id)
+      .eq('cart_id', cart.cart_id);
 
     if (error) {
       return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
+    }
+
+    if (count === 0) {
+      return NextResponse.json({ error: 'Item not found in your cart' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true });

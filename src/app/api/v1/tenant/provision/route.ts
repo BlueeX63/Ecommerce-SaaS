@@ -65,6 +65,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, storeSlug, tenantId });
   } catch (error: any) {
     console.error('Provisioning error:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

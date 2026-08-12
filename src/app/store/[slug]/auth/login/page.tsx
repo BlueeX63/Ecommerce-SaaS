@@ -39,7 +39,11 @@ function PremiumLoginContent() {
       });
       const data = await res.json();
       if (res.ok) {
-        router.push(next);
+        if (data.catalogSlug && next === `/store/${slug}`) {
+          router.push(`/store/${slug}/c/${data.catalogSlug}`);
+        } else {
+          router.push(next);
+        }
         router.refresh();
       } else {
         setError(data.error || "Failed to login.");

@@ -23,6 +23,7 @@ const navItems = [
   { name: "Overview", href: "/dashboard", icon: LayoutGrid },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Products", href: "/dashboard/products", icon: Store },
+  { name: "Catalogs", href: "/dashboard/catalogs", icon: Store },
   { name: "Coupons", href: "/dashboard/coupons", icon: BarChart3 },
   { name: "Customers", href: "/dashboard/customers", icon: Users },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },

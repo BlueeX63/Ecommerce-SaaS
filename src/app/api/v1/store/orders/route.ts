@@ -3,9 +3,11 @@ import { getAdminClient } from '@/lib/supabase/admin';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 'your-256-bit-secret'
-);
+const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('FATAL: JWT_SECRET or SUPABASE_JWT_SECRET must be set for store auth.');
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecret);
 
 async function getCustomerSession(slug: string) {
   const cookieStore = await cookies();

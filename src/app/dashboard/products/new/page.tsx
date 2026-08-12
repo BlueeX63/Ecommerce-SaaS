@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Save, ArrowLeft, Image as ImageIcon, X } from "lucide-react";
+import { Save, ArrowLeft, Image as ImageIcon, X, Plus } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 import Link from "next/link";
 
@@ -12,6 +12,7 @@ export default function NewProductPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [categories, setCategories] = useState<{value: string, label: string}[]>([]);
+  const [catalogs, setCatalogs] = useState<{value: string, label: string}[]>([]);
   
   useEffect(() => {
     fetch('/api/v1/categories', { cache: 'no-store' })
@@ -22,6 +23,15 @@ export default function NewProductPage() {
         }
       })
       .catch(console.error);
+      
+    fetch('/api/v1/catalogs', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.data) {
+          setCatalogs(data.data.map((c: any) => ({ value: c.catalog_id, label: c.catalog_name })));
+        }
+      })
+      .catch(console.error);
   }, []);
 
   const [formData, setFormData] = useState({
@@ -29,12 +39,12 @@ export default function NewProductPage() {
     slug: "",
     categoryId: "",
     sku: "",
-    basePrice: "",
     currency: "INR",
     description: "",
     imageUrls: ["", "", "", ""] as string[], // 0 is primary, 1-3 are side images
     threeDModelUrl: "",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    catalogs: [] as { catalogId: string; catalogPriceOverride: string }[]
   });
 
   useEffect(() => {
@@ -48,12 +58,17 @@ export default function NewProductPage() {
       .catch(console.error);
   }, []);
 
+  const [slugDirty, setSlugDirty] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    if (name === 'slug') setSlugDirty(true);
+
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      ...(name === 'productName' ? { slug: value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') } : {})
+      ...(name === 'productName' && !slugDirty ? { slug: value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') } : {})
     }));
   };
 
@@ -105,9 +120,9 @@ export default function NewProductPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          basePrice: parseFloat(formData.basePrice),
           // Filter out empty slots, ensuring primary image stays at index 0 if it exists
-          imageUrls: formData.imageUrls.filter(url => url !== "")
+          imageUrls: formData.imageUrls.filter(url => url !== ""),
+          catalogs: formData.catalogs.filter(c => c.catalogId !== "")
         })
       });
 
@@ -154,6 +169,19 @@ export default function NewProductPage() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-primary mb-1">URL Slug *</label>
+              <input 
+                required
+                name="slug"
+                value={formData.slug}
+                onChange={handleChange}
+                placeholder="e.g. minimalist-ceramic-vase"
+                className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
+              />
+              <p className="text-xs text-secondary mt-1">This will be the URL path for your product.</p>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-primary mb-1">Category</label>
               <CustomSelect
                 name="categoryId"
@@ -162,6 +190,71 @@ export default function NewProductPage() {
                 placeholder="Select a category"
                 options={categories}
               />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-primary">Catalog Assignments (Optional)</label>
+                <button 
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, catalogs: [...prev.catalogs, { catalogId: "", catalogPriceOverride: "" }] }))}
+                  className="text-xs font-medium text-[#FF4D00] hover:text-[#e64500] flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Add Assignment
+                </button>
+              </div>
+              
+              {formData.catalogs.map((assignment, index) => (
+                <div key={index} className="flex gap-3 mb-3 p-3 bg-black/[0.02] rounded-xl border border-black/[0.04]">
+                  <div className="flex-1">
+                    <label className="block text-[10px] uppercase tracking-wider text-secondary mb-1">Catalog</label>
+                    <CustomSelect
+                      name={`catalog-${index}`}
+                      value={assignment.catalogId}
+                      onChange={(val) => {
+                        const newCatalogs = [...formData.catalogs];
+                        newCatalogs[index].catalogId = val;
+                        setFormData({ ...formData, catalogs: newCatalogs });
+                      }}
+                      placeholder="Select catalog"
+                      options={catalogs}
+                    />
+                  </div>
+                  <div className="w-32">
+                    <label className="block text-[10px] uppercase tracking-wider text-secondary mb-1">Price Override</label>
+                    <input 
+                      required
+                      type="number"
+                      step="0.01"
+                      value={assignment.catalogPriceOverride}
+                      onChange={(e) => {
+                        const newCatalogs = [...formData.catalogs];
+                        newCatalogs[index].catalogPriceOverride = e.target.value;
+                        setFormData({ ...formData, catalogs: newCatalogs });
+                      }}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 bg-white border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-end pb-1">
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const newCatalogs = formData.catalogs.filter((_, i) => i !== index);
+                        setFormData({ ...formData, catalogs: newCatalogs });
+                      }}
+                      className="p-1.5 text-secondary hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {formData.catalogs.length === 0 && (
+                <div className="text-sm text-secondary p-4 text-center border border-dashed border-black/[0.1] rounded-xl bg-black/[0.01]">
+                  At least one catalog assignment is required to define a price.
+                </div>
+              )}
             </div>
 
             <div>
@@ -227,35 +320,9 @@ export default function NewProductPage() {
 
         <div className="space-y-6">
           <div className="bg-surface rounded-2xl border border-black/[0.04] p-6 space-y-4 shadow-sm">
-            <h3 className="font-medium text-primary mb-2">Pricing & Status</h3>
+            <h3 className="font-medium text-primary mb-2">Status & Pricing</h3>
             
-            <div>
-              <label className="block text-sm font-medium text-primary mb-1">Base Price *</label>
-              <div className="flex gap-2">
-                <CustomSelect
-                  name="currency"
-                  value={formData.currency}
-                  onChange={(val) => setFormData(prev => ({ ...prev, currency: val }))}
-                  className="w-28 shrink-0"
-                  options={[
-                    { value: "USD", label: "USD" },
-                    { value: "EUR", label: "EUR" },
-                    { value: "GBP", label: "GBP" },
-                    { value: "INR", label: "INR" }
-                  ]}
-                />
-                <input 
-                  required
-                  type="number"
-                  step="0.01"
-                  name="basePrice"
-                  value={formData.basePrice}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
-                />
-              </div>
-            </div>
+            <p className="text-xs text-secondary mb-4">Pricing is now configured per-catalog in the <strong>Catalog Assignments</strong> section.</p>
             
             <div>
               <label className="block text-sm font-medium text-primary mb-1">Status</label>
@@ -287,7 +354,7 @@ export default function NewProductPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || formData.catalogs.length === 0 || !formData.catalogs.every(c => c.catalogId && c.catalogPriceOverride)}
             className="group relative w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-[#050505] text-white rounded-[16px] overflow-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0"
           >
             <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300 ease-[0.16,1,0.3,1] rounded-[16px]" />

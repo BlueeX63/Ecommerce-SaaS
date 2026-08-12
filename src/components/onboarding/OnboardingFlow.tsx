@@ -49,12 +49,12 @@ export function OnboardingFlow() {
 
         // Wait for the cinematic wipe animation to mostly finish before redirecting
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/");
         }, 4000);
       } catch (error) {
         console.error("Error provisioning store:", error);
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/");
         }, 4000);
       }
     } else {

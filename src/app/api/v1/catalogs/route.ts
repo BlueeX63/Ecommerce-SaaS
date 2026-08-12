@@ -14,16 +14,22 @@ export async function GET(req: Request) {
 
     const db = getAdminClient();
     
-    const { data: customers, error, count } = await db.from('customers')
-      .select('*, customer_groups(group_name)', { count: 'exact' })
+    const { data: catalogsData, error, count } = await db.from('catalogs')
+      .select('*, tenant:tenant_id(code)', { count: 'exact' })
       .eq('tenant_id', session.tenantId)
       .order('created_date', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
+    const catalogs = catalogsData?.map((c: any) => ({
+      ...c,
+      tenant_slug: c.tenant?.code,
+      tenant: undefined
+    })) || [];
+
     return NextResponse.json({
-      data: customers,
+      data: catalogs,
       meta: {
         total: count,
         page,
@@ -32,7 +38,7 @@ export async function GET(req: Request) {
       }
     });
   } catch (error) {
-    console.error('Fetch customers error:', error);
+    console.error('Fetch catalogs error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -45,34 +51,40 @@ export async function POST(req: Request) {
     const body = await req.json();
     const db = getAdminClient();
     
-    if (!body.firstName || !body.lastName || (!body.email && !body.phoneNumber)) {
-      return NextResponse.json({ error: 'Name, and either email or phone number are required' }, { status: 400 });
+    if (!body.catalogName || !body.slug) {
+      return NextResponse.json({ error: 'Catalog name and slug are required' }, { status: 400 });
     }
 
-    const { data: customer, error } = await db.from('customers')
+    const { data: catalog, error } = await db.from('catalogs')
       .insert({
         tenant_id: session.tenantId,
-        first_name: body.firstName,
-        last_name: body.lastName,
-        email: body.email || null,
-        phone_number: body.phoneNumber || null,
-        company_name: body.companyName || null,
-        group_id: body.groupId || null,
-        created_by: session.userId
+        catalog_name: body.catalogName,
+        slug: body.slug,
+        catalog_type: body.catalogType || 'GENERAL',
+        description: body.description || null,
+        is_active: body.isActive !== undefined ? body.isActive : true,
+        created_by: session.userId,
+        updated_by: session.userId
       })
-      .select()
+      .select('*, tenant:tenant_id(code)')
       .single();
 
     if (error) {
       if (error.code === '23505') {
-        return NextResponse.json({ error: 'Customer email already exists' }, { status: 400 });
+        return NextResponse.json({ error: 'Catalog slug already exists' }, { status: 400 });
       }
       throw error;
     }
 
-    return NextResponse.json({ message: 'Customer created successfully', data: customer }, { status: 201 });
+    const returnedCatalog = {
+      ...catalog,
+      tenant_slug: (catalog as any).tenant?.code,
+      tenant: undefined
+    };
+
+    return NextResponse.json({ message: 'Catalog created successfully', data: returnedCatalog }, { status: 201 });
   } catch (error) {
-    console.error('Create customer error:', error);
+    console.error('Create catalog error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

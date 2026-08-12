@@ -3,6 +3,19 @@ import { getAdminClient } from '@/lib/supabase/admin';
 import { hashPassword } from '@/lib/auth/password';
 import { rateLimit } from '@/lib/auth/rate-limiter';
 
+import { z } from 'zod';
+
+const registerSchema = z.object({
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+  tenantName: z.string().min(3, 'Tenant name must be at least 3 characters')
+    .regex(/^[a-zA-Z0-9\s-]+$/, 'Tenant name can only contain letters, numbers, spaces, and hyphens'),
+});
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
@@ -12,11 +25,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }
 
-    const { firstName, lastName, email, password, tenantName } = await req.json();
+    const body = await req.json();
+    const parseResult = registerSchema.safeParse(body);
 
-    if (!firstName || !lastName || !email || !password || !tenantName) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!parseResult.success) {
+      return NextResponse.json({ 
+        error: 'Validation failed', 
+        details: parseResult.error.errors.map(e => e.message) 
+      }, { status: 400 });
     }
+
+    const { firstName, lastName, email, password, tenantName } = parseResult.data;
 
     const db = getAdminClient();
     

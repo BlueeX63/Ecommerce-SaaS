@@ -46,8 +46,25 @@ export async function POST(req: Request) {
     const db = getAdminClient();
     
     // Minimal required fields
-    if (!body.productName || !body.slug || body.basePrice === undefined || isNaN(Number(body.basePrice))) {
-      return NextResponse.json({ error: 'Product name, slug, and valid base price are required' }, { status: 400 });
+    if (!body.productName || !body.slug) {
+      return NextResponse.json({ error: 'Product name and slug are required' }, { status: 400 });
+    }
+    if (!body.catalogs || body.catalogs.length === 0) {
+      return NextResponse.json({ error: 'At least one catalog assignment is required to define pricing' }, { status: 400 });
+    }
+
+    let finalSlug = body.slug;
+    
+    // Check if slug exists
+    const { data: existingSlug } = await db.from('products')
+      .select('slug')
+      .eq('tenant_id', session.tenantId)
+      .eq('slug', finalSlug)
+      .maybeSingle();
+      
+    if (existingSlug) {
+      const randomSuffix = Math.random().toString(36).substring(2, 6);
+      finalSlug = `${finalSlug}-${randomSuffix}`;
     }
 
     const { data: product, error } = await db.from('products')
@@ -55,10 +72,10 @@ export async function POST(req: Request) {
         tenant_id: session.tenantId,
         category_id: body.categoryId || null,
         product_name: body.productName,
-        slug: body.slug,
+        slug: finalSlug,
         sku: body.sku || null,
         description: body.description || null,
-        base_price: Number(body.basePrice),
+        base_price: 0, // Default to 0 since pricing is now strictly managed via catalog assignments
         compare_at_price: body.compareAtPrice ? Number(body.compareAtPrice) : null,
         cost_price: body.costPrice ? Number(body.costPrice) : null,
         status: body.status || 'DRAFT',
@@ -99,6 +116,18 @@ export async function POST(req: Request) {
 
       if (imageError) {
         console.error('Failed to insert product image:', imageError);
+      }
+    }
+
+    if (body.catalogs && Array.isArray(body.catalogs) && body.catalogs.length > 0) {
+      for (const catalog of body.catalogs) {
+        if (!catalog.catalogId) continue;
+        const { error: catalogError } = await db.from('catalog_products').insert({
+          catalog_id: catalog.catalogId,
+          product_id: product.product_id,
+          price_override: catalog.catalogPriceOverride ? Number(catalog.catalogPriceOverride) : null
+        });
+        if (catalogError) console.error(`Failed to assign product to catalog ${catalog.catalogId}:`, catalogError);
       }
     }
 

@@ -62,6 +62,11 @@ export async function GET(request: Request) {
       if (customUser && customUser.status === 'ACTIVE') {
         // 3. Issue Custom Session JWT for the rest of the application
         await createSession(customUser.user_id, customUser.tenant_id, 'owner');
+        
+        if (customUser.password_hash === 'OAUTH_PROVIDER') {
+          return NextResponse.redirect(`${origin}/set-password`);
+        }
+        
         return NextResponse.redirect(`${origin}${next}`);
       }
     }

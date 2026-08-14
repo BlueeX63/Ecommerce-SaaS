@@ -3,7 +3,8 @@ import { getAdminClient } from '@/lib/supabase/admin';
 import { getSession } from '@/lib/auth/session';
 
 function generateSlug(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).substring(2, 6);
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 40);
+  return base + '-' + Math.random().toString(36).substring(2, 6);
 }
 
 export async function POST(req: Request) {
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
     // 2. Upsert Tenant Branding
     const { error: brandingError } = await db.from('tenant_branding').upsert({
       tenant_id: tenantId,
-      logo_url: formData.aboutImage || '',
+      logo_url: formData.logoUrl || formData.aboutHeroImage || '',
       primary_color: formData.primaryColor || '#000000',
       secondary_color: '#ffffff'
     }, { onConflict: 'tenant_id' });
@@ -65,6 +66,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, storeSlug, tenantId });
   } catch (error: any) {
     console.error('Provisioning error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: error?.message || error }, { status: 500 });
   }
 }

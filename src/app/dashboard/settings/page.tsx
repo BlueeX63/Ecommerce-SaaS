@@ -10,7 +10,8 @@ export default function GeneralSettingsPage() {
   const [formData, setFormData] = useState({
     storeName: "My Awesome Store",
     supportEmail: "support@store.com",
-    currency: "INR"
+    currency: "INR",
+    customDomain: ""
   });
 
   useEffect(() => {
@@ -97,6 +98,23 @@ export default function GeneralSettingsPage() {
               <option value="GBP">GBP (£)</option>
               <option value="INR">INR (₹)</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-primary mb-1">Custom Domain</label>
+            <input 
+              type="text" 
+              name="customDomain"
+              placeholder="e.g. www.mybrand.com"
+              value={formData.customDomain}
+              onChange={handleChange}
+              className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+            />
+            {formData.customDomain && (
+              <p className="mt-2 text-sm text-secondary">
+                To connect this domain, please add a <strong>CNAME</strong> record at your domain registrar pointing to <strong>your-saas.com</strong> (or an A record pointing to the server's IP).
+              </p>
+            )}
           </div>
         </div>
 

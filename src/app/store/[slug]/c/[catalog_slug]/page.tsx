@@ -15,7 +15,7 @@ export default async function CatalogHomePage({
   const tenant = await fetchWithCache(
     `tenant:${slug}`,
     async () => {
-      const { data } = await db.from("tenant").select("tenant_id").eq("code", slug).single();
+      const { data } = await db.from("tenant").select("tenant_id").or(`code.eq.${slug},custom_domain.eq.${slug}`).single();
       return data;
     },
     3600

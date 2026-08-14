@@ -11,13 +11,25 @@ export default function SetPasswordPage() {
   const router = useRouter();
   
   const [isLoading, setIsLoading] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string; general?: string }>({});
+  const [errors, setErrors] = useState<{ firstName?: string; lastName?: string; password?: string; confirmPassword?: string; general?: string }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    
+    if (!firstName || firstName.length < 2) {
+      setErrors(prev => ({ ...prev, firstName: "First name must be at least 2 characters" }));
+      return;
+    }
+
+    if (!lastName || lastName.length < 2) {
+      setErrors(prev => ({ ...prev, lastName: "Last name must be at least 2 characters" }));
+      return;
+    }
     
     if (password.length < 8) {
       setErrors(prev => ({ ...prev, password: "Password must be at least 8 characters" }));
@@ -45,7 +57,7 @@ export default function SetPasswordPage() {
       const res = await fetch("/api/v1/auth/set-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password, firstName, lastName })
       });
       
       const data = await res.json();
@@ -73,10 +85,10 @@ export default function SetPasswordPage() {
     >
       <div className="mb-10 text-center">
         <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-          Set a Password
+          Complete Your Profile
         </h2>
         <p className="mt-3 text-sm text-gray-500 max-w-sm mx-auto">
-          You signed in with Google! Set a password so you can also log in with your email in the future.
+          You signed in with Google! Please complete your profile and set a password so you can also log in with your email in the future.
         </p>
       </div>
 
@@ -87,6 +99,29 @@ export default function SetPasswordPage() {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-1">
+        <div className="flex gap-4">
+          <div className="w-1/2">
+            <FloatingLabelInput
+              label="First Name"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              error={errors.firstName}
+              autoComplete="given-name"
+            />
+          </div>
+          <div className="w-1/2">
+            <FloatingLabelInput
+              label="Last Name"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              error={errors.lastName}
+              autoComplete="family-name"
+            />
+          </div>
+        </div>
+
         <FloatingLabelInput
           label="New Password"
           type="password"
@@ -107,12 +142,8 @@ export default function SetPasswordPage() {
         
         <div className="mt-6 flex flex-col gap-4">
           <SubmitButton isLoading={isLoading} type="submit">
-            Set Password
+            Complete Profile
           </SubmitButton>
-          
-          <Link href="/" className="text-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
-            Skip for now
-          </Link>
         </div>
       </form>
     </motion.div>

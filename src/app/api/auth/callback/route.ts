@@ -24,10 +24,25 @@ export async function GET(request: Request) {
         // 2. If not, create a new tenant and user
         const nameParts = (authUser.user_metadata?.full_name || authUser.email || '').split(' ');
         let firstName = nameParts[0] || 'User';
-        let lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '-';
+        let lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User';
         
-        const tenantName = `${firstName}'s Store`;
-        const tenantCode = tenantName.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 50);
+        const tenantName = `${firstName} Store`;
+        let baseTenantCode = tenantName.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 45);
+        if (baseTenantCode.endsWith('-')) baseTenantCode = baseTenantCode.slice(0, -1);
+        
+        let tenantCode = baseTenantCode;
+        let codeExists = true;
+        let counter = 0;
+        
+        while (codeExists) {
+          const { data: existingTenant } = await db.from('tenant').select('tenant_id').eq('code', tenantCode).maybeSingle();
+          if (!existingTenant) {
+            codeExists = false;
+          } else {
+            counter++;
+            tenantCode = `${baseTenantCode}-${counter}`.substring(0, 50);
+          }
+        }
         
         // Flag to prompt user for name setup on the dashboard
         const cookieStore = await cookies();
@@ -48,7 +63,8 @@ export async function GET(request: Request) {
             last_name: lastName,
             email: authUser.email,
             password_hash: 'OAUTH_PROVIDER', // Flag as OAuth
-            status: 'ACTIVE'
+            status: 'ACTIVE',
+            email_verified: true
           }).select().single();
           
           if (newUser) {
@@ -57,17 +73,26 @@ export async function GET(request: Request) {
             customUser = newUser;
           }
         }
+      } else {
+        // Prevent Account Takeover (ATO): Update email_verified to true since Google verified it,
+        // but DO NOT overwrite their password_hash if they previously registered via email.
+        if (!customUser.email_verified) {
+          await db.from('users').update({ email_verified: true }).eq('user_id', customUser.user_id);
+          customUser.email_verified = true;
+        }
       }
       
       if (customUser && customUser.status === 'ACTIVE') {
         // 3. Issue Custom Session JWT for the rest of the application
-        await createSession(customUser.user_id, customUser.tenant_id, 'owner');
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+        const userAgent = request.headers.get('user-agent') || 'Unknown';
+        await createSession(customUser.user_id, customUser.tenant_id, 'owner', ip, userAgent);
         
         if (customUser.password_hash === 'OAUTH_PROVIDER') {
           return NextResponse.redirect(`${origin}/set-password`);
         }
-        
-        return NextResponse.redirect(`${origin}${next}`);
+
+        return NextResponse.redirect(`${origin}/`);
       }
     }
   }

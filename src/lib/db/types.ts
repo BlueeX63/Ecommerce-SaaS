@@ -14,6 +14,7 @@ export interface Database {
           tenant_id: string
           tenant_name: string
           code: string
+          custom_domain: string | null
           description: string | null
           status: string
           created_date: string
@@ -23,6 +24,7 @@ export interface Database {
           tenant_id?: string
           tenant_name: string
           code: string
+          custom_domain?: string | null
           description?: string | null
           status?: string
           created_date?: string
@@ -32,6 +34,7 @@ export interface Database {
           tenant_id?: string
           tenant_name?: string
           code?: string
+          custom_domain?: string | null
           description?: string | null
           status?: string
           created_date?: string
@@ -77,6 +80,38 @@ export interface Database {
           email_verified?: boolean
           last_login?: string | null
           created_date?: string
+        }
+      }
+      user_sessions: {
+        Row: {
+          session_id: string
+          user_id: string
+          tenant_id: string
+          ip_address: string | null
+          user_agent: string | null
+          is_active: boolean
+          created_at: string
+          logout_time: string | null
+        }
+        Insert: {
+          session_id?: string
+          user_id: string
+          tenant_id: string
+          ip_address?: string | null
+          user_agent?: string | null
+          is_active?: boolean
+          created_at?: string
+          logout_time?: string | null
+        }
+        Update: {
+          session_id?: string
+          user_id?: string
+          tenant_id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          is_active?: boolean
+          created_at?: string
+          logout_time?: string | null
         }
       }
       // Add other tables as needed based on migrations

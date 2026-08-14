@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     if (!parseResult.success) {
       return NextResponse.json({ 
         error: 'Validation failed', 
-        details: parseResult.error.errors.map(e => e.message) 
+        details: parseResult.error.issues.map(e => e.message) 
       }, { status: 400 });
     }
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const db = getAdminClient();
     
     const { data: user, error } = await db.from('users')
-      .select('user_id, tenant_id, password_hash, status')
+      .select('user_id, tenant_id, password_hash, status, email_verified')
       .eq('email', email)
       .single();
 
@@ -44,7 +44,11 @@ export async function POST(req: Request) {
     }
 
     if (user.status !== 'ACTIVE') {
-      return NextResponse.json({ error: 'Account is disabled or pending verification' }, { status: 403 });
+      return NextResponse.json({ error: 'Account is disabled' }, { status: 403 });
+    }
+
+    if (!user.email_verified) {
+      return NextResponse.json({ error: 'Email not verified. Please check your inbox for the verification link.' }, { status: 403 });
     }
 
     if (user.password_hash === 'OAUTH_PROVIDER') {
@@ -61,14 +65,20 @@ export async function POST(req: Request) {
     const role = 'ADMIN';
 
     // Create session (sets HTTP-only cookie)
-    await createSession(user.user_id, user.tenant_id, role);
+    const userAgent = req.headers.get('user-agent') || 'Unknown';
+    try {
+      await createSession(user.user_id, user.tenant_id, role, ip, userAgent);
+    } catch (sessionError: any) {
+      console.error('Session creation failed:', sessionError);
+      return NextResponse.json({ error: `Failed to create session: ${sessionError.message || 'Unknown database error'}` }, { status: 500 });
+    }
 
     // Update last login
     await db.from('users').update({ last_login: new Date().toISOString() }).eq('user_id', user.user_id);
 
     return NextResponse.json({ message: 'Login successful' }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: `Internal server error: ${error.message || 'Unknown error'}` }, { status: 500 });
   }
 }

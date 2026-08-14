@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   try {
     // 1. In a real app, you'd get the tenant_id from the authenticated user session.
     // For this boilerplate, we'll fetch the first tenant.
-    const { data: tenantData } = await supabase.from('tenant').select('tenant_id').limit(1).single();
+    const { data: tenantData } = await supabase.from('tenant').select('tenant_id, custom_domain').limit(1).single();
     if (!tenantData) return NextResponse.json({ error: "No tenant found" }, { status: 404 });
 
     const tenantId = tenantData.tenant_id;
@@ -35,6 +35,11 @@ export async function GET(req: Request) {
       } catch (e) {
         console.error("Failed to parse customization JSON", e);
       }
+    }
+
+    if (tenantData.custom_domain) {
+      if (!customization.formData) customization.formData = {};
+      customization.formData.customDomain = tenantData.custom_domain;
     }
 
     return NextResponse.json(customization);
@@ -73,6 +78,14 @@ export async function POST(req: Request) {
       ...customization,
       ...body
     };
+
+    // Extract and handle customDomain separately, as it belongs to the tenant table
+    if (body.formData && 'customDomain' in body.formData) {
+      const customDomain = body.formData.customDomain || null;
+      await supabase.from('tenant').update({ custom_domain: customDomain }).eq('tenant_id', tenantId);
+      // Remove it from settings so we don't duplicate data
+      delete newCustomization.formData.customDomain;
+    }
 
     // 4. Upsert
     const { error: upsertError } = await supabase

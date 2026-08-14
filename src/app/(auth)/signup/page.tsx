@@ -15,8 +15,10 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; general?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; general?: string; otp?: string }>({});
   const [isSuccess, setIsSuccess] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,9 +48,9 @@ export default function SignupPage() {
     setIsLoading(true);
     
     const parts = name.trim().split(" ");
-    const firstName = parts[0];
-    const lastName = parts.length > 1 ? parts.slice(1).join(" ") : "-";
-    const tenantName = `${firstName}'s Store`;
+    const firstName = parts[0] || "User";
+    const lastName = parts.length > 1 ? parts.slice(1).join(" ") : "User";
+    const tenantName = `${firstName} Store`;
 
     try {
       const res = await fetch("/api/v1/auth/register", {
@@ -60,7 +62,8 @@ export default function SignupPage() {
       const data = await res.json();
       
       if (!res.ok) {
-        setErrors({ general: data.error || "Registration failed." });
+        const errorMsg = data.details ? data.details.join(", ") : data.error || "Registration failed.";
+        setErrors({ general: errorMsg });
       } else {
         setIsSuccess(true);
       }
@@ -71,24 +74,70 @@ export default function SignupPage() {
     }
   };
 
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      setErrors({ otp: "OTP must be 6 digits" });
+      return;
+    }
+
+    setIsVerifying(true);
+    setErrors({});
+
+    try {
+      const res = await fetch("/api/v1/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setErrors({ otp: data.error || "Verification failed." });
+        setIsVerifying(false);
+      } else {
+        router.push("/");
+      }
+    } catch (error) {
+      setErrors({ otp: "An error occurred during verification." });
+      setIsVerifying(false);
+    }
+  };
+
   if (isSuccess) {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full flex flex-col justify-center items-center text-center space-y-6"
+        className="w-full flex flex-col justify-center text-center space-y-6"
       >
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
           <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
           </svg>
         </div>
         <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Check your email</h2>
-        <p className="text-gray-500">We've sent a verification link to <span className="font-medium text-gray-900">{email}</span>.</p>
-        <p className="text-sm text-gray-400">Please verify your email to complete registration.</p>
-        <Link href="/login" className="mt-8 text-[#F04438] hover:text-[#d93b2f] font-medium transition-colors">
-          Return to login
-        </Link>
+        <p className="text-gray-500">We've sent a 6-digit verification code to <span className="font-medium text-gray-900">{email}</span>.</p>
+        
+        <form onSubmit={handleVerifyOtp} className="flex flex-col mt-4">
+          <FloatingLabelInput
+            label="Enter 6-digit OTP"
+            type="text"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+            error={errors.otp}
+            autoComplete="one-time-code"
+          />
+          
+          <div className="mt-4">
+            <SubmitButton isLoading={isVerifying} type="submit">
+              Verify Email
+            </SubmitButton>
+          </div>
+        </form>
+
+        <p className="text-sm text-gray-400 mt-4">Please verify your email to complete registration.</p>
       </motion.div>
     );
   }

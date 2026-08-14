@@ -38,9 +38,8 @@ export function CustomizationWizardContent() {
   
   // Calculate preview URL from ID (e.g. "growth-nexus-pro" -> "/templates/nexus-pro")
   const parts = templateId.split("-");
-  const folder = parts[0];
   const name = parts.slice(1).join("-");
-  const previewUrl = `/templates/${folder}/${name}`;
+  const previewUrl = `/templates/${name}`;
 
   const [activeStep, setActiveStep] = useState(0);
 

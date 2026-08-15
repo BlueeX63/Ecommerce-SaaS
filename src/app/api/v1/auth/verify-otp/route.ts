@@ -9,9 +9,9 @@ const verifySchema = z.object({
   otp: z.string().min(6).max(6),
 });
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
+export async function POST(rereqq: Request) {
+  try {    const body = await rereqq.json();
+
     const parseResult = verifySchema.safeParse(body);
 
     if (!parseResult.success) {
@@ -51,10 +51,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'User not found or failed to update' }, { status: 500 });
     }
 
-    // Create a session
     const role = 'ADMIN';
-    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-    const userAgent = req.headers.get('user-agent') || 'Unknown';
+    const ip = rereqq.headers.get('x-forwarded-for') || '127.0.0.1';
+    const userAgent = rereqq.headers.get('user-agent') || 'Unknown';
     
     await createSession(user.user_id, user.tenant_id, role, ip, userAgent);
 

@@ -104,6 +104,33 @@ export default function CanvasHomePage() {
         </motion.div>
       </section>
 
+      {/* Editorial Section */}
+      <section className="relative z-10 py-24 md:py-32 px-6 md:px-12 border-t border-white/10 bg-black">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center">
+          <motion.div 
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            viewport={{ once: true, margin: "-100px" }}
+            className="order-2 md:order-1"
+          >
+            <h2 className="font-serif text-4xl md:text-6xl uppercase tracking-tighter mb-8">{editorialTitle}</h2>
+            <p className="text-[10px] md:text-xs uppercase tracking-[0.2em] leading-loose text-white/70 max-w-md">
+              {editorialText}
+            </p>
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            viewport={{ once: true, margin: "-100px" }}
+            className="order-1 md:order-2"
+          >
+            <img src={editorialImage2} alt={editorialTitle} className="w-full aspect-[4/5] object-cover grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-700" />
+          </motion.div>
+        </div>
+      </section>
+
       {/* Featured Products */}
       <section className="relative z-10 py-32 px-6 md:px-12 border-t border-white/10">
         <div className="w-full">

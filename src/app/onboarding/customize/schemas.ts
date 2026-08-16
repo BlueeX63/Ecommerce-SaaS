@@ -284,7 +284,7 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
       },
       {
         id: "shop",
-        label: "Shop Page",
+        label: "Collection Page",
         fields: [
           { name: "shopTitle", label: "Shop Title", type: "text", defaultValue: "Canvas Collection" },
           { name: "shopCategories", label: "Filter Categories", type: "text", defaultValue: "All, Art, Furniture, Lighting, Objects" }
@@ -293,26 +293,26 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
     ,
       {
         id: 'about',
-        label: 'About Page',
+        label: 'Maison Page',
         fields: [
-          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'Our Story' },
-          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'Founded with a vision to create exceptional products.' },
-          { name: 'aboutHeroImage', label: 'About Hero Image', type: 'image', defaultValue: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop' },
-          { name: 'feature1Title', label: 'Feature 1 Title', type: 'text', defaultValue: 'The Gallery' },
-          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'We believe in quality over quantity.' },
+          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'The Shape \nOf Things.' },
+          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'Canvas is an independent design house focused on creating objects of uncompromising quality. We believe that true luxury lies in restraint and negative space.' },
+          { name: 'aboutHeroImage', label: 'About Hero Image', type: 'image', defaultValue: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2000&auto=format&fit=crop' },
+          { name: 'feature1Title', label: 'Feature 1 Title', type: 'text', defaultValue: 'Philosophy.' },
+          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'Our flagship space was conceived as a brutalist sanctuary in the heart of the city. A place where objects can breathe and be appreciated for their intrinsic forms.' },
           { name: 'feature2Title', label: 'Feature 2 Title', type: 'text', defaultValue: 'The Collection' },
-          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'Every piece in our collection is carefully curated.' }
+          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'We curate pieces from independent designers globally. Each object must meet our strict criteria: uncompromising quality, bold geometry, and absolute permanence.' }
         ]
       },
       {
         id: 'contact',
-        label: 'Contact Page',
+        label: 'Concierge Page',
         fields: [
-          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Get In Touch' },
-          { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Contact Us' },
-          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '123 Design District\nNew York, NY 10012' },
-          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'hello@example.com' },
-          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+1 (555) 123-4567' },
+          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Concierge' },
+          { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Inquiries.' },
+          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '1984 Monolith Blvd\nSector 4\nNew York, NY 10001' },
+          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'inquiries@canvas.studio' },
+          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+1 (555) 019-8472' },
           { name: 'contactHours', label: 'Operating Hours', type: 'textarea', defaultValue: 'Monday — Friday\n9:00 AM — 6:00 PM EST' }
         ]
       },
@@ -370,7 +370,7 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
       },
       {
         id: "shop",
-        label: "Shop Page",
+        label: "Collection Page",
         fields: [
           { name: "shopTitle", label: "Shop Title", type: "text", defaultValue: "Nexus Pro Arsenal" },
           { name: "shopCategories", label: "Filter Categories", type: "text", defaultValue: "All, Techwear, Footwear, Accessories, Hardware" }
@@ -381,25 +381,24 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
         id: 'about',
         label: 'About Page',
         fields: [
-          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'Our Story' },
-          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'Founded with a vision to create exceptional products.' },
-          { name: 'aboutHeroImage', label: 'About Hero Image', type: 'image', defaultValue: 'https://images.unsplash.com/photo-1511556820780-d912e42b4980?q=80&w=2000&auto=format&fit=crop' },
-          { name: 'feature1Title', label: 'Feature 1 Title', type: 'text', defaultValue: 'The Protocol' },
-          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'We believe in quality over quantity.' },
-          { name: 'feature2Title', label: 'Feature 2 Title', type: 'text', defaultValue: 'The Syndicate' },
-          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'Every piece in our collection is carefully curated.' }
+          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'Designing the Future of Essentials.' },
+          { name: 'aboutHeroImage', label: 'About Hero Image', type: 'image', defaultValue: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop' },
+          { name: 'feature1Title', label: 'Section Title', type: 'text', defaultValue: 'The Vision' },
+          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'Nexus Pro was established to bridge the gap between technical performance and metropolitan aesthetics. We engineer garments that adapt to the wearer\'s environment, providing uncompromising utility without sacrificing design.' },
+          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'We operate as a global collective of designers, material scientists, and urban athletes. Our development process is iterative and relentless, resulting in gear that performs flawlessly in concrete jungles.' },
+          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'This isn\'t just clothing or accessories; it\'s industrial design applied to the body. It is hardware for the human form.' }
         ]
       },
       {
         id: 'contact',
         label: 'Contact Page',
         fields: [
-          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Get In Touch' },
-          { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Contact Us' },
-          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '123 Design District\nNew York, NY 10012' },
-          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'hello@example.com' },
-          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+1 (555) 123-4567' },
-          { name: 'contactHours', label: 'Operating Hours', type: 'textarea', defaultValue: 'Monday — Friday\n9:00 AM — 6:00 PM EST' }
+          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Support' },
+          { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Contact Us.' },
+          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '123 Innovation Drive, Silicon Valley, CA 94025' },
+          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'support@nexuspro.com' },
+          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+1 (800) 555-0199' },
+          { name: 'contactHours', label: 'Operating Hours', type: 'textarea', defaultValue: 'Our customer service team is available Monday through Friday, from 9 AM to 6 PM PST. We aim to respond to all inquiries within 24 hours.' }
         ]
       },
       {
@@ -446,7 +445,7 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
       },
       {
         id: "shop",
-        label: "Shop Page",
+        label: "Products Page",
         fields: [
           { name: "shopTitle", label: "Shop Title", type: "text", defaultValue: "Gear Grid" },
           { name: "shopCategories", label: "Filter Categories", type: "text", defaultValue: "All, Apparel, Hardware, Implants, Mods" }
@@ -457,25 +456,22 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
         id: 'about',
         label: 'About Page',
         fields: [
-          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'System.Origin()' },
-          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'Velocity was conceived in the neon-lit underground.' },
-          { name: 'aboutHeroImage', label: 'About Hero Image', type: 'image', defaultValue: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=2000&auto=format&fit=crop' },
-          { name: 'feature1Title', label: 'Feature 1 Title', type: 'text', defaultValue: 'The Construct' },
-          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'Every garment is a piece of hardware.' },
-          { name: 'feature2Title', label: 'Feature 2 Title', type: 'text', defaultValue: 'The Directive' },
-          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'We outfit the vanguard of the new world.' }
+          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'Protocol // 01' },
+          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'We are the architects of the future. We don\'t just design clothes; we engineer armor for the digital age.' },
+          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'Every garment is a piece of hardware. We source advanced synthetics, utilize laser-cut precision, and engineer for maximum mobility in urban environments.' },
+          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'We outfit the vanguard of the new world. Those who move fast, think critically, and demand gear that can keep pace with an accelerating reality.' },
+          { name: 'aboutHeroImage', label: 'About Hero Image', type: 'image', defaultValue: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop' }
         ]
       },
       {
         id: 'contact',
         label: 'Contact Page',
         fields: [
-          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Get In Touch' },
+          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Contact Information' },
           { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Contact Us' },
-          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '123 Design District\nNew York, NY 10012' },
-          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'hello@example.com' },
-          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+1 (555) 123-4567' },
-          { name: 'contactHours', label: 'Operating Hours', type: 'textarea', defaultValue: 'Monday — Friday\n9:00 AM — 6:00 PM EST' }
+          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '35.6762° N, 139.6503° E\nTokyo, Japan' },
+          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'support@velocity.com' },
+          { name: 'contactPhone', label: 'Response Time', type: 'text', defaultValue: 'Usually within 24 hours' }
         ]
       },
       {
@@ -519,7 +515,7 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
       },
       {
         id: "shop",
-        label: "Shop Page",
+        label: "Collection Page",
         fields: [
           { name: "shopTitle", label: "Shop Title", type: "text", defaultValue: "Quantum Realm" },
           { name: "shopCategories", label: "Filter Categories", type: "text", defaultValue: "All, Energy, Matter, Anti-Matter, Plasma" }
@@ -528,24 +524,24 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
     ,
       {
         id: 'about',
-        label: 'About Page',
+        label: 'Philosophy Page',
         fields: [
-          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'Our Story' },
-          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'Founded with a vision to create exceptional products.' },
-          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'We believe in quality over quantity.' },
-          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'Every piece in our collection is carefully curated.' }
+          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'Beyond Form. \nBeyond Function.' },
+          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'Quantum was founded on a singular premise: that the objects we interact with every day should not merely serve a purpose, but should elevate our consciousness.' },
+          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'We collaborate with visionary designers and avant-garde artists to blur the lines between conceptual art and functional homeware. Every artifact in our collection is a testament to what happens when imagination is unconstrained by traditional manufacturing limitations.' },
+          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'We don\'t sell furniture. We curate experiences.' },
+          { name: 'aboutHeroImage', label: 'About Hero Image', type: 'image', defaultValue: 'https://images.unsplash.com/photo-1574958269340-fa927503f3dd?q=80&w=2000&auto=format&fit=crop' }
         ]
       },
       {
         id: 'contact',
         label: 'Contact Page',
         fields: [
-          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Get In Touch' },
-          { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Contact Us' },
-          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '123 Design District\nNew York, NY 10012' },
-          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'hello@example.com' },
-          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+1 (555) 123-4567' },
-          { name: 'contactHours', label: 'Operating Hours', type: 'textarea', defaultValue: 'Monday — Friday\n9:00 AM — 6:00 PM EST' }
+          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'textarea', defaultValue: 'Whether you\'re inquiring about a bespoke commission or need support with a recent acquisition, our concierge is at your disposal.' },
+          { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Let\'s Connect.' },
+          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '100 Quantum Way\nNeo-Tokyo, 100-0001' },
+          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'concierge@quantum.design' },
+          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+81 3 1234 5678' }
         ]
       },
       {
@@ -588,7 +584,7 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
       },
       {
         id: "shop",
-        label: "Shop Page",
+        label: "Collection Page",
         fields: [
           { name: "shopTitle", label: "Shop Title", type: "text", defaultValue: "Digital Store" },
           { name: "shopCategories", label: "Filter Categories", type: "text", defaultValue: "All, Software, Courses, Assets, Subscriptions" }
@@ -597,24 +593,24 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
     ,
       {
         id: 'about',
-        label: 'About Page',
+        label: 'Manifesto Page',
         fields: [
-          { name: 'aboutTitle', label: 'About Title', type: 'text', defaultValue: 'Our Story' },
-          { name: 'aboutText1', label: 'About Text 1', type: 'textarea', defaultValue: 'Founded with a vision to create exceptional products.' },
-          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'We believe in quality over quantity.' },
-          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'Every piece in our collection is carefully curated.' }
+          { name: 'aboutTitle', label: 'About Title', type: 'textarea', defaultValue: 'We believe that aesthetic excellence is not a luxury, but a fundamental requirement for the modern digital experience.' },
+          { name: 'aboutText1', label: 'About Text 1', type: 'text', defaultValue: 'Uncompromising Quality.' },
+          { name: 'aboutText2', label: 'About Text 2', type: 'textarea', defaultValue: 'Horizon was founded on a singular principle: digital assets should be crafted with the same meticulous attention to detail as physical luxury goods. We reject the generic, the templated, and the uninspired.' },
+          { name: 'aboutText3', label: 'About Text 3', type: 'textarea', defaultValue: 'Every UI kit, typography pairing, and motion asset in our archive is designed to elevate your brand from merely functional to profoundly memorable. We exist for the creators who push boundaries.' },
+          { name: 'aboutHeroImage', label: 'About Hero Image', type: 'image', defaultValue: 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?q=80&w=2000&auto=format&fit=crop' }
         ]
       },
       {
         id: 'contact',
         label: 'Contact Page',
         fields: [
-          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Get In Touch' },
-          { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Contact Us' },
-          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '123 Design District\nNew York, NY 10012' },
-          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'hello@example.com' },
-          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+1 (555) 123-4567' },
-          { name: 'contactHours', label: 'Operating Hours', type: 'textarea', defaultValue: 'Monday — Friday\n9:00 AM — 6:00 PM EST' }
+          { name: 'contactPreTitle', label: 'Contact Pre-Title', type: 'text', defaultValue: 'Connect' },
+          { name: 'contactTitle', label: 'Contact Title', type: 'text', defaultValue: 'Start a \nDialogue.' },
+          { name: 'contactAddress', label: 'Address', type: 'textarea', defaultValue: '142 Aesthetics Blvd.\nDesign District\nNew York, NY 10012' },
+          { name: 'contactEmail', label: 'Email Address', type: 'text', defaultValue: 'studio@horizon.design' },
+          { name: 'contactPhone', label: 'Phone Number', type: 'text', defaultValue: '+81 3 1234 5678' }
         ]
       },
       {

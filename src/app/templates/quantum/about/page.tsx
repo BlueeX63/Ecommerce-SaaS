@@ -11,6 +11,7 @@ export default function QuantumAboutPage() {
   const tContent1 = customData?.formData?.aboutText1 || "Quantum was founded on a singular premise: that the objects we interact with every day should not merely serve a purpose, but should elevate our consciousness.";
   const tContent2 = customData?.formData?.aboutText2 || "We collaborate with visionary designers and avant-garde artists to blur the lines between conceptual art and functional homeware. Every artifact in our collection is a testament to what happens when imagination is unconstrained by traditional manufacturing limitations.";
   const tContent3 = customData?.formData?.aboutText3 || "We don't sell furniture. We curate experiences.";
+  const tImage = customData?.formData?.aboutHeroImage || "https://images.unsplash.com/photo-1574958269340-fa927503f3dd?q=80&w=2000&auto=format&fit=crop";
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
   const yImage = useTransform(scrollYProgress, [0, 1], [-100, 100]);
@@ -55,7 +56,7 @@ export default function QuantumAboutPage() {
             <div className="absolute inset-0 bg-gradient-to-tr from-[#111111]/30 to-gray-800/30 mix-blend-overlay z-10" />
             <motion.img 
               style={{ y: yImage, rotate: rotateImage, scale: 1.2 }}
-              src="https://images.unsplash.com/photo-1574958269340-fa927503f3dd?q=80&w=2000&auto=format&fit=crop" 
+              src={tImage} 
               alt="Studio"
               className="w-full h-full object-cover relative z-0"
             />

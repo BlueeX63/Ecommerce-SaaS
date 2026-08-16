@@ -23,7 +23,7 @@ function Header() {
     <>
       <header className="sticky top-0 z-50 bg-[#F3EDE2]/90 backdrop-blur-md border-b border-[#4A3F35]/5 relative">
         <div className="max-w-[1600px] mx-auto px-6 md:px-12 h-24 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+          <div className="flex-1 flex items-center justify-start gap-6">
             <button 
               className="xl:hidden text-[#4A3F35]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -39,11 +39,13 @@ function Header() {
             </nav>
           </div>
           
-          <Link href="/templates/essence" className="font-heading text-4xl tracking-tighter absolute left-1/2 -translate-x-1/2 text-[#4A3F35]">
-            {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Droplet className="w-6 h-6" /><span>{brandName}</span></div>}
-          </Link>
+          <div className="flex-shrink-0 px-2 md:px-4 flex justify-center">
+            <Link href="/templates/essence" className="font-heading text-2xl md:text-4xl tracking-tighter text-[#4A3F35]">
+              {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Droplet className="w-6 h-6" /><span>{brandName}</span></div>}
+            </Link>
+          </div>
 
-          <div className="flex items-center gap-8 relative">
+          <div className="flex-1 flex items-center justify-end gap-4 md:gap-8 relative">
             <AnimatePresence>
               {isSearchOpen && (
                 <motion.input
@@ -74,16 +76,16 @@ function Header() {
                   setIsSearchOpen(true);
                 }
               }}
-              className="hover:text-[#4A3F35]/50 transition-colors hidden sm:block text-[#4A3F35]"
+              className="hover:text-[#4A3F35]/50 transition-colors hidden lg:block text-[#4A3F35]"
             >
               <Search className="w-5 h-5" />
             </button>
             <Link href="/templates/essence/profile" className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
-              <span className="text-[11px] uppercase tracking-widest font-medium hidden sm:block">Profile</span>
+              <span className="text-[11px] uppercase tracking-widest font-medium hidden lg:block">Profile</span>
               <User className="w-5 h-5" />
             </Link>
             <Link href="/templates/essence/wishlist" className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
-              <span className="text-[11px] uppercase tracking-widest font-medium hidden sm:block">Wishlist</span>
+              <span className="text-[11px] uppercase tracking-widest font-medium hidden lg:block">Wishlist</span>
               <div className="relative">
                 <Heart className="w-5 h-5" />
                 <AnimatePresence>
@@ -102,7 +104,7 @@ function Header() {
             </Link>
             
             <Link href="/templates/essence/cart" className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
-              <span className="text-[11px] uppercase tracking-widest font-medium hidden sm:block">Cart</span>
+              <span className="text-[11px] uppercase tracking-widest font-medium hidden lg:block">Cart</span>
               <div className="relative">
                 <ShoppingBag className="w-5 h-5" />
                 <AnimatePresence>

@@ -13,6 +13,7 @@ export default function HorizonAbout() {
   const tContent1 = customData?.formData?.aboutText1 || "Uncompromising Quality.";
   const tContent2 = customData?.formData?.aboutText2 || "Horizon was founded on a singular principle: digital assets should be crafted with the same meticulous attention to detail as physical luxury goods. We reject the generic, the templated, and the uninspired.";
   const tContent3 = customData?.formData?.aboutText3 || "Every UI kit, typography pairing, and motion asset in our archive is designed to elevate your brand from merely functional to profoundly memorable. We exist for the creators who push boundaries.";
+  const tImage = customData?.formData?.aboutHeroImage || "https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?q=80&w=2000&auto=format&fit=crop";
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ 
     target: containerRef,
@@ -46,7 +47,7 @@ export default function HorizonAbout() {
           <div className="relative aspect-[3/4] overflow-hidden bg-[#F5F5F5]">
             <motion.img 
               style={{ y: yImage, scale: 1.15 }}
-              src="https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?q=80&w=2000&auto=format&fit=crop" 
+              src={tImage} 
               alt="Studio Abstract"
               className="w-full h-full object-cover opacity-90 filter brightness-[0.9]"
             />

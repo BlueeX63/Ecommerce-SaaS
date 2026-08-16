@@ -272,7 +272,53 @@ function ProductsContent() {
                     onChange={(val) => setSortBy(val as any)} 
                   />
                 </div>
-                {/* Replicate filter logic for mobile here if needed, keeping simple for now */}
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#d4af37] mb-4">Category</h3>
+                  <ul className="space-y-3 text-sm text-white/60 flex flex-wrap gap-4">
+                    {categories.map((cat: any) => (
+                      <li key={cat} className="w-full">
+                        <button 
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`hover:text-white transition-colors text-left w-full ${selectedCategory === cat ? 'text-[#d4af37] font-bold' : ''}`}
+                        >
+                          {cat}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#d4af37] mb-4">Brand</h3>
+                  <ul className="space-y-3 text-sm text-white/60">
+                    {brands.map(brand => (
+                      <li key={brand}>
+                        <button 
+                          onClick={() => setSelectedBrand(brand)}
+                          className={`hover:text-white transition-colors text-left w-full ${selectedBrand === brand ? 'text-[#d4af37] font-bold' : ''}`}
+                        >
+                          {brand}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#d4af37] mb-4">Wear Type</h3>
+                  <ul className="space-y-3 text-sm text-white/60">
+                    {wearTypes.map(type => (
+                      <li key={type}>
+                        <button 
+                          onClick={() => setSelectedWearType(type)}
+                          className={`hover:text-white transition-colors text-left capitalize w-full ${selectedWearType === type ? 'text-[#d4af37] font-bold' : ''}`}
+                        >
+                          {type}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </motion.div>
           )}

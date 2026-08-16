@@ -169,35 +169,35 @@ function Navigation() {
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center gap-6 md:gap-8">
+          <div className="flex items-center gap-3 md:gap-6 lg:gap-8">
             <Link
               href="/templates/canvas/profile"
-              className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 md:gap-2 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
             >
-              <User className="w-4 h-4" />
+              <User className="w-4 h-4 md:w-5 md:h-5" />
             </Link>
 
             <Link
               href="/templates/canvas/wishlist"
-              className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 md:gap-2 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
             >
-              <Heart className="w-4 h-4" />
-              <span>[{wishlist.length}]</span>
+              <Heart className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="text-[9px] md:text-[10px]">[{wishlist.length}]</span>
             </Link>
 
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
+              className="flex items-center gap-2 md:gap-3 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
             >
-              <span className="hidden md:inline">Cart</span>
-              <span>[{cartCount}]</span>
+              <span className="hidden md:inline whitespace-nowrap">Cart</span>
+              <span className="text-[9px] md:text-[10px]">[{cartCount}]</span>
             </button>
 
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="xl:hidden text-white"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 md:w-6 md:h-6" />
             </button>
           </div>
         </div>

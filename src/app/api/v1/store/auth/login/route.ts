@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     // Check for assigned catalog
     const { data: assignedCatalog } = await supabase
       .from('catalog_customers')
-      .select('catalogs!inner(slug, is_active)')
+      .select('catalogs!inner(slug, is_active)') 
       .eq('customer_id', customer.customer_id)
       .eq('catalogs.is_active', true)
       .limit(1)

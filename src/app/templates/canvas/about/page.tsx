@@ -56,7 +56,7 @@ export default function CanvasAboutPage() {
             className="aspect-square md:aspect-auto h-full border-b md:border-b-0 md:border-r border-white/20 overflow-hidden relative"
           >
             <img 
-              src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2000&auto=format&fit=crop" 
+              src={tImage}
               alt="Studio" 
               className="absolute inset-0 w-full h-full object-cover grayscale opacity-80"
             />
@@ -69,7 +69,7 @@ export default function CanvasAboutPage() {
             transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
             className="p-12 md:p-24 flex flex-col justify-center"
           >
-            <h2 className="font-serif text-3xl md:text-5xl uppercase tracking-tighter mb-8">Philosophy.</h2>
+            <h2 className="font-serif text-3xl md:text-5xl uppercase tracking-tighter mb-8">{tFeature1Title}</h2>
             <div className="w-[1px] h-12 bg-white/30 mb-8"></div>
             <p className="text-[10px] uppercase tracking-[0.2em] leading-loose text-white/60 mb-8">
               {tContent2}

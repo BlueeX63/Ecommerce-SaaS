@@ -28,7 +28,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 });
     }
 
-    let customization = {};
+    let customization: any = {};
     if (settingData && settingData.setting_value) {
       try {
         customization = JSON.parse(settingData.setting_value);

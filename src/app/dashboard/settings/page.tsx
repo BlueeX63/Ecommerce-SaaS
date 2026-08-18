@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save } from "lucide-react";
+import { Save, Trash2, AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function GeneralSettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   
   const [formData, setFormData] = useState({
     storeName: "My Awesome Store",
@@ -44,6 +47,31 @@ export default function GeneralSettingsPage() {
       alert("Failed to save settings");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteStore = async () => {
+    if (!window.confirm("Are you absolutely sure you want to delete your store? This action cannot be undone and all your data will be permanently lost.")) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/v1/tenant/me', {
+        method: 'DELETE'
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to delete store");
+      }
+      
+      // Successfully deleted, logout and redirect to login
+      await fetch('/api/v1/auth/logout', { method: 'POST' });
+      router.push('/login');
+      router.refresh();
+    } catch (err) {
+      alert("Failed to delete store. Please try again or contact support.");
+      setIsDeleting(false);
     }
   };
 
@@ -133,6 +161,34 @@ export default function GeneralSettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* Danger Zone */}
+      <div className="mt-12 pt-8 border-t border-red-100 max-w-2xl">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-red-600 mb-1">Danger Zone</h3>
+            <p className="text-sm text-secondary mb-4">
+              Permanently delete your store and all of its data. This action cannot be undone. 
+              All products, orders, and customer data will be erased.
+            </p>
+            <button
+              onClick={handleDeleteStore}
+              disabled={isDeleting}
+              className="flex items-center gap-2 px-5 py-2.5 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 border border-red-200"
+            >
+              {isDeleting ? (
+                <span className="w-4 h-4 border-2 border-red-600/20 border-t-red-600 rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              {isDeleting ? "Deleting Store..." : "Delete Store"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

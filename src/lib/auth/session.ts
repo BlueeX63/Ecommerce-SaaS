@@ -108,7 +108,14 @@ export async function deleteSession() {
         .eq('session_id', payload.sessionId);
     }
   }
-  cookieStore.delete('session');
+  
+  cookieStore.set('session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    expires: new Date(0),
+    sameSite: 'lax',
+    path: '/',
+  });
 }
 
 export async function getSession() {

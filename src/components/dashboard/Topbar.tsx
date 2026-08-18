@@ -87,7 +87,7 @@ export function Topbar({ user }: { user?: any }) {
                   <CreditCard className="w-4 h-4 text-gray-400" /> Billing
                 </button>
                 <button 
-                  onClick={() => { setIsDropdownOpen(false); router.push("/dashboard/store"); }}
+                  onClick={() => { setIsDropdownOpen(false); router.push("/dashboard/settings"); }}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
                 >
                   <LayoutDashboard className="w-4 h-4 text-gray-400" /> Store Configuration

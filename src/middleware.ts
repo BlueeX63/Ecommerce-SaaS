@@ -32,6 +32,7 @@ const PUBLIC_ROUTES = [
   '/api/v1/auth/verify-email',
   '/api/v1/auth/forgot-password',
   '/api/v1/auth/reset-password',
+  '/api/v1/auth/logout',
   '/api/v1/store/',       // All store-facing APIs (storefront is public/has its own auth)
   '/api/auth/callback',   // OAuth callback
   '/api/webhooks/',       // Webhooks have their own signature verification

@@ -3,6 +3,11 @@ import { headers } from "next/headers";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { fetchWithCache } from "@/lib/redis";
 import MinimalistLayout from "@/app/templates/minimalist/layout";
+import EssenceLayout from "@/app/templates/essence/layout";
+import OriginLayout from "@/app/templates/origin/layout";
+import NexusProLayout from "@/app/templates/nexus-pro/layout";
+import VelocityLayout from "@/app/templates/velocity/layout";
+import QuantumLayout from "@/app/templates/quantum/layout";
 
 export default async function StoreLayout({
   children,
@@ -50,10 +55,19 @@ export default async function StoreLayout({
   const basePath = isSubdomain ? '' : `/store/${slug}`;
 
   const customData = settings ? JSON.parse(settings.setting_value) : {};
+  const templateId = customData.templateId || "starter-minimalist";
+
+  let LayoutComponent = MinimalistLayout;
+  if (templateId === "starter-essence") LayoutComponent = EssenceLayout;
+  else if (templateId === "starter-origin") LayoutComponent = OriginLayout;
+  else if (templateId === "growth-nexus-pro") LayoutComponent = NexusProLayout;
+  else if (templateId === "growth-velocity") LayoutComponent = VelocityLayout;
+  else if (templateId === "growth-quantum") LayoutComponent = QuantumLayout;
+  // Fallback to MinimalistLayout for canvas and horizon or unknown
 
   return (
-    <MinimalistLayout initialCustomData={{ formData: customData }} basePath={basePath}>
+    <LayoutComponent initialCustomData={{ formData: customData }} basePath={basePath}>
       {children}
-    </MinimalistLayout>
+    </LayoutComponent>
   );
 }

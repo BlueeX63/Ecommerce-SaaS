@@ -2,6 +2,11 @@ import { notFound } from "next/navigation";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { fetchWithCache } from "@/lib/redis";
 import StarterMinimalistHome from "@/app/templates/minimalist/page";
+import EssenceHomePage from "@/app/templates/essence/page";
+import OriginHomePage from "@/app/templates/origin/page";
+import NexusProHomePage from "@/app/templates/nexus-pro/page";
+import VelocityHomePage from "@/app/templates/velocity/page";
+import QuantumHomePage from "@/app/templates/quantum/page";
 
 export default async function StoreHomePage({
   params,
@@ -36,6 +41,7 @@ export default async function StoreHomePage({
   );
 
   const customData = settings ? JSON.parse(settings.setting_value) : {};
+  const templateId = customData.templateId || "starter-minimalist";
 
   const products = await fetchWithCache(
     `tenant_products:${tenant.tenant_id}`,
@@ -50,5 +56,13 @@ export default async function StoreHomePage({
     300 // 5 min cache for products
   );
 
-  return <StarterMinimalistHome initialCustomData={{ formData: customData }} initialProducts={products || []} />;
+  let PageComponent = StarterMinimalistHome;
+  if (templateId === "starter-essence") PageComponent = EssenceHomePage;
+  else if (templateId === "starter-origin") PageComponent = OriginHomePage;
+  else if (templateId === "growth-nexus-pro") PageComponent = NexusProHomePage;
+  else if (templateId === "growth-velocity") PageComponent = VelocityHomePage;
+  else if (templateId === "growth-quantum") PageComponent = QuantumHomePage;
+  // Fallback to StarterMinimalistHome for canvas and horizon or unknown
+
+  return <PageComponent initialCustomData={{ formData: customData }} initialProducts={products || []} />;
 }

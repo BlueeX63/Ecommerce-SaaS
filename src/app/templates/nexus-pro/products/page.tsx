@@ -52,9 +52,9 @@ function SortDropdown({ value, onChange }: { value: string, onChange: (val: stri
   );
 }
 
-function ProductsContent() {
+function ProductsContent({ initialProducts, initialCustomData }: any) {
   const searchParams = useSearchParams();
-  const { addToCart, setIsCartOpen , currencySymbol } = useShop();
+  const { basePath, addToCart, setIsCartOpen , currencySymbol  } = useShop();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedBrand, setSelectedBrand] = useState<string>("All");
@@ -78,15 +78,15 @@ function ProductsContent() {
     else setShowNewOnly(false);
   }, [searchParams]);
 
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const shopTitle = customData?.formData?.shopTitle || "Archive.";
   const rawCategories = customData?.formData?.shopCategories;
   
   const categories = rawCategories
     ? rawCategories.split(",").map((c: string) => c.trim()).filter(Boolean)
-    : ["All", ...Array.from(new Set(NEXUS_PRODUCTS.map(p => p.category)))];
+    : ["All", ...Array.from(new Set(NEXUS_PRODUCTS.map((p: any) => p.category)))];
   
-  const brands = ["All", ...Array.from(new Set(NEXUS_PRODUCTS.map(p => p.brand)))];
+  const brands = ["All", ...Array.from(new Set(NEXUS_PRODUCTS.map((p: any) => p.brand)))];
   const wearTypes = ["All", "top", "bottom", "accessory", "footwear", "other"];
 
   const filteredProducts = useMemo(() => {
@@ -95,31 +95,31 @@ function ProductsContent() {
     // Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+      result = result.filter((p: any) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
     }
 
     // Category
     if (selectedCategory !== "All") {
-      result = result.filter(p => p.category === selectedCategory);
+      result = result.filter((p: any) => p.category === selectedCategory);
     }
 
     // Brand
     if (selectedBrand !== "All") {
-      result = result.filter(p => p.brand === selectedBrand);
+      result = result.filter((p: any) => p.brand === selectedBrand);
     }
 
     // Wear Type
     if (selectedWearType !== "All") {
-      result = result.filter(p => p.wearType === selectedWearType);
+      result = result.filter((p: any) => p.wearType === selectedWearType);
     }
 
     // New Only
     if (showNewOnly) {
-      result = result.filter(p => p.isNew);
+      result = result.filter((p: any) => p.isNew);
     }
 
     // Price
-    result = result.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    result = result.filter((p: any) => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
     // Sort
     if (sortBy === "price-asc") {
@@ -346,7 +346,7 @@ function ProductsContent() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 gap-y-16">
               <AnimatePresence>
-                {filteredProducts.map((product, index) => (
+                {filteredProducts.map((product: any, index: number) => (
                   <motion.div 
                     layout
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -356,7 +356,7 @@ function ProductsContent() {
                     key={product.id}
                     className="group cursor-pointer flex flex-col"
                   >
-                    <Link href={`/templates/nexus-pro/products/${product.id}`} className="block relative">
+                    <Link href={`${basePath}/products/${product.id}`} className="block relative">
                       <div className="relative aspect-[3/4] overflow-hidden rounded-lg mb-6 bg-white/5">
                         <img 
                           src={product.image} 
@@ -421,10 +421,10 @@ function ProductsContent() {
   );
 }
 
-export default function ProductsPage() {
+export default function ({ initialProducts, initialCustomData }: any) {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading products...</div>}>
-      <ProductsContent />
+      <ProductsContent initialProducts={initialProducts} initialCustomData={initialCustomData} />
     </Suspense>
   );
 }

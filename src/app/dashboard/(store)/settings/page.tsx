@@ -57,20 +57,20 @@ export default function GeneralSettingsPage() {
     
     setIsDeleting(true);
     try {
-      const res = await fetch('/api/v1/tenant/me', {
-        method: 'DELETE'
+      const res = await fetch('/api/v1/store/delete', {
+        method: 'POST'
       });
       
       if (!res.ok) {
-        throw new Error("Failed to delete store");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.details || "Failed to delete store");
       }
       
-      // Successfully deleted, logout and redirect to login
-      await fetch('/api/v1/auth/logout', { method: 'POST' });
-      router.push('/login');
+      // Successfully deleted, redirect to dashboard which will now show the selector or empty state
+      router.push('/dashboard');
       router.refresh();
-    } catch (err) {
-      alert("Failed to delete store. Please try again or contact support.");
+    } catch (err: any) {
+      alert(err.message || "Failed to delete store. Please try again or contact support.");
       setIsDeleting(false);
     }
   };

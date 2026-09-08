@@ -28,7 +28,11 @@ export default function NewProductPage() {
       .then(res => res.json())
       .then(data => {
         if (data && data.data) {
-          setCatalogs(data.data.map((c: any) => ({ value: c.catalog_id, label: c.catalog_name })));
+          setCatalogs(
+            data.data
+              .filter((c: any) => c.catalog_type !== 'GENERAL')
+              .map((c: any) => ({ value: c.catalog_id, label: c.catalog_name }))
+          );
         }
       })
       .catch(console.error);
@@ -39,7 +43,8 @@ export default function NewProductPage() {
     slug: "",
     categoryId: "",
     sku: "",
-    currency: "INR",
+    currency: "USD",
+    basePrice: "",
     description: "",
     imageUrls: ["", "", "", ""] as string[], // 0 is primary, 1-3 are side images
     threeDModelUrl: "",
@@ -140,7 +145,7 @@ export default function NewProductPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8 pb-12">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/products" className="p-2 hover:bg-black/5 rounded-full transition-colors">
@@ -155,34 +160,34 @@ export default function NewProductPage() {
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          <div className="bg-surface rounded-2xl border border-black/[0.04] p-6 space-y-4 shadow-sm">
+          <div className="bg-white rounded-[24px] border border-black/[0.04] p-8 space-y-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow duration-500">
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">Product Name *</label>
+              <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">Product Name *</label>
               <input 
                 required
                 name="productName"
                 value={formData.productName}
                 onChange={handleChange}
                 placeholder="e.g. Minimalist Ceramic Vase"
-                className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
+                className="w-full px-4 py-3 bg-[#F9F9F9] border border-black/[0.05] rounded-xl focus:outline-none focus:border-black/20 focus:bg-white focus:ring-4 focus:ring-black/5 text-sm transition-all duration-300 placeholder:text-black/30"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">URL Slug *</label>
+              <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">URL Slug *</label>
               <input 
                 required
                 name="slug"
                 value={formData.slug}
                 onChange={handleChange}
                 placeholder="e.g. minimalist-ceramic-vase"
-                className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
+                className="w-full px-4 py-3 bg-[#F9F9F9] border border-black/[0.05] rounded-xl focus:outline-none focus:border-black/20 focus:bg-white focus:ring-4 focus:ring-black/5 text-sm transition-all duration-300 placeholder:text-black/30"
               />
               <p className="text-xs text-secondary mt-1">This will be the URL path for your product.</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">Category</label>
+              <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">Category</label>
               <CustomSelect
                 name="categoryId"
                 value={formData.categoryId}
@@ -207,7 +212,7 @@ export default function NewProductPage() {
               {formData.catalogs.map((assignment, index) => (
                 <div key={index} className="flex gap-3 mb-3 p-3 bg-black/[0.02] rounded-xl border border-black/[0.04]">
                   <div className="flex-1">
-                    <label className="block text-[10px] uppercase tracking-wider text-secondary mb-1">Catalog</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-black/40 mb-1">Catalog</label>
                     <CustomSelect
                       name={`catalog-${index}`}
                       value={assignment.catalogId}
@@ -221,7 +226,7 @@ export default function NewProductPage() {
                     />
                   </div>
                   <div className="w-32">
-                    <label className="block text-[10px] uppercase tracking-wider text-secondary mb-1">Price Override</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-black/40 mb-1">Price Override</label>
                     <input 
                       required
                       type="number"
@@ -250,27 +255,22 @@ export default function NewProductPage() {
                   </div>
                 </div>
               ))}
-              {formData.catalogs.length === 0 && (
-                <div className="text-sm text-secondary p-4 text-center border border-dashed border-black/[0.1] rounded-xl bg-black/[0.01]">
-                  At least one catalog assignment is required to define a price.
-                </div>
-              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">Description</label>
+              <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">Description</label>
               <textarea 
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
+                className="w-full px-4 py-3 bg-[#F9F9F9] border border-black/[0.05] rounded-xl focus:outline-none focus:border-black/20 focus:bg-white focus:ring-4 focus:ring-black/5 text-sm transition-all duration-300 placeholder:text-black/30"
               />
             </div>
           </div>
 
-          <div className="bg-surface rounded-2xl border border-black/[0.04] p-6 shadow-sm">
-            <h3 className="font-medium text-primary mb-4">Media & 3D Assets</h3>
+          <div className="bg-white rounded-[24px] border border-black/[0.04] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow duration-500">
+            <h3 className="text-[12px] font-bold tracking-widest uppercase text-black/50 mb-6 border-b border-black/[0.04] pb-4">Media & 3D Assets</h3>
             
             <div className="mt-4">
               <label className="block text-sm font-medium text-primary mb-3">Product Images (Up to 4)</label>
@@ -306,26 +306,70 @@ export default function NewProductPage() {
             </div>
             
             <div className="mt-6">
-              <label className="block text-sm font-medium text-primary mb-1">3D Model URL (Optional)</label>
+              <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">3D Model URL (Optional)</label>
               <input 
                 name="threeDModelUrl"
                 value={formData.threeDModelUrl}
                 onChange={handleChange}
                 placeholder="https://example.com/shoe.glb"
-                className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
+                className="w-full px-4 py-3 bg-[#F9F9F9] border border-black/[0.05] rounded-xl focus:outline-none focus:border-black/20 focus:bg-white focus:ring-4 focus:ring-black/5 text-sm transition-all duration-300 placeholder:text-black/30"
               />
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="bg-surface rounded-2xl border border-black/[0.04] p-6 space-y-4 shadow-sm">
-            <h3 className="font-medium text-primary mb-2">Status & Pricing</h3>
+          <div className="bg-white rounded-[24px] border border-black/[0.04] p-8 space-y-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow duration-500">
+            <h3 className="text-[12px] font-bold tracking-widest uppercase text-black/50 mb-6 border-b border-black/[0.04] pb-4">Status & Pricing</h3>
             
-            <p className="text-xs text-secondary mb-4">Pricing is now configured per-catalog in the <strong>Catalog Assignments</strong> section.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col justify-end">
+                <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">Base Price</label>
+                <input 
+                  type="number"
+                  step="0.01"
+                  name="basePrice"
+                  value={formData.basePrice}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="w-full px-4 py-3 bg-[#F9F9F9] border border-black/[0.05] rounded-xl focus:outline-none focus:border-black/20 focus:bg-white focus:ring-4 focus:ring-black/5 text-sm transition-all duration-300 placeholder:text-black/30"
+                />
+              </div>
+              <div className="flex flex-col justify-end">
+                <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">Currency</label>
+                <CustomSelect
+                  name="currency"
+                  value={formData.currency}
+                  onChange={(val) => {
+                     setFormData(prev => ({ ...prev, currency: val }));
+                     
+                     // Optional: Attempt to save it to settings immediately, though it might overwrite other settings if not careful.
+                     // A safer way is to fetch existing, update, then save.
+                     fetch('/api/v1/dashboard/settings')
+                       .then(r => r.json())
+                       .then(data => {
+                         const currentData = data.formData || {};
+                         fetch('/api/v1/dashboard/settings', {
+                           method: 'POST',
+                           headers: { 'Content-Type': 'application/json' },
+                           body: JSON.stringify({ formData: { ...currentData, currency: val } })
+                         });
+                       });
+                  }}
+                  options={[
+                    { value: 'USD', label: 'USD ($)' },
+                    { value: 'EUR', label: 'EUR (€)' },
+                    { value: 'GBP', label: 'GBP (£)' },
+                    { value: 'CAD', label: 'CAD (C$)' },
+                    { value: 'AUD', label: 'AUD (A$)' },
+                    { value: 'INR', label: 'INR (₹)' }
+                  ]}
+                />
+              </div>
+            </div>
             
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">Status</label>
+              <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">Status</label>
               <CustomSelect
                 name="status"
                 value={formData.status}
@@ -339,23 +383,23 @@ export default function NewProductPage() {
             </div>
           </div>
 
-          <div className="bg-surface rounded-2xl border border-black/[0.04] p-6 space-y-4 shadow-sm">
-            <h3 className="font-medium text-primary mb-2">Inventory</h3>
+          <div className="bg-white rounded-[24px] border border-black/[0.04] p-8 space-y-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow duration-500">
+            <h3 className="text-[12px] font-bold tracking-widest uppercase text-black/50 mb-6 border-b border-black/[0.04] pb-4">Inventory</h3>
             <div>
-              <label className="block text-sm font-medium text-primary mb-1">SKU</label>
+              <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-2">SKU</label>
               <input 
                 name="sku"
                 value={formData.sku}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm font-mono uppercase"
+                className="w-full px-4 py-3 bg-[#F9F9F9] border border-black/[0.05] rounded-xl focus:outline-none focus:border-black/20 focus:bg-white focus:ring-4 focus:ring-black/5 text-sm transition-all duration-300 placeholder:text-black/30 font-mono uppercase"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={isLoading || formData.catalogs.length === 0 || !formData.catalogs.every(c => c.catalogId && c.catalogPriceOverride)}
-            className="group relative w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-[#050505] text-white rounded-[16px] overflow-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0"
+            disabled={isLoading || !formData.productName || !formData.slug || !formData.categoryId}
+            className="group relative w-full flex items-center justify-center gap-2 px-6 py-4 bg-black text-white rounded-[20px] overflow-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-500 hover:shadow-[0_20px_40px_rgb(0,0,0,0.2)] hover:-translate-y-1 active:translate-y-0 active:shadow-none"
           >
             <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300 ease-[0.16,1,0.3,1] rounded-[16px]" />
             <div className="relative z-10 flex items-center gap-2">

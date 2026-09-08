@@ -59,12 +59,12 @@ const AnimatedText = ({ text, className }: { text: string, className?: string })
   );
 };
 
-export default function QuantumHome() {
+export default function QuantumHome({ initialProducts, initialCustomData }: any) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { addToCart , currencySymbol } = useQuantum();
+  const { basePath, addToCart , currencySymbol  } = useQuantum();
   const { scrollYProgress } = useScroll({ target: containerRef });
   
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const heroTitle = customData?.formData?.heroTitle || "Future Living Objects.";
   const heroSubtitle = customData?.formData?.heroSubtitle || "Discover our curated collection of avant-garde conceptual art and functional masterpieces that transcend ordinary space.";
   const primaryCta = customData?.formData?.primaryCta || "Explore Collection";
@@ -144,7 +144,7 @@ export default function QuantumHome() {
                   visible: { opacity: 1, scale: 1, transition: { duration: 0.8, delay: 1, type: "spring" } }
                 }}
               >
-                <Link href="/templates/quantum/products">
+                <Link href={`${basePath}/products`}>
                   <MagneticButton className="group relative overflow-hidden rounded-full bg-[#121212] px-8 py-4 text-white transition-all hover:bg-[#111111] hover:shadow-[0_0_40px_rgba(17,17,17,0.3)]">
                     <span className="relative z-10 flex items-center gap-2 font-bold uppercase tracking-wider text-sm font-inter">
                       {primaryCta} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -224,7 +224,7 @@ export default function QuantumHome() {
               {shopTitle}
             </motion.h2>
           </div>
-          <Link href="/templates/quantum/products">
+          <Link href={`${basePath}/products`}>
             <MagneticButton className="px-6 py-3 border border-gray-200 rounded-full font-inter font-medium hover:bg-gray-50 transition-colors">
               View Entire Collection
             </MagneticButton>
@@ -232,7 +232,7 @@ export default function QuantumHome() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
-          {QUANTUM_PRODUCTS.slice(0, 4).map((product, idx) => (
+          {(initialProducts || QUANTUM_PRODUCTS).slice(0, 4).map((product: any, idx: number) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 100 }}
@@ -241,7 +241,7 @@ export default function QuantumHome() {
               transition={{ duration: 0.8, delay: (idx % 2) * 0.2, ease: [0.16, 1, 0.3, 1] }}
               className={`group relative ${idx % 2 === 1 ? 'md:mt-32' : ''}`}
             >
-              <Link href={`/templates/quantum/products/${product.id}`} className="block">
+              <Link href={`${basePath}/products/${product.id}`} className="block">
                 <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-gray-100 mb-6">
                   {product.isNew && (
                     <div className="absolute top-6 left-6 z-20 bg-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm font-inter">
@@ -326,7 +326,7 @@ export default function QuantumHome() {
               viewport={{ once: true }}
               transition={{ delay: 0.4 }}
             >
-              <Link href="/templates/quantum/about" className="inline-flex items-center gap-2 font-playfair font-bold uppercase tracking-wider text-sm border-b-2 border-[#121212] pb-1 hover:border-[#111111] hover:text-[#111111] transition-colors">
+              <Link href={`${basePath}/about`} className="inline-flex items-center gap-2 font-playfair font-bold uppercase tracking-wider text-sm border-b-2 border-[#121212] pb-1 hover:border-[#111111] hover:text-[#111111] transition-colors">
                 Read our Manifesto <ArrowRight className="w-4 h-4" />
               </Link>
             </motion.div>

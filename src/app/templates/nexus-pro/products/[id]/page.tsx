@@ -7,19 +7,18 @@ import Link from "next/link";
 import { Heart, Star, ShoppingBag, ArrowLeft, ArrowRight, Share2, Plus, Minus, Check } from "lucide-react";
 import { NEXUS_PRODUCTS, useShop } from "../../ShopContext";
 
-export default function NexusProProductDetailPage() {
+export default function NexusProProductDetailPage({ initialProduct }: any) {
   const { id } = useParams();
-  const { addToCart, toggleWishlist, isInWishlist , currencySymbol } = useShop();
-  const basePath = '/templates/nexus-pro';
+  const { basePath, addToCart, toggleWishlist, isInWishlist , currencySymbol  } = useShop();
   
-  const product = NEXUS_PRODUCTS.find(p => p.id === id);
+  const product = initialProduct || NEXUS_PRODUCTS.find((p: any) => p.id === id);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
   const [reviewForm, setReviewForm] = useState({ author: '', rating: 5, content: '' });
-  const [localReviews, setLocalReviews] = useState(product?.reviews || []);
+  const [localReviews, setLocalReviews] = useState<any[]>(product?.reviews || []);
 
   const slideVariants = {
     enter: (direction: number) => ({
@@ -67,7 +66,7 @@ export default function NexusProProductDetailPage() {
 
   const similarProducts = useMemo(() => {
     if (!product) return [];
-    return NEXUS_PRODUCTS.filter(p => p.category === product.category && p.id !== product.id).slice(0, 3);
+    return NEXUS_PRODUCTS.filter((p: any) => p.category === product.category && p.id !== product.id).slice(0, 3);
   }, [product]);
 
   if (!product) {
@@ -75,7 +74,7 @@ export default function NexusProProductDetailPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white">
         <div className="text-center">
           <h1 className="text-4xl font-black uppercase tracking-tighter mb-4">Product Not Found</h1>
-          <Link href="/templates/nexus-pro/products" className="text-[#d4af37] text-xs font-bold uppercase tracking-widest hover:text-white transition-colors">
+          <Link href={`${basePath}/products`} className="text-[#d4af37] text-xs font-bold uppercase tracking-widest hover:text-white transition-colors">
             Return to Archive
           </Link>
         </div>
@@ -93,7 +92,7 @@ export default function NexusProProductDetailPage() {
     <div className="flex flex-col w-full bg-[#0a0a0a] text-[#ededed] pt-32 pb-32">
       
       <div className="px-6 md:px-12 max-w-7xl mx-auto w-full mb-8">
-        <Link href="/templates/nexus-pro/products" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
+        <Link href={`${basePath}/products`} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Collection
         </Link>
       </div>
@@ -277,7 +276,7 @@ export default function NexusProProductDetailPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {localReviews.map(review => (
+            {localReviews.map((review: any) => (
               <motion.div 
                 key={review.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -310,7 +309,7 @@ export default function NexusProProductDetailPage() {
             <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter">Similar Works</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {similarProducts.map((product, index) => (
+            {similarProducts.map((product: any, index: number) => (
               <motion.div 
                 key={product.id}
                 initial={{ opacity: 0, y: 50 }}
@@ -319,7 +318,7 @@ export default function NexusProProductDetailPage() {
                 transition={{ duration: 0.8, delay: index * 0.2 }}
                 className="group cursor-pointer flex flex-col"
               >
-                <Link href={`/templates/nexus-pro/products/${product.id}`}>
+                <Link href={`${basePath}/products/${product.id}`}>
                   <div className="relative aspect-[3/4] overflow-hidden rounded-lg mb-6 bg-white/5">
                     <img 
                       src={product.image} 

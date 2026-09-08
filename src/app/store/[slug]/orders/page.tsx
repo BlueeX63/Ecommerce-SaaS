@@ -4,9 +4,6 @@ import { fetchWithCache } from "@/lib/redis";
 import MinimalistOrdersPage from "@/app/templates/minimalist/orders/page";
 import EssenceOrdersPage from "@/app/templates/essence/orders/page";
 import OriginOrdersPage from "@/app/templates/origin/orders/page";
-import NexusProOrdersPage from "@/app/templates/nexus-pro/orders/page";
-import VelocityOrdersPage from "@/app/templates/velocity/orders/page";
-import QuantumOrdersPage from "@/app/templates/quantum/orders/page";
 
 export default async function StoreOrdersPage(props: any) {
   const { slug } = await (props.params || {});
@@ -40,9 +37,6 @@ export default async function StoreOrdersPage(props: any) {
   let PageComponent = MinimalistOrdersPage;
   if (templateId === "starter-essence") PageComponent = EssenceOrdersPage;
   else if (templateId === "starter-origin") PageComponent = OriginOrdersPage;
-  else if (templateId === "growth-nexus-pro") PageComponent = NexusProOrdersPage;
-  else if (templateId === "growth-velocity") PageComponent = VelocityOrdersPage;
-  else if (templateId === "growth-quantum") PageComponent = QuantumOrdersPage;
 
   return <PageComponent {...props} />;
 }

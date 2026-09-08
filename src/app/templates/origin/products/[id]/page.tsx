@@ -6,23 +6,22 @@ import Link from "next/link";
 import { ArrowLeft, ChevronRight, Heart } from "lucide-react";
 import { useState } from "react";
 
-export default function OriginProductDetailPage() {
+export default function OriginProductDetailPage({ initialProduct }: any) {
   const { id } = useParams();
-  const basePath = '/templates/origin';
   const router = useRouter();
-  const { addToCart, toggleWishlist, isInWishlist, reviews, addReview , currencySymbol } = useCart();
+  const { addToCart, toggleWishlist, isInWishlist, reviews, addReview , currencySymbol, basePath } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [reviewName, setReviewName] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   
-  const product = ALL_PRODUCTS.find(p => p.id === id);
+  const product = initialProduct || ALL_PRODUCTS.find((p: any) => p.id === id);
 
   if (!product) {
     return (
       <div className="w-full bg-[#fdfbf7] min-h-[70vh] flex flex-col items-center justify-center">
         <h1 className="font-serif text-3xl text-[#402c21] font-bold mb-4">Product Not Found</h1>
-        <Link href="/templates/origin/products" className="text-sm font-bold uppercase tracking-widest text-[#a38c7f] border-b border-[#a38c7f] pb-1">
+        <Link href={`${basePath}/products`} className="text-sm font-bold uppercase tracking-widest text-[#a38c7f] border-b border-[#a38c7f] pb-1">
           Back to Shop
         </Link>
       </div>
@@ -30,7 +29,7 @@ export default function OriginProductDetailPage() {
   }
 
   // Find related products
-  const relatedProducts = ALL_PRODUCTS.filter(p => p.category === product.category && p.id !== product.id).slice(0, 3);
+  const relatedProducts = ALL_PRODUCTS.filter((p: any) => p.category === product.category && p.id !== product.id).slice(0, 3);
 
   const productReviews = reviews.filter(r => r.productId === product.id);
 
@@ -54,7 +53,7 @@ export default function OriginProductDetailPage() {
             <ArrowLeft className="w-3 h-3" /> Back
           </button>
           <span>/</span>
-          <Link href="/templates/origin/products" className="hover:text-[#402c21] transition-colors">Shop</Link>
+          <Link href={`${basePath}/products`} className="hover:text-[#402c21] transition-colors">Shop</Link>
           <span>/</span>
           <span className="text-[#a38c7f]">{product.category}</span>
         </div>
@@ -106,7 +105,7 @@ export default function OriginProductDetailPage() {
                 </div>
                 
                 <button 
-                  onClick={() => toggleWishlist(product)}
+                  onClick={() => toggleWishlist(product as any)}
                   className="w-12 h-12 shrink-0 flex items-center justify-center border-2 border-[#402c21] text-[#402c21] hover:bg-[#402c21] hover:text-[#fdfbf7] transition-colors rounded-sm"
                 >
                   <Heart className={`w-5 h-5 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
@@ -116,7 +115,7 @@ export default function OriginProductDetailPage() {
               <button 
                 onClick={() => {
                   for (let i = 0; i < quantity; i++) {
-                    addToCart(product);
+                    addToCart(product as any);
                   }
                   setQuantity(1);
                 }}
@@ -152,7 +151,7 @@ export default function OriginProductDetailPage() {
                 <p className="text-[#402c21]/60 italic font-medium">Be the first to share your thoughts on this piece.</p>
               ) : (
                 <div className="space-y-10">
-                  {productReviews.map(review => (
+                  {productReviews.map((review: any) => (
                     <div key={review.id} className="border-b border-[#402c21]/10 pb-8 last:border-0 last:pb-0">
                       <div className="flex justify-between items-center mb-3">
                         <span className="font-bold text-[#402c21] uppercase tracking-widest text-xs">{review.userName}</span>
@@ -196,9 +195,9 @@ export default function OriginProductDetailPage() {
           <div className="mt-32 pt-20 border-t border-[#402c21]/10">
             <h2 className="font-serif text-3xl font-bold text-[#402c21] mb-10">You may also like</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {relatedProducts.map(p => (
+              {relatedProducts.map((p: any) => (
                 <div key={p.id} className="group flex flex-col gap-4">
-                  <Link href={`/templates/origin/products/${p.id}`} className="block relative aspect-square overflow-hidden bg-[#e5e0dc] rounded-sm">
+                  <Link href={`${basePath}/products/${p.id}`} className="block relative aspect-square overflow-hidden bg-[#e5e0dc] rounded-sm">
                     <img 
                       src={p.image} 
                       alt={p.name} 
@@ -206,7 +205,7 @@ export default function OriginProductDetailPage() {
                     />
                   </Link>
                   <div className="flex flex-col">
-                    <Link href={`/templates/origin/products/${p.id}`}>
+                    <Link href={`${basePath}/products/${p.id}`}>
                       <h3 className="font-serif text-lg font-bold text-[#402c21] group-hover:text-[#a38c7f] transition-colors">{p.name}</h3>
                     </Link>
                     <div className="text-sm font-bold text-[#402c21]/70">{currencySymbol}{p.price.toFixed(2)}</div>

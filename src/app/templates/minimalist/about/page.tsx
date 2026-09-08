@@ -2,10 +2,8 @@
 
 import { motion } from "framer-motion";
 
-import { useCustomization } from "@/hooks/useCustomization";
-
-export default function StarterAboutPage() {
-  const customData = useCustomization();
+import { useCustomization } from "@/hooks/useCustomization"; export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
 
   const tTitle = customData?.formData?.aboutTitle || "Our Story";
   const tContent = customData?.formData?.aboutText1 || "Founded on the principle that less is more, we create everyday essentials that strip away the excess to focus on what truly matters: quality, fit, and timeless design.";

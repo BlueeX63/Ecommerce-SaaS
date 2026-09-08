@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
-const basePath = '/templates/canvas';
+
 
 export type Product = {
   id: string;
@@ -70,7 +70,7 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children , initialCustomData }: { children: ReactNode, initialCustomData?: any  }) {
+export function CartProvider({ children , initialCustomData , basePath = '/templates/canvas' }: { children: ReactNode, initialCustomData?: any  , basePath?: string }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const symbolMap: Record<string, string> = {
@@ -256,9 +256,8 @@ export function CartProvider({ children , initialCustomData }: { children: React
 
   return (
     <CartContext.Provider
-      value={{
+      value={{ basePath,
         currencySymbol,
-        basePath,
         items,
         addToCart,
         removeFromCart,

@@ -56,6 +56,9 @@ export default async function StoreHomePage({
     300 // 5 min cache for products
   );
 
+  const { mapDatabaseProducts } = await import("@/lib/utils/product-mapper");
+  const mappedProducts = mapDatabaseProducts(products || []);
+
   let PageComponent = StarterMinimalistHome;
   if (templateId === "starter-essence") PageComponent = EssenceHomePage;
   else if (templateId === "starter-origin") PageComponent = OriginHomePage;
@@ -64,5 +67,5 @@ export default async function StoreHomePage({
   else if (templateId === "growth-quantum") PageComponent = QuantumHomePage;
   // Fallback to StarterMinimalistHome for canvas and horizon or unknown
 
-  return <PageComponent initialCustomData={{ formData: customData }} initialProducts={products || []} />;
+  return <PageComponent initialCustomData={{ formData: customData }} initialProducts={mappedProducts} />;
 }

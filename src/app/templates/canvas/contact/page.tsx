@@ -4,9 +4,8 @@ import { motion } from "framer-motion";
 import { ArrowRight, Send } from "lucide-react";
 import { useState } from "react";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function CanvasContactPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   
   const tPreTitle = customData?.formData?.contactPreTitle || "Concierge";

@@ -1,13 +1,14 @@
 "use client";
+import { useVelocity } from "../VelocityContext";
 
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { useRef } from "react";
 import { Zap, Activity, Crosshair } from "lucide-react";
 import Link from "next/link";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function VelocityAboutPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const { basePath } = useVelocity();
+  const customData = useCustomization(initialCustomData);
   
   const tTitle = customData?.formData?.aboutTitle || "Protocol // 01";
   const tContent1 = customData?.formData?.aboutText1 || "We are the architects of the future. We don't just design clothes; we engineer armor for the digital age.";
@@ -151,7 +152,7 @@ export default function VelocityAboutPage() {
         <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter font-orbitron mb-8">
           Join the <span className="text-[#00f0ff]">Resistance.</span>
         </h2>
-        <Link href="/templates/velocity/products">
+        <Link href={`${basePath}/products`}>
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

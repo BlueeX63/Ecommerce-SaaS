@@ -1,13 +1,14 @@
 "use client";
+import { useShop } from "../ShopContext";
 
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function NexusProAboutPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const { basePath } = useShop();
+  const customData = useCustomization(initialCustomData);
   
   const tTitle = customData?.formData?.aboutTitle || "Designing the Future of Essentials.";
   const tImage = customData?.formData?.aboutHeroImage || "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop";
@@ -112,7 +113,7 @@ export default function NexusProAboutPage() {
             className="pt-12 border-t border-white/10"
           >
             <Link 
-              href="/templates/nexus-pro/products"
+              href={`${basePath}/products`}
               className="inline-flex items-center gap-4 text-white hover:text-[#d4af37] text-sm font-bold uppercase tracking-widest transition-colors"
             >
               Explore The Collection <ArrowRight className="w-5 h-5" />

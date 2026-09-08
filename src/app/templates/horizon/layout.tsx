@@ -20,14 +20,14 @@ const outfit = Outfit({
   variable: "--font-outfit" 
 });
 
-function HorizonNavigation() {
-  const { cart, wishlist, isCartOpen, setIsCartOpen, clearCart, appliedCoupon, applyCoupon, removeCoupon, discountAmount, couponError, updateQuantity, removeFromCart , currencySymbol } = useHorizon();
+function HorizonNavigation({ initialCustomData, basePath }: any) {
+  const { cart, wishlist, isCartOpen, setIsCartOpen, clearCart, appliedCoupon, applyCoupon, removeCoupon, discountAmount, couponError, updateQuantity, removeFromCart, currencySymbol } = useHorizon();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const { scrollY } = useScroll();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [couponInput, setCouponInput] = useState("");
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "HORIZON";
   const logoUrl = customData?.formData?.logoUrl || "";
   
@@ -54,7 +54,7 @@ function HorizonNavigation() {
     setIsScrolled(latest > 20);
   });
 
-  const cartItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const cartItemsCount = cart.reduce((acc: any, item: any) => acc + item.quantity, 0);
 
   const navLinks = [
     { name: "Collection", href: "/templates/horizon/products" },
@@ -131,8 +131,11 @@ function HorizonNavigation() {
       >
         <div className="max-w-[1600px] mx-auto px-6 md:px-12 flex items-center justify-between">
           
-          <Link href="/templates/horizon" className="flex items-center gap-3 group z-50 relative pointer-events-auto" style={{ cursor: "none" }}>
-            {logoUrl ? (<img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />) : (<div className="flex items-center gap-2"><Sun className="w-6 h-6" /><span className={`text-2xl font-medium tracking-widest text-black uppercase ${outfit.className}`}>{brandName.charAt(0)}<span className="text-black/40">{brandName.slice(1)}</span></span></div>)}
+          <Link href={basePath || "/"} className="flex items-center gap-3 group z-50 relative pointer-events-auto" style={{ cursor: "none" }}>
+            <div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Sun className="w-6 h-6" />}
+                <span className={`text-2xl font-medium tracking-widest text-black uppercase ${outfit.className}`}>{brandName.charAt(0)}<span className="text-black/40">{brandName.slice(1)}</span></span>
+              </div>
           </Link>
 
           <nav className="hidden md:flex items-center justify-center absolute left-1/2 -translate-x-1/2 gap-12">
@@ -159,11 +162,11 @@ function HorizonNavigation() {
           </nav>
 
           <div className="flex items-center gap-6 z-50 relative text-black">
-            <Link href="/templates/horizon/profile" className="hidden md:flex relative group p-2 hover:opacity-50 transition-opacity duration-500 pointer-events-auto" style={{ cursor: "none" }}>
+            <Link href={`${basePath}/profile`} className="hidden md:flex relative group p-2 hover:opacity-50 transition-opacity duration-500 pointer-events-auto" style={{ cursor: "none" }}>
               <User className="w-4 h-4 stroke-[1.5]" />
             </Link>
 
-            <Link href="/templates/horizon/wishlist" className="hidden md:flex relative group p-2 hover:opacity-50 transition-opacity duration-500 pointer-events-auto" style={{ cursor: "none" }}>
+            <Link href={`${basePath}/wishlist`} className="hidden md:flex relative group p-2 hover:opacity-50 transition-opacity duration-500 pointer-events-auto" style={{ cursor: "none" }}>
               <Heart className="w-4 h-4 stroke-[1.5]" />
               {wishlist.length > 0 && (
                 <span className={`absolute top-0 right-0 w-3.5 h-3.5 bg-black text-white text-[9px] font-bold flex items-center justify-center rounded-full ${outfit.className}`}>
@@ -219,10 +222,10 @@ function HorizonNavigation() {
                 </motion.div>
               ))}
               <div className="flex gap-8 mt-12 border-t border-black/10 pt-8">
-                <Link href="/templates/horizon/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                <Link href={`${basePath}/profile`} onClick={() => setIsMobileMenuOpen(false)}>
                   <User className="w-6 h-6 text-black/60 hover:text-black" />
                 </Link>
-                <Link href="/templates/horizon/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="relative">
+                <Link href={`${basePath}/wishlist`} onClick={() => setIsMobileMenuOpen(false)} className="relative">
                   <Heart className="w-6 h-6 text-black/60 hover:text-black" />
                   {wishlist.length > 0 && (
                     <span className="absolute -top-2 -right-2 w-4 h-4 bg-black text-white text-xs flex items-center justify-center rounded-full">
@@ -407,7 +410,7 @@ function HorizonNavigation() {
                     <div className="flex justify-between items-center mb-6">
                        <span className={`text-black text-sm uppercase tracking-widest font-medium ${outfit.className}`}>Total to Pay</span>
                        <span className={`text-2xl text-black ${cormorant.className} italic`}>
-                         ${(cart.reduce((acc, item) => acc + (item.price * item.quantity), 0) - discountAmount).toFixed(2)}
+                         ${(cart.reduce((acc: any, item: any) => acc + (item.price * item.quantity), 0) - discountAmount).toFixed(2)}
                        </span>
                     </div>
                     <div className="flex gap-4">
@@ -508,7 +511,7 @@ function HorizonNavigation() {
                         <div className="flex justify-between items-center">
                           <span className={`text-black/40 text-xs uppercase tracking-widest ${outfit.className}`}>Subtotal</span>
                           <span className={`text-black/80 ${outfit.className} font-light`}>
-                            ${cart.reduce((acc, item) => acc + (item.price * item.quantity), 0).toFixed(2)}
+                            ${cart.reduce((acc: any, item: any) => acc + (item.price * item.quantity), 0).toFixed(2)}
                           </span>
                         </div>
                         {discountAmount > 0 && (
@@ -522,7 +525,7 @@ function HorizonNavigation() {
                         <div className="flex justify-between items-center pt-4 border-t border-black/10">
                           <span className={`text-black text-sm uppercase tracking-widest font-medium ${outfit.className}`}>Total</span>
                           <span className={`text-2xl text-black ${cormorant.className} italic`}>
-                            ${(cart.reduce((acc, item) => acc + (item.price * item.quantity), 0) - discountAmount).toFixed(2)}
+                            ${(cart.reduce((acc: any, item: any) => acc + (item.price * item.quantity), 0) - discountAmount).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -549,12 +552,12 @@ function HorizonNavigation() {
   );
 }
 
-function HorizonFooter() {
-  const customData = useCustomization();
+function HorizonFooter({ initialCustomData, basePath }: any) {
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "HORIZON";
   const logoUrl = customData?.formData?.logoUrl || "";
   const footerText = customData?.formData?.footerText || "A curated collection of exceptionally crafted digital assets. Designed for the most discerning creators and agencies aiming for unparalleled aesthetic excellence.";
-  const copyrightText = customData?.formData?.copyrightText || `© ${new Date().getFullYear()} ${logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Sun className="w-6 h-6" /><span>{brandName}</span></div>} STUDIO.`;
+  const copyrightText = customData?.formData?.copyrightText || `© ${new Date().getFullYear()} ${brandName} STUDIO.`;
   const socialInsta = customData?.formData?.socialInsta || "#";
   const socialTwitter = customData?.formData?.socialTwitter || "#";
   const socialFacebook = customData?.formData?.socialFacebook || "#";
@@ -564,7 +567,7 @@ function HorizonFooter() {
       <div className="max-w-[1600px] mx-auto px-6 md:px-12 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-16 md:gap-24 mb-24">
           <div className="md:col-span-2">
-            <Link href="/templates/horizon" className="flex items-center gap-3 mb-8 pointer-events-auto" style={{ cursor: "none" }}>
+            <Link href={basePath || "/"} className="flex items-center gap-3 mb-8 pointer-events-auto" style={{ cursor: "none" }}>
               <span className={`text-3xl text-black tracking-widest uppercase ${outfit.className}`}>
                 {brandName.charAt(0)}<span className="text-black/30">{brandName.slice(1)}</span>
               </span>
@@ -576,9 +579,9 @@ function HorizonFooter() {
           <div>
             <h4 className={`text-[10px] text-black/40 tracking-[0.3em] font-medium uppercase mb-8 ${outfit.className}`}>Discovery</h4>
             <ul className={`space-y-4 text-sm font-light text-black/70 ${outfit.className}`}>
-              <li><Link href="/templates/horizon/products" className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>The Vault</Link></li>
-              <li><Link href="/templates/horizon/about" className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Manifesto</Link></li>
-              <li><Link href="/templates/horizon/contact" className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Inquiries</Link></li>
+              <li><Link href={`${basePath}/products`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>The Vault</Link></li>
+              <li><Link href={`${basePath}/about`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Manifesto</Link></li>
+              <li><Link href={`${basePath}/contact`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Inquiries</Link></li>
             </ul>
           </div>
           <div>
@@ -664,7 +667,7 @@ function GlobalCursor() {
   );
 }
 
-export default function HorizonLayout({ children }: { children: ReactNode }) {
+export function HorizonLayout({ children, basePath, initialCustomData }: { children: ReactNode, basePath?: string, initialCustomData?: any }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.includes('/auth/');
 
@@ -673,11 +676,18 @@ export default function HorizonLayout({ children }: { children: ReactNode }) {
     <HorizonProvider>
       <div className={`min-h-screen bg-[#FAFAFA] text-[#111111] selection:bg-black selection:text-white ${cormorant.variable} ${outfit.variable} font-sans flex flex-col overflow-x-hidden cursor-none`}>
         <GlobalCursor />
-        <HorizonNavigation />
+        <HorizonNavigation initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/horizon'} />
         <main className="flex-1 pointer-events-none *:pointer-events-auto">{children}</main>
-        <HorizonFooter />
+        <HorizonFooter initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/horizon'} />
         <ToastContainer />
       </div>
     </HorizonProvider>
   );
+}
+
+
+
+
+export default function Layout({ children, initialCustomData }: { children: React.ReactNode, initialCustomData?: any }) {
+  return <HorizonLayout basePath="/templates/horizon">{children}</HorizonLayout>;
 }

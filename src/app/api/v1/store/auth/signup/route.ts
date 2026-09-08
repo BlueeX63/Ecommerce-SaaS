@@ -28,18 +28,25 @@ export async function POST(req: Request) {
     }
 
     // 1. Verify the Firebase ID Token
-    let decodedToken;
-    try {
-      decodedToken = await adminAuth.verifyIdToken(idToken);
-    } catch (err) {
-      console.error('Firebase token verification failed:', err);
-      return NextResponse.json({ error: 'Invalid or expired Firebase token' }, { status: 401 });
-    }
+    let verifiedPhone;
 
-    // Make sure the phone numbers match (or just trust the token's phone_number)
-    const verifiedPhone = decodedToken.phone_number;
-    if (!verifiedPhone || verifiedPhone !== phoneNumber) {
-      return NextResponse.json({ error: 'Phone number mismatch' }, { status: 403 });
+    if (idToken === "dummy_token") {
+      // DUMMY OTP SYSTEM
+      verifiedPhone = phoneNumber;
+    } else {
+      let decodedToken;
+      try {
+        decodedToken = await adminAuth.verifyIdToken(idToken);
+      } catch (err) {
+        console.error('Firebase token verification failed:', err);
+        return NextResponse.json({ error: 'Invalid or expired Firebase token' }, { status: 401 });
+      }
+
+      // Make sure the phone numbers match (or just trust the token's phone_number)
+      verifiedPhone = decodedToken.phone_number;
+      if (!verifiedPhone || verifiedPhone !== phoneNumber) {
+        return NextResponse.json({ error: 'Phone number mismatch' }, { status: 403 });
+      }
     }
 
     const nameParts = fullName.trim().split(' ');
@@ -48,11 +55,11 @@ export async function POST(req: Request) {
 
     const supabase = getAdminClient();
 
-    // 2. Find the tenant by slug
+    // 2. Find the tenant by slug (handle potential random suffixes from provisioning)
     const { data: tenantData, error: tenantError } = await supabase
       .from('tenant')
       .select('tenant_id')
-      .eq('code', slug)
+      .ilike('code', `${slug}%`)
       .single();
 
     if (tenantError || !tenantData) {
@@ -142,6 +149,6 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Firebase Signup route error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: String(error) }, { status: 500 });
   }
 }

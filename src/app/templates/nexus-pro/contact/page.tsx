@@ -2,9 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function NexusProContactPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   
   const tPreTitle = customData?.formData?.contactPreTitle || "Support";
   const tTitle = customData?.formData?.contactTitle || "Contact Us.";

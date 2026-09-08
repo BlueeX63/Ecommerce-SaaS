@@ -50,13 +50,11 @@ export default function SignupPage() {
     const parts = name.trim().split(" ");
     const firstName = parts[0] || "User";
     const lastName = parts.length > 1 ? parts.slice(1).join(" ") : "User";
-    const tenantName = `${firstName} Store`;
-
     try {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, email, password, tenantName })
+        body: JSON.stringify({ firstName, lastName, email, password })
       });
       
       const data = await res.json();

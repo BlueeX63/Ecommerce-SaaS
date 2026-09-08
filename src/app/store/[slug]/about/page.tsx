@@ -44,5 +44,5 @@ export default async function StoreAboutPage(props: any) {
   else if (templateId === "growth-velocity") PageComponent = VelocityAboutPage;
   else if (templateId === "growth-quantum") PageComponent = QuantumAboutPage;
 
-  return <PageComponent {...props} />;
+  return <PageComponent {...props} initialCustomData={{ formData: customData }} />;
 }

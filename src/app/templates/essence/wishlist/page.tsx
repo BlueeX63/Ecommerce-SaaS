@@ -6,7 +6,7 @@ import { useCart } from "../CartContext";
 import { Heart } from "lucide-react";
 
 export default function EssenceWishlistPage() {
-  const { currencySymbol } = useCart();
+  const { basePath, currencySymbol  } = useCart();
   const { wishlist, toggleWishlist, addToCart } = useCart();
   
   return (
@@ -36,7 +36,7 @@ export default function EssenceWishlistPage() {
         {/* Product Grid */}
         {wishlist.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
-            {wishlist.map((product, idx) => (
+            {wishlist.map((product: any, idx: number) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -44,7 +44,7 @@ export default function EssenceWishlistPage() {
                 transition={{ duration: 0.8, delay: idx * 0.05 }}
                 className="group cursor-pointer"
               >
-                <Link href={`/templates/essence/products/${product.id}`}>
+                <Link href={`${basePath}/products/${product.id}`}>
                   <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-[#E3D8C8]">
                     <img 
                       src={product.image} 
@@ -89,7 +89,7 @@ export default function EssenceWishlistPage() {
             <h2 className="font-serif text-2xl text-[#4A3F35] mb-4">Your wishlist is empty</h2>
             <p className="text-[#4A3F35]/60 mb-8">Save items you love and they will appear here.</p>
             <Link 
-              href="/templates/essence/products"
+              href={`${basePath}/products`}
               className="inline-block bg-[#4A3F35] text-[#F3EDE2] px-10 py-5 text-xs font-bold tracking-[0.2em] uppercase hover:bg-[#332B25] transition-colors"
             >
               Shop Collection

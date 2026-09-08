@@ -21,11 +21,11 @@ export async function POST(req: Request) {
 
     const supabase = getAdminClient();
 
-    // Find the tenant by slug
+    // Find the tenant by slug (handle potential random suffixes from provisioning)
     const { data: tenantData, error: tenantError } = await supabase
       .from('tenant')
       .select('tenant_id')
-      .eq('code', slug)
+      .ilike('code', `${slug}%`)
       .single();
 
     if (tenantError || !tenantData) {

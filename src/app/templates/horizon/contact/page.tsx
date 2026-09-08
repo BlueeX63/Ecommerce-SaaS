@@ -5,16 +5,15 @@ import { ArrowRight, Mail, MapPin } from "lucide-react";
 import { useState } from "react";
 import { useHorizon } from "../HorizonContext";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function HorizonContact() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   
   const tPreTitle = customData?.formData?.contactPreTitle || "Connect";
   const tTitle = customData?.formData?.contactTitle || "Start a \nDialogue.";
   const tAddress = customData?.formData?.contactAddress || "142 Aesthetics Blvd.\nDesign District\nNew York, NY 10012";
   const tEmail = customData?.formData?.contactEmail || "studio@horizon.design";
   const tPhone = customData?.formData?.contactPhone || "+81 3 1234 5678";
-  const { setToastMessage } = useHorizon();
+  const { setToastMessage, basePath } = useHorizon();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 

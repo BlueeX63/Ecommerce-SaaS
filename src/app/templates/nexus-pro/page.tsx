@@ -7,9 +7,9 @@ import { useRef } from "react";
 import { NEXUS_PRODUCTS, useShop } from "./ShopContext";
 import { useCustomization } from "@/hooks/useCustomization";
 
-export default function NexusProHomePage() {
+export default function NexusProHomePage({ initialProducts, initialCustomData }: any) {
   const containerRef = useRef(null);
-  const { addToCart, setIsCartOpen , currencySymbol } = useShop();
+  const { basePath, addToCart, setIsCartOpen , currencySymbol  } = useShop();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"]
@@ -18,8 +18,8 @@ export default function NexusProHomePage() {
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "40%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  const featuredProducts = NEXUS_PRODUCTS.slice(0, 3);
-  const customData = useCustomization();
+  const featuredProducts = (initialProducts || NEXUS_PRODUCTS).slice(0, 3);
+  const customData = useCustomization(initialCustomData);
   
   const preTitle = customData?.formData?.preTitle || "The Evolution of Style";
   const heroTitle1 = customData?.formData?.heroTitle1 || "Form Meets";
@@ -91,7 +91,7 @@ export default function NexusProHomePage() {
               {heroDesc}
             </p>
             <Link 
-              href="/templates/nexus-pro/products"
+              href={`${basePath}/products`}
               className="group relative px-8 py-4 bg-white text-black font-bold uppercase tracking-widest text-xs overflow-hidden rounded-full"
             >
               <span className="relative z-10 flex items-center gap-2 group-hover:text-white transition-colors duration-500">
@@ -126,13 +126,13 @@ export default function NexusProHomePage() {
             <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter">{featuredTitle}</h2>
             <p className="text-[#d4af37] text-xs font-bold uppercase tracking-widest mt-4">{featuredSubtitle}</p>
           </div>
-          <Link href="/templates/nexus-pro/products" className="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:text-[#d4af37] transition-colors">
+          <Link href={`${basePath}/products`} className="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:text-[#d4af37] transition-colors">
             {viewAllText} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {featuredProducts.map((product, index) => (
+          {featuredProducts.map((product: any, index: number) => (
             <motion.div 
               key={product.id}
               initial={{ opacity: 0, y: 50 }}
@@ -141,7 +141,7 @@ export default function NexusProHomePage() {
               transition={{ duration: 0.8, delay: index * 0.2 }}
               className="group cursor-pointer flex flex-col"
             >
-              <Link href={`/templates/nexus-pro/products/${product.id}`} className="block relative">
+              <Link href={`${basePath}/products/${product.id}`} className="block relative">
                 <div className="relative aspect-[3/4] overflow-hidden rounded-lg mb-6 bg-white/5">
                   <img 
                     src={product.image} 
@@ -222,7 +222,7 @@ export default function NexusProHomePage() {
                 featureBullet1,
                 featureBullet2,
                 featureBullet3
-              ].map((item, i) => (
+              ].map((item: any, i: number) => (
                 <li key={i} className="flex items-center gap-4 text-sm font-bold uppercase tracking-widest border-b border-white/10 pb-4">
                   <span className="text-[#d4af37]">0{i + 1}</span>
                   {item}
@@ -230,7 +230,7 @@ export default function NexusProHomePage() {
               ))}
             </ul>
 
-            <Link href="/templates/nexus-pro/about" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:text-[#d4af37] transition-colors pb-1 border-b border-transparent hover:border-[#d4af37]">
+            <Link href={`${basePath}/about`} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:text-[#d4af37] transition-colors pb-1 border-b border-transparent hover:border-[#d4af37]">
               {featureCta} <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>

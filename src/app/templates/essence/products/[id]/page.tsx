@@ -7,7 +7,8 @@ import Link from "next/link";
 import { ArrowLeft, Plus, Minus, Heart } from "lucide-react";
 import { useState } from "react";
 
-export default function EssenceProductDetail() {
+export default function EssenceProductDetail({ initialProduct }: any) {
+  const { basePath } = useCart();
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -17,13 +18,13 @@ export default function EssenceProductDetail() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   
-  const product = ALL_PRODUCTS.find(p => p.id === id);
+  const product = initialProduct || ALL_PRODUCTS.find((p: any) => p.id === id);
 
   if (!product) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center bg-[#F3EDE2]">
         <h1 className="font-serif text-3xl mb-4 text-[#4A3F35]">Product not found</h1>
-        <Link href="/templates/essence/products" className="text-xs uppercase tracking-[0.2em] border-b border-[#4A3F35] pb-1 text-[#4A3F35] hover:text-[#A69684] hover:border-[#A69684] transition-colors">
+        <Link href={`${basePath}/products`} className="text-xs uppercase tracking-[0.2em] border-b border-[#4A3F35] pb-1 text-[#4A3F35] hover:text-[#A69684] hover:border-[#A69684] transition-colors">
           Return to Shop
         </Link>
       </div>
@@ -74,7 +75,7 @@ export default function EssenceProductDetail() {
 
         {/* Right Content - Scrollable Details */}
         <div className="w-full md:w-1/2 p-6 md:p-16 lg:p-24 flex flex-col justify-center min-h-[50vh] md:min-h-[calc(100vh-6rem)]">
-          <Link href="/templates/essence/products" className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#4A3F35]/50 hover:text-[#4A3F35] transition-colors mb-12 w-fit">
+          <Link href={`${basePath}/products`} className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#4A3F35]/50 hover:text-[#4A3F35] transition-colors mb-12 w-fit">
             <ArrowLeft className="w-3 h-3" /> Back to Collection
           </Link>
 
@@ -160,7 +161,7 @@ export default function EssenceProductDetail() {
                 <p className="text-[#4A3F35]/70 italic font-serif mb-12">No experiences shared yet. Be the first to reflect on this piece.</p>
               ) : (
                 <div className="space-y-12 mb-16">
-                  {productReviews.map(review => (
+                  {productReviews.map((review: any) => (
                     <div key={review.id} className="border-b border-[#4A3F35]/10 pb-8">
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-xs uppercase tracking-[0.2em] font-bold text-[#4A3F35]">{review.userName}</span>

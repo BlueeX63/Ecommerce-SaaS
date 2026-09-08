@@ -32,10 +32,11 @@ function PremiumLoginContent() {
 
     
     try {
+      const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
       const res = await fetch("/api/v1/store/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, phone, password }),
+        body: JSON.stringify({ slug, phone: formattedPhone, password }),
       });
       const data = await res.json();
       if (res.ok) {

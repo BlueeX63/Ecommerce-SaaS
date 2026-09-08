@@ -6,14 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Trash2, Plus, Minus } from "lucide-react";
 
 export default function EssenceCartPage() {
-  const { currencySymbol } = useCart();
+  const { basePath, currencySymbol  } = useCart();
   const { items, updateQuantity, removeFromCart, totalPrice } = useCart();
 
   return (
     <div className="w-full bg-[#F3EDE2] min-h-screen pt-12 pb-32 px-6 md:px-12">
       <div className="max-w-[1200px] mx-auto">
         
-        <Link href="/templates/essence/products" className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#4A3F35]/50 hover:text-[#4A3F35] transition-colors mb-12 w-fit">
+        <Link href={`${basePath}/products`} className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#4A3F35]/50 hover:text-[#4A3F35] transition-colors mb-12 w-fit">
           <ArrowLeft className="w-3 h-3" /> Continue Shopping
         </Link>
 
@@ -29,7 +29,7 @@ export default function EssenceCartPage() {
           >
             <p className="text-[#4A3F35]/50 text-sm mb-8">Your cart is currently empty.</p>
             <Link 
-              href="/templates/essence/products"
+              href={`${basePath}/products`}
               className="bg-[#4A3F35] text-[#F3EDE2] px-8 py-4 text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#332B25] transition-colors"
             >
               Return to Shop
@@ -57,7 +57,7 @@ export default function EssenceCartPage() {
                     className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center py-8 border-b border-[#4A3F35]/5 group"
                   >
                     <div className="col-span-1 md:col-span-6 flex gap-6 items-center">
-                      <Link href={`/templates/essence/products/${item.product.id}`}>
+                      <Link href={`${basePath}/products/${item.product.id}`}>
                         <div className="w-24 md:w-32 aspect-[3/4] bg-[#E3D8C8] overflow-hidden">
                           <img 
                             src={item.product.image} 
@@ -67,7 +67,7 @@ export default function EssenceCartPage() {
                         </div>
                       </Link>
                       <div className="flex flex-col gap-2">
-                        <Link href={`/templates/essence/products/${item.product.id}`}>
+                        <Link href={`${basePath}/products/${item.product.id}`}>
                           <h3 className="font-serif text-lg text-[#4A3F35]">{item.product.name}</h3>
                         </Link>
                         <div className="text-sm text-[#4A3F35]/60 italic font-serif">{currencySymbol}{item.product.price.toFixed(2)}</div>
@@ -129,7 +129,7 @@ export default function EssenceCartPage() {
                   <span className="font-serif text-3xl italic">{currencySymbol}{totalPrice.toFixed(2)}</span>
                 </div>
                 
-                <Link href="/templates/essence/checkout" className="w-full flex items-center justify-center bg-[#4A3F35] text-[#F3EDE2] py-5 text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#332B25] transition-colors mb-4">
+                <Link href={`${basePath}/checkout`} className="w-full flex items-center justify-center bg-[#4A3F35] text-[#F3EDE2] py-5 text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#332B25] transition-colors mb-4">
                   Proceed to Checkout
                 </Link>
                 <div className="text-center text-[10px] text-[#4A3F35]/50 uppercase tracking-[0.1em]">

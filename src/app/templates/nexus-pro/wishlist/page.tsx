@@ -6,7 +6,7 @@ import { ArrowRight, Trash2, ShoppingBag } from "lucide-react";
 import { useShop } from "../ShopContext";
 
 export default function NexusProWishlistPage() {
-  const { wishlist, toggleWishlist, addToCart , currencySymbol } = useShop();
+  const { basePath, wishlist, toggleWishlist, addToCart , currencySymbol  } = useShop();
 
   return (
     <div className="flex flex-col w-full bg-[#0a0a0a] text-[#ededed] pt-32 pb-32 min-h-screen">
@@ -31,7 +31,7 @@ export default function NexusProWishlistPage() {
             <h3 className="text-2xl font-black uppercase tracking-tighter mb-4">Nothing Saved Yet</h3>
             <p className="text-white/50 text-sm mb-8">Keep track of items you love by adding them to your wishlist.</p>
             <Link 
-              href="/templates/nexus-pro/products"
+              href={`${basePath}/products`}
               className="inline-block px-8 py-4 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-[#d4af37] hover:text-white transition-colors rounded-full"
             >
               Explore Collection
@@ -40,7 +40,7 @@ export default function NexusProWishlistPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 gap-y-16 pt-8 border-t border-white/10">
             <AnimatePresence>
-              {wishlist.map((product, index) => (
+              {wishlist.map((product: any, index: number) => (
                 <motion.div 
                   layout
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -66,7 +66,7 @@ export default function NexusProWishlistPage() {
                   
                   <div className="flex justify-between items-start mb-6">
                     <div>
-                      <Link href={`/templates/nexus-pro/products/${product.id}`}>
+                      <Link href={`${basePath}/products/${product.id}`}>
                         <h3 className="text-xl font-bold mb-1 hover:text-[#d4af37] transition-colors">{product.name}</h3>
                       </Link>
                       <p className="text-sm text-white/50">{product.category}</p>

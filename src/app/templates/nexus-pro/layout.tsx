@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCustomization } from "@/hooks/useCustomization";
 
 function CartFlyout() {
-  const { isCartOpen, setIsCartOpen, cartItems, removeFromCart, updateCartQuantity, totalPrice , currencySymbol } = useShop();
+  const { isCartOpen, setIsCartOpen, cartItems, removeFromCart, updateCartQuantity, currencySymbol, totalPrice, basePath } = useShop();
 
   return (
     <AnimatePresence>
@@ -45,7 +45,7 @@ function CartFlyout() {
                   <ShoppingCart className="w-12 h-12 mb-4" />
                   <p className="text-sm tracking-widest uppercase">Your cart is empty</p>
                   <Link 
-                    href="/templates/nexus-pro/products"
+                    href={`${basePath}/products`}
                     onClick={() => setIsCartOpen(false)}
                     className="border-b border-white pb-1 text-xs uppercase tracking-widest hover:text-[#d4af37] hover:border-[#d4af37] transition-colors"
                   >
@@ -53,7 +53,7 @@ function CartFlyout() {
                   </Link>
                 </div>
               ) : (
-                cartItems.map((item) => (
+                cartItems.map((item: any) => (
                   <motion.div layout key={item.product.id} className="flex gap-6 group">
                     <div className="w-24 h-32 bg-white/5 flex-shrink-0 overflow-hidden rounded-md relative">
                       <img
@@ -106,7 +106,7 @@ function CartFlyout() {
                   <span className="text-2xl font-bold">{currencySymbol}{totalPrice.toFixed(2)}</span>
                 </div>
                 <Link
-                  href="/templates/nexus-pro/cart"
+                  href={`${basePath}/cart`}
                   onClick={() => setIsCartOpen(false)}
                   className="w-full py-4 bg-white text-black rounded-full flex items-center justify-center gap-2 text-xs uppercase tracking-widest font-bold hover:bg-[#d4af37] hover:text-white transition-all duration-300"
                 >
@@ -125,9 +125,9 @@ function CartFlyout() {
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { cartCount, setIsCartOpen } = useShop();
+  const { cartCount, setIsCartOpen, basePath } = useShop();
   const pathname = usePathname();
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "NEXUS";
   const logoUrl = customData?.formData?.logoUrl || "";
 
@@ -162,8 +162,11 @@ function Navbar() {
             >
               <Menu className="w-6 h-6" />
             </button>
-            <Link href="/templates/nexus-pro" className="text-2xl font-black tracking-tighter uppercase text-white hover:text-[#d4af37] transition-colors">
-              {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Layers className="w-6 h-6" /><span>{brandName}</span></div>}<span className="text-[#d4af37]">.</span>
+            <Link href={basePath || "/"} className="text-2xl font-black tracking-tighter uppercase text-white hover:text-[#d4af37] transition-colors">
+              <div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Layers className="w-6 h-6" />}
+                <span>{brandName}</span>
+              </div><span className="text-[#d4af37]">.</span>
             </Link>
           </div>
 
@@ -182,13 +185,13 @@ function Navbar() {
           </div>
 
           <div className="flex items-center gap-6">
-            <Link href="/templates/nexus-pro/products" className="hidden sm:block text-white/70 hover:text-white transition-colors">
+            <Link href={`${basePath}/products`} className="hidden sm:block text-white/70 hover:text-white transition-colors">
               <Search className="w-5 h-5" />
             </Link>
-            <Link href="/templates/nexus-pro/profile" className="hidden sm:block text-white/70 hover:text-white transition-colors">
+            <Link href={`${basePath}/profile`} className="hidden sm:block text-white/70 hover:text-white transition-colors">
               <User className="w-5 h-5" />
             </Link>
-            <Link href="/templates/nexus-pro/wishlist" className="text-white/70 hover:text-white transition-colors">
+            <Link href={`${basePath}/wishlist`} className="text-white/70 hover:text-white transition-colors">
               <Heart className="w-5 h-5" />
             </Link>
             <button 
@@ -217,8 +220,11 @@ function Navbar() {
             className="fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col p-6"
           >
             <div className="flex justify-between items-center mb-12">
-              <Link href="/templates/nexus-pro" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-black tracking-tighter uppercase text-white">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Layers className="w-6 h-6" /><span>{brandName}</span></div>}<span className="text-[#d4af37]">.</span>
+              <Link href={basePath || "/"} onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-black tracking-tighter uppercase text-white">
+                <div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Layers className="w-6 h-6" />}
+                <span>{brandName}</span>
+              </div><span className="text-[#d4af37]">.</span>
               </Link>
               <button onClick={() => setIsMobileMenuOpen(false)} className="text-white/50 hover:text-white">
                 <X className="w-8 h-8" />
@@ -237,8 +243,8 @@ function Navbar() {
                 </Link>
               ))}
               <div className="h-px bg-white/10 w-full my-4" />
-              <Link href="/templates/nexus-pro/profile" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#d4af37] transition-colors text-lg">My Account</Link>
-              <Link href="/templates/nexus-pro/products" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#d4af37] transition-colors text-lg">Search</Link>
+              <Link href={`${basePath}/profile`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#d4af37] transition-colors text-lg">My Account</Link>
+              <Link href={`${basePath}/products`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#d4af37] transition-colors text-lg">Search</Link>
             </div>
           </motion.div>
         )}
@@ -247,8 +253,8 @@ function Navbar() {
   );
 }
 
-function Footer() {
-  const customData = useCustomization();
+function Footer({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+  const customData = useCustomization(initialCustomData);
   
   const footerText = customData?.formData?.footerText || "Defining the future of premium aesthetics. Engineered for the modern individual who refuses to compromise on quality and design.";
   const socialInsta = customData?.formData?.socialInsta || "#";
@@ -265,7 +271,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-20">
           <div className="col-span-1 md:col-span-1">
-            <Link href="/templates/nexus-pro" className="text-3xl font-black tracking-tighter uppercase mb-6 block">
+            <Link href={basePath || "/"} className="text-3xl font-black tracking-tighter uppercase mb-6 block">
               {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : tBrandName}<span className="text-[#d4af37]">.</span>
             </Link>
             <p className="text-sm text-white/50 leading-relaxed mb-8 max-w-xs">
@@ -293,19 +299,19 @@ function Footer() {
           <div>
             <h4 className="text-xs uppercase tracking-widest font-bold mb-6 text-white/70">{footerCol1}</h4>
             <ul className="space-y-4 text-sm font-medium">
-              <li><Link href="/templates/nexus-pro/products" className="hover:text-[#d4af37] transition-colors">All Collection</Link></li>
-              <li><Link href="/templates/nexus-pro/products?category=Outerwear" className="hover:text-[#d4af37] transition-colors">Outerwear</Link></li>
-              <li><Link href="/templates/nexus-pro/products?wearType=accessory" className="hover:text-[#d4af37] transition-colors">Accessories</Link></li>
-              <li><Link href="/templates/nexus-pro/products?isNew=true" className="hover:text-[#d4af37] transition-colors">New Arrivals</Link></li>
+              <li><Link href={`${basePath}/products`} className="hover:text-[#d4af37] transition-colors">All Collection</Link></li>
+              <li><Link href={`${basePath}/products?category=Outerwear`} className="hover:text-[#d4af37] transition-colors">Outerwear</Link></li>
+              <li><Link href={`${basePath}/products?wearType=accessory`} className="hover:text-[#d4af37] transition-colors">Accessories</Link></li>
+              <li><Link href={`${basePath}/products?isNew=true`} className="hover:text-[#d4af37] transition-colors">New Arrivals</Link></li>
             </ul>
           </div>
           
           <div>
             <h4 className="text-xs uppercase tracking-widest font-bold mb-6 text-white/70">{footerCol2}</h4>
             <ul className="space-y-4 text-sm font-medium">
-              <li><Link href="/templates/nexus-pro/contact" className="hover:text-[#d4af37] transition-colors">Contact Us</Link></li>
-              <li><Link href="/templates/nexus-pro/privacy-policy" className="hover:text-[#d4af37] transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/templates/nexus-pro/terms-conditions" className="hover:text-[#d4af37] transition-colors">Terms & Conditions</Link></li>
+              <li><Link href={`${basePath}/contact`} className="hover:text-[#d4af37] transition-colors">Contact Us</Link></li>
+              <li><Link href={`${basePath}/privacy-policy`} className="hover:text-[#d4af37] transition-colors">Privacy Policy</Link></li>
+              <li><Link href={`${basePath}/terms-conditions`} className="hover:text-[#d4af37] transition-colors">Terms & Conditions</Link></li>
               <li><Link href="#" className="hover:text-[#d4af37] transition-colors">Shipping Returns</Link></li>
             </ul>
           </div>
@@ -341,7 +347,7 @@ function Footer() {
   );
 }
 
-export default function NexusProLayout({ children }: { children: React.ReactNode }) {
+export function NexusProLayout({ children, basePath }: { children: React.ReactNode, basePath?: string, initialCustomData?: any }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.includes('/auth/');
 
@@ -351,8 +357,15 @@ export default function NexusProLayout({ children }: { children: React.ReactNode
         <Navbar />
         <CartFlyout />
         <main className="flex-grow pt-0">{children}</main>
-        {!isAuthPage && <Footer />}
+        {!isAuthPage && <Footer initialCustomData={initialCustomData} />}
       </div>
     </ShopProvider>
   );
+}
+
+
+
+
+export default function Layout({ children, initialCustomData }: { children: React.ReactNode, initialCustomData?: any }) {
+  return <NexusProLayout basePath="/templates/nexus-pro">{children}</NexusProLayout>;
 }

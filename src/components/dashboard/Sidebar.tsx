@@ -13,14 +13,16 @@ import {
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { ChevronDown, Plus } from "lucide-react";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 const navItems = [
-  { name: "Overview", href: "/dashboard", icon: LayoutGrid },
+  { name: "Overview", href: "/dashboard/overview", icon: LayoutGrid },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Products", href: "/dashboard/products", icon: Store },
   { name: "Catalogs", href: "/dashboard/catalogs", icon: Store },
@@ -32,19 +34,83 @@ const navItems = [
   { name: "Back to Home", href: "/", icon: Home },
 ];
 
-export function Sidebar() {
+export function Sidebar({ user }: { user?: any }) {
   const pathname = usePathname();
+  const [isStoreMenuOpen, setIsStoreMenuOpen] = useState(false);
+  
+  const handleSwitchStore = async (tenantId: string) => {
+    if (tenantId === user?.activeStore?.tenant_id) return;
+    try {
+      const res = await fetch("/api/v1/auth/switch-store", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId })
+      });
+      if (res.ok) {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <aside className="w-[240px] h-screen bg-surface border-r border-black/[0.06] flex flex-col fixed left-0 top-0 z-40">
-      {/* Logo Area */}
-      <div className="h-20 flex items-center px-6 border-b border-black/[0.03]">
-        <Link href="/dashboard" className="flex items-center gap-3 group">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
-            <Store className="w-4 h-4" />
+      {/* Store Switcher Area */}
+      <div className="flex flex-col px-4 py-4 border-b border-black/[0.03] relative">
+        <button 
+          onClick={() => setIsStoreMenuOpen(!isStoreMenuOpen)}
+          className="flex items-center justify-between w-full p-2 rounded-xl hover:bg-black/[0.03] transition-colors"
+        >
+          <div className="flex items-center gap-3 truncate">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white shadow-sm flex-shrink-0">
+              <Store className="w-4 h-4" />
+            </div>
+            <span className="font-heading text-lg text-primary tracking-tight truncate">
+              {user?.activeStore?.tenant_name || 'Select Store'}
+            </span>
           </div>
-          <span className="font-heading text-xl text-primary tracking-tight">SaaS</span>
-        </Link>
+          <ChevronDown className={cn("w-4 h-4 text-secondary transition-transform", isStoreMenuOpen && "rotate-180")} />
+        </button>
+
+        <AnimatePresence>
+          {isStoreMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-[100%] left-4 right-4 bg-white border border-black/5 shadow-xl rounded-xl mt-2 py-2 z-50 overflow-hidden"
+            >
+              <div className="px-3 pb-2 text-xs font-accent text-secondary tracking-widest uppercase">Your Stores</div>
+              <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                {user?.stores?.map((store: any) => (
+                  <button
+                    key={store.tenant_id}
+                    onClick={() => {
+                      setIsStoreMenuOpen(false);
+                      handleSwitchStore(store.tenant_id);
+                    }}
+                    className={cn(
+                      "w-full text-left px-4 py-2 text-sm font-body hover:bg-black/[0.02] transition-colors",
+                      store.tenant_id === user?.activeStore?.tenant_id ? "text-accent font-medium bg-accent/5" : "text-primary"
+                    )}
+                  >
+                    {store.tenant_name}
+                  </button>
+                ))}
+              </div>
+              <div className="px-2 pt-2 border-t border-black/5 mt-2">
+                <Link
+                  href="/onboarding/customize"
+                  className="flex items-center gap-2 w-full px-2 py-2 text-sm font-body text-secondary hover:text-accent hover:bg-accent/5 rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create New Store
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Navigation */}

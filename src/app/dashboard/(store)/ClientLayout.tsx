@@ -13,7 +13,7 @@ export default function DashboardLayout({ children, user }: { children: ReactNod
   return (
     <CurrencyProvider>
       <div className="min-h-screen bg-background flex">
-        <Sidebar />
+        <Sidebar user={user} />
         <div className="flex-1 ml-[240px] flex flex-col">
           <Topbar user={user} />
           <main className="flex-1 p-8 overflow-x-hidden">

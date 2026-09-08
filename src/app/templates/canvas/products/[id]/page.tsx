@@ -11,7 +11,7 @@ export default function CanvasProductDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const product = ALL_PRODUCTS.find((p) => p.id === id);
-  const { addToCart, toggleWishlist, isInWishlist, reviews, addReview } = useCart();
+  const { addToCart, toggleWishlist, isInWishlist, reviews, addReview, basePath } = useCart();
   const [isAdding, setIsAdding] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
@@ -175,7 +175,7 @@ export default function CanvasProductDetailPage() {
                 <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono">No data submitted. Await input.</p>
               ) : (
                 <div className="space-y-8">
-                  {productReviews.map(review => (
+                  {productReviews.map((review: any) => (
                     <div key={review.id} className="border border-white/10 p-6 bg-white/5">
                       <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
                         <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-white/80">USR_{review.userName}</span>

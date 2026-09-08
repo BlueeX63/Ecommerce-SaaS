@@ -9,7 +9,7 @@ import { CheckCircle2, ChevronRight, PackageCheck, Tag, X } from "lucide-react";
 import { useQuantum } from "../QuantumContext";
 
 export default function QuantumCheckoutPage() {
-  const { cart, clearCart, setIsCartOpen, appliedCoupon, discountAmount, couponError, applyCoupon, removeCoupon , currencySymbol } = useQuantum();
+  const { basePath, cart, clearCart, setIsCartOpen, appliedCoupon, discountAmount, couponError, applyCoupon, removeCoupon , currencySymbol  } = useQuantum();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -86,13 +86,13 @@ export default function QuantumCheckoutPage() {
           </p>
           <div className="flex flex-col gap-4">
             <Link 
-              href="/templates/quantum/profile"
+              href={`${basePath}/profile`}
               className="w-full py-4 bg-[#111111] text-white font-inter font-bold uppercase tracking-widest text-xs hover:bg-gray-800 transition-colors rounded-xl text-center"
             >
               View Order Details
             </Link>
             <Link 
-              href="/templates/quantum/products"
+              href={`${basePath}/products`}
               className="w-full py-4 bg-transparent border border-gray-200 text-[#111111] font-inter font-bold uppercase tracking-widest text-xs hover:bg-gray-50 transition-colors rounded-xl text-center"
             >
               Continue Exploring
@@ -107,7 +107,7 @@ export default function QuantumCheckoutPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#F9F9FB] text-[#121212] font-inter">
         <p className="text-gray-500 mb-4">Your collection is empty.</p>
-        <Link href="/templates/quantum/products" className="text-[#111111] font-bold underline hover:text-gray-600 transition-colors">Return to Gallery</Link>
+        <Link href={`${basePath}/products`} className="text-[#111111] font-bold underline hover:text-gray-600 transition-colors">Return to Gallery</Link>
       </div>
     );
   }

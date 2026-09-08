@@ -9,7 +9,7 @@ import { CheckCircle2, ChevronRight, Zap, Tag, X } from "lucide-react";
 import { useVelocity } from "../VelocityContext";
 
 export default function VelocityCheckoutPage() {
-  const { cart, clearCart, setIsCartOpen, appliedCoupon, discountAmount, couponError, applyCoupon, removeCoupon , currencySymbol } = useVelocity();
+  const { basePath, cart, clearCart, setIsCartOpen, appliedCoupon, discountAmount, couponError, applyCoupon, removeCoupon , currencySymbol  } = useVelocity();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -90,13 +90,13 @@ export default function VelocityCheckoutPage() {
           </p>
           <div className="flex flex-col gap-4">
             <Link 
-              href="/templates/velocity/profile"
+              href={`${basePath}/profile`}
               className="w-full py-4 bg-[#00ffaa] text-black font-bold uppercase tracking-widest text-xs hover:bg-white transition-colors text-center"
             >
               Access Order Status
             </Link>
             <Link 
-              href="/templates/velocity/products"
+              href={`${basePath}/products`}
               className="w-full py-4 bg-transparent border border-[#00ffaa]/30 text-[#00ffaa] font-bold uppercase tracking-widest text-xs hover:bg-[#00ffaa]/10 transition-colors text-center"
             >
               Return to Grid
@@ -111,7 +111,7 @@ export default function VelocityCheckoutPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#0f0f11] text-[#e0e0e0] font-mono">
         <p>No payload detected.</p>
-        <Link href="/templates/velocity/products" className="mt-4 text-[#00ffaa] hover:underline">Access the Grid</Link>
+        <Link href={`${basePath}/products`} className="mt-4 text-[#00ffaa] hover:underline">Access the Grid</Link>
       </div>
     );
   }

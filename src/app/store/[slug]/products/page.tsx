@@ -46,6 +46,9 @@ export default async function StoreProductsPage({
     .eq("status", "ACTIVE")
     .order("created_date", { ascending: false });
 
+  const { mapDatabaseProducts } = await import("@/lib/utils/product-mapper");
+  const mappedProducts = mapDatabaseProducts(products || []);
+
   let PageComponent = MinimalistProductsPage;
   if (templateId === "starter-essence") PageComponent = EssenceProductsPage;
   else if (templateId === "starter-origin") PageComponent = OriginProductsPage;
@@ -53,5 +56,5 @@ export default async function StoreProductsPage({
   else if (templateId === "growth-velocity") PageComponent = VelocityProductsPage;
   else if (templateId === "growth-quantum") PageComponent = QuantumProductsPage;
 
-  return <PageComponent initialProducts={products || []} />;
+  return <PageComponent initialProducts={mappedProducts} initialCustomData={{ formData: customData }} />;
 }

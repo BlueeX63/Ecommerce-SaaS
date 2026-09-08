@@ -7,18 +7,18 @@ import { useState } from "react";
 import { Heart } from "lucide-react";
 import { useCustomization } from "@/hooks/useCustomization";
 
-export default function EssenceProductsPage() {
-  const { currencySymbol } = useCart();
+export default function ({ initialProducts, initialCustomData }: any) {
+  const { basePath, currencySymbol  } = useCart();
   const { addToCart, searchQuery, toggleWishlist, isInWishlist } = useCart();
   const [activeCategory, setActiveCategory] = useState<string>("All");
   
-  const filteredProducts = ALL_PRODUCTS.filter(product => {
+  const filteredProducts = (initialProducts || ALL_PRODUCTS).filter((product: any) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === "All" || product.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   
   const shopTitle = customData?.formData?.shopTitle || "The Collection";
   const rawCategories = customData?.formData?.shopCategories || "All, Ceramics, Textiles, Glassware, Furniture";
@@ -78,7 +78,7 @@ export default function EssenceProductsPage() {
         {/* Product Grid */}
         {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
-            {filteredProducts.map((product, idx) => (
+            {filteredProducts.map((product: any, idx: number) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -86,7 +86,7 @@ export default function EssenceProductsPage() {
                 transition={{ duration: 0.8, delay: idx * 0.05 }}
                 className="group cursor-pointer"
               >
-                <Link href={`/templates/essence/products/${product.id}`}>
+                <Link href={`${basePath}/products/${product.id}`}>
                   <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-[#E3D8C8]">
                     <img 
                       src={product.image} 

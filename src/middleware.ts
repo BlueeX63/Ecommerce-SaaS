@@ -51,10 +51,16 @@ export async function middleware(request: NextRequest) {
   const isLocalhost = hostname.includes('localhost');
   const baseDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (isLocalhost ? 'localhost:3000' : 'your-saas.com');
   
-  let currentHost = hostname.replace(`.${baseDomain}`, '');
-  // if currentHost is same as hostname or baseDomain, then it's the root domain.
-  if (currentHost === hostname || currentHost === baseDomain || currentHost === 'www') {
-    currentHost = ''; // Not a subdomain
+  // If hostname is exactly the base SaaS domain, or www.baseDomain, it's not a store
+  let currentHost = '';
+  if (hostname === baseDomain || hostname === `www.${baseDomain}`) {
+    currentHost = ''; // Serve SaaS marketing/dashboard pages
+  } else {
+    // If it's a subdomain (e.g. slug.your-saas.com), extract 'slug'.
+    // If it's a custom domain (e.g. www.customer.com), treat the whole thing as 'slug'.
+    currentHost = hostname.endsWith(`.${baseDomain}`) 
+      ? hostname.replace(`.${baseDomain}`, '') 
+      : hostname;
   }
 
   // 1. If it's a subdomain, rewrite to /store/[slug]/...

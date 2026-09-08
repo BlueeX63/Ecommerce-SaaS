@@ -1,4 +1,5 @@
 "use client";
+import { useCart } from "../../CartContext";
 
 import { useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -10,6 +11,7 @@ import { PremiumMagneticButton } from "@/components/auth/PremiumMagneticButton";
 import { Suspense } from "react";
 
 function LoginContent() {
+  const { basePath } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = `/templates/origin`;

@@ -6,7 +6,7 @@ import { ArrowRight, X, Minus, Plus } from "lucide-react";
 import { useShop } from "../ShopContext";
 
 export default function NexusProCartPage() {
-  const { cartItems, updateCartQuantity, removeFromCart, totalPrice , currencySymbol } = useShop();
+  const { basePath, cartItems, updateCartQuantity, removeFromCart, totalPrice , currencySymbol  } = useShop();
 
   const tax = totalPrice * 0.08;
   const shipping = totalPrice > 0 ? (totalPrice > 200 ? 0 : 25) : 0;
@@ -38,7 +38,7 @@ export default function NexusProCartPage() {
               <h3 className="text-2xl font-black uppercase tracking-tighter mb-4">Cart is Empty</h3>
               <p className="text-white/50 text-sm mb-8">You haven't added any items to your cart yet.</p>
               <Link 
-                href="/templates/nexus-pro/products"
+                href={`${basePath}/products`}
                 className="inline-block px-8 py-4 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-[#d4af37] hover:text-white transition-colors rounded-full"
               >
                 Return to Archive
@@ -70,7 +70,7 @@ export default function NexusProCartPage() {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <Link href={`/templates/nexus-pro/products/${item.product.id}`}>
+                        <Link href={`${basePath}/products/${item.product.id}`}>
                           <h3 className="text-lg font-bold group-hover:text-[#d4af37] transition-colors">{item.product.name}</h3>
                         </Link>
                         <p className="text-[10px] text-white/50 uppercase tracking-widest">{item.product.category}</p>

@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
-export default function StarterProductsPage({ initialProducts }: { initialProducts?: any[] }) {
+export default function ({ initialProducts, initialCustomData }: any) {
   const { addToCart, searchQuery, currencySymbol, toggleWishlist, isInWishlist, basePath } = useCart();
   const [activeCategory, setActiveCategory] = useState("All");
   const [customData, setCustomData] = useState<any>(null);
@@ -108,7 +108,7 @@ export default function StarterProductsPage({ initialProducts }: { initialProduc
           layout
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16"
         >
-          {filteredProducts.map((product, i) => (
+          {filteredProducts.map((product: any, i: number) => (
             <motion.div 
               layout
               key={product.id} 

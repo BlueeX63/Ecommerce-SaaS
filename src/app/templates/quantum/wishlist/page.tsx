@@ -6,7 +6,7 @@ import { Heart, ShoppingBag, X } from "lucide-react";
 import { useQuantum } from "../QuantumContext";
 
 export default function QuantumWishlistPage() {
-  const { wishlist, toggleWishlist, addToCart } = useQuantum();
+  const { basePath, wishlist, toggleWishlist, addToCart  } = useQuantum();
 
   return (
     <div className="min-h-screen bg-[#F9F9FB] pt-32 pb-24 px-6 md:px-12">
@@ -38,7 +38,7 @@ export default function QuantumWishlistPage() {
             <p className="font-inter text-gray-500 max-w-md mb-8">
               Explore our collection of conceptual art and homeware to find pieces that resonate with your space.
             </p>
-            <Link href="/templates/quantum/products">
+            <Link href={`${basePath}/products`}>
               <button className="px-8 py-4 bg-[#121212] text-white rounded-full font-bold font-inter uppercase tracking-widest text-sm hover:bg-[#111111] transition-colors shadow-xl">
                 Discover Collection
               </button>
@@ -64,7 +64,7 @@ export default function QuantumWishlistPage() {
                     <X className="w-4 h-4" />
                   </button>
 
-                  <Link href={`/templates/quantum/products/${item.id}`} className="block relative aspect-square rounded-2xl overflow-hidden bg-gray-100 mb-6">
+                  <Link href={`${basePath}/products/${item.id}`} className="block relative aspect-square rounded-2xl overflow-hidden bg-gray-100 mb-6">
                     <img 
                       src={item.image} 
                       alt={item.name}
@@ -76,7 +76,7 @@ export default function QuantumWishlistPage() {
                     <div className="text-xs uppercase tracking-widest text-[#111111] font-bold mb-2">
                       {item.category}
                     </div>
-                    <Link href={`/templates/quantum/products/${item.id}`}>
+                    <Link href={`${basePath}/products/${item.id}`}>
                       <h3 className="font-playfair text-xl font-bold text-[#121212] group-hover:text-[#111111] transition-colors mb-2">
                         {item.name}
                       </h3>

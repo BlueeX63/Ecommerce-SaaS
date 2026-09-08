@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart } from "lucide-react";
 
 export default function CanvasWishlistPage() {
-  const { currencySymbol } = useCart();
+  const { currencySymbol, basePath } = useCart();
   const { wishlist, toggleWishlist } = useCart();
   
   return (
@@ -31,7 +31,7 @@ export default function CanvasWishlistPage() {
       <section className="w-full pb-32">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border-l border-white/10">
           <AnimatePresence mode="popLayout">
-            {wishlist.map((product) => (
+            {wishlist.map((product: any) => (
               <motion.div
                 layout
                 initial={{ opacity: 0 }}

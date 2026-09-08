@@ -68,7 +68,10 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
           </div>
           
           <Link href={basePath || '/'} className={`font-heading text-3xl tracking-tighter absolute left-1/2 -translate-x-1/2 text-[#111111] transition-opacity duration-300 z-10 ${isSearchOpen ? 'opacity-0 sm:opacity-100 pointer-events-none sm:pointer-events-auto' : 'opacity-100'}`}>
-            {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Hexagon className="w-6 h-6" /><span>{tBrandName}</span></div>}
+            <div className="flex items-center gap-2">
+              {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <Hexagon className="w-6 h-6" />}
+              <span>{tBrandName}</span>
+            </div>
           </Link>
 
           <div className="flex items-center gap-6 relative">
@@ -155,7 +158,10 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
           >
             <div className="flex items-center justify-between p-6 border-b border-black/10">
               <span className="font-heading text-2xl tracking-tighter text-[#111111]">
-                {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Hexagon className="w-6 h-6" /><span>{tBrandName}</span></div>}
+                <div className="flex items-center gap-2">
+                  {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <Hexagon className="w-6 h-6" />}
+                  <span>{tBrandName}</span>
+                </div>
               </span>
               <button 
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -229,7 +235,10 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
     <footer className="border-t border-black/10 py-16 px-6 bg-[#F8F7F5] mt-auto">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
         <div>
-          <div className="font-heading text-2xl tracking-tighter mb-2 text-[#111111] uppercase">{tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Hexagon className="w-6 h-6" /><span>{tBrandName}</span></div>}</div>
+          <div className="flex items-center gap-2 font-heading text-2xl tracking-tighter mb-2 text-[#111111] uppercase">
+            {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <Hexagon className="w-6 h-6" />}
+            <span>{tBrandName}</span>
+          </div>
           <p className="text-sm text-black/50 max-w-xs">{footerText}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-8 sm:gap-16 text-sm text-[#111111]">
@@ -270,7 +279,7 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
     </footer>
   );
 }
-export default function StarterPreviewLayout({ children, initialCustomData, basePath }: { children: ReactNode, initialCustomData?: any, basePath?: string }) {
+export function StarterPreviewLayout({ children, initialCustomData, basePath }: { children: ReactNode, initialCustomData?: any, basePath?: string }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.includes('/auth/');
 
@@ -308,4 +317,9 @@ function ToastContainer() {
       )}
     </AnimatePresence>
   );
+}
+
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <StarterPreviewLayout basePath="/templates/minimalist">{children}</StarterPreviewLayout>;
 }

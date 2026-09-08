@@ -6,7 +6,7 @@ import { X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CanvasCartPage() {
-  const { currencySymbol } = useCart();
+  const { currencySymbol, basePath } = useCart();
   const { items, updateQuantity, removeFromCart, totalPrice } = useCart();
 
   const tax = totalPrice * 0.08;

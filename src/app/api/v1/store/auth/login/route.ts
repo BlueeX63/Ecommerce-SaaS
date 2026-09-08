@@ -28,15 +28,17 @@ export async function POST(req: Request) {
 
     const supabase = getAdminClient();
 
-    // Find the tenant by slug
+    // Find the tenant by slug (handle potential random suffixes from provisioning)
     const { data: tenantData, error: tenantError } = await supabase
       .from('tenant')
-      .select('tenant_id')
-      .eq('code', slug)
-      .single();
+      .select('tenant_id, code')
+      .ilike('code', `${slug}%`)
+      .maybeSingle();
 
     if (tenantError || !tenantData) {
-      return NextResponse.json({ error: 'Store not found' }, { status: 404 });
+      const { data: allTenants } = await supabase.from('tenant').select('tenant_id, code');
+      console.error("404 Debug:", { slug, tenantError, allTenants });
+      return NextResponse.json({ error: 'Store not found', debug: { slug, tenantError, allTenants } }, { status: 404 });
     }
 
     const tenantId = tenantData.tenant_id;
@@ -104,10 +106,10 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     let catalogSlug = undefined;
-    if (assignedCatalog?.catalogs && !Array.isArray(assignedCatalog.catalogs) && assignedCatalog.catalogs.slug) {
-      catalogSlug = assignedCatalog.catalogs.slug;
-    } else if (Array.isArray(assignedCatalog?.catalogs) && assignedCatalog.catalogs[0]?.slug) {
-       catalogSlug = assignedCatalog.catalogs[0].slug;
+    if (assignedCatalog?.catalogs && !Array.isArray(assignedCatalog.catalogs) && (assignedCatalog.catalogs as any).slug) {
+      catalogSlug = (assignedCatalog.catalogs as any).slug;
+    } else if (Array.isArray(assignedCatalog?.catalogs) && (assignedCatalog.catalogs[0] as any)?.slug) {
+       catalogSlug = (assignedCatalog.catalogs[0] as any).slug;
     }
 
     return NextResponse.json({
@@ -118,6 +120,6 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Store login error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: String(error) }, { status: 500 });
   }
 }

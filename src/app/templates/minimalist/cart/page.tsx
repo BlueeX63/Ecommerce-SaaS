@@ -52,7 +52,7 @@ export default function StarterCartPage() {
 
           {/* Items */}
           <div className="flex flex-col gap-8 py-8 border-b border-black/10">
-            {items.map((item, i) => (
+            {items.map((item: any, i: number) => (
               <motion.div 
                 key={item.product.id}
                 initial={{ opacity: 0, x: -20 }}

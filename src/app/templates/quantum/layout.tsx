@@ -12,14 +12,14 @@ import { useCustomization } from "@/hooks/useCustomization";
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-function QuantumNavigation() {
-  const { cart, wishlist, isCartOpen, setIsCartOpen, clearCart, updateQuantity , currencySymbol } = useQuantum();
+function QuantumNavigation({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+  const { cart, wishlist, isCartOpen, setIsCartOpen, clearCart, updateQuantity, currencySymbol } = useQuantum();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const pathname = usePathname();
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Quantum";
   const logoUrl = customData?.formData?.logoUrl || "";
 
@@ -29,7 +29,7 @@ function QuantumNavigation() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const cartItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const cartItemsCount = cart.reduce((acc: any, item: any) => acc + item.quantity, 0);
 
   const handleCheckout = () => {
     setIsCheckingOut(true);
@@ -61,13 +61,16 @@ function QuantumNavigation() {
       >
         <div className="max-w-[1600px] mx-auto px-6 md:px-12 flex items-center justify-between">
           
-          <Link href="/templates/quantum" className="flex items-center gap-3 group z-50 relative">
+          <Link href={basePath || "/"} className="flex items-center gap-3 group z-50 relative">
             <div className="relative flex items-center justify-center w-10 h-10 overflow-hidden rounded-full bg-[#121212] group-hover:bg-[#111111] transition-colors duration-500">
               <Infinity className="w-5 h-5 text-white" />
               <div className="absolute inset-0 bg-gradient-to-tr from-[#FF4500]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
             <span className={`text-2xl font-bold tracking-tight text-[#121212] ${playfair.className}`}>
-              {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Atom className="w-6 h-6" /><span>{brandName}</span></div>}
+              <div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Atom className="w-6 h-6" />}
+                <span>{brandName}</span>
+              </div>
             </span>
           </Link>
 
@@ -94,11 +97,11 @@ function QuantumNavigation() {
           </nav>
 
           <div className="flex items-center gap-6 z-50 relative">
-            <Link href="/templates/quantum/profile" className="hidden md:flex relative group p-2">
+            <Link href={`${basePath}/profile`} className="hidden md:flex relative group p-2">
               <User className="w-5 h-5 text-gray-500 group-hover:text-[#111111] transition-colors" />
             </Link>
 
-            <Link href="/templates/quantum/wishlist" className="hidden md:flex relative group p-2">
+            <Link href={`${basePath}/wishlist`} className="hidden md:flex relative group p-2">
               <Heart className="w-5 h-5 text-gray-500 group-hover:text-[#FF4500] transition-colors" />
               {wishlist.length > 0 && (
                 <span className="absolute top-0 right-0 w-4 h-4 bg-[#FF4500] text-white text-[10px] font-bold flex items-center justify-center rounded-full">
@@ -145,10 +148,10 @@ function QuantumNavigation() {
                 </Link>
               ))}
               <div className="flex gap-8 mt-12">
-                <Link href="/templates/quantum/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                <Link href={`${basePath}/profile`} onClick={() => setIsMobileMenuOpen(false)}>
                   <User className="w-8 h-8 text-gray-400" />
                 </Link>
-                <Link href="/templates/quantum/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="relative">
+                <Link href={`${basePath}/wishlist`} onClick={() => setIsMobileMenuOpen(false)} className="relative">
                   <Heart className="w-8 h-8 text-gray-400" />
                   {wishlist.length > 0 && (
                     <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#FF4500] text-white text-xs flex items-center justify-center rounded-full">
@@ -240,11 +243,11 @@ function QuantumNavigation() {
                   <div className="flex justify-between items-center mb-6">
                     <span className={`text-gray-500 font-medium ${inter.className}`}>Subtotal</span>
                     <span className={`text-xl font-bold text-[#121212] ${playfair.className}`}>
-                      ${cart.reduce((acc, item) => acc + (item.price * item.quantity), 0).toFixed(2)}
+                      ${cart.reduce((acc: any, item: any) => acc + (item.price * item.quantity), 0).toFixed(2)}
                     </span>
                   </div>
                   <Link 
-                    href="/templates/quantum/checkout"
+                    href={`${basePath}/checkout`}
                     onClick={() => setIsCartOpen(false)}
                     className="w-full py-4 rounded-full font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 group overflow-hidden relative bg-[#111111] text-white hover:bg-gray-800 shadow-lg shadow-black/20 hover:shadow-black/40"
                   >
@@ -260,12 +263,12 @@ function QuantumNavigation() {
   );
 }
 
-function QuantumFooter() {
-  const customData = useCustomization();
+function QuantumFooter({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Quantum";
   const logoUrl = customData?.formData?.logoUrl || "";
   const footerText = customData?.formData?.footerText || "Designing the future of living spaces. We merge conceptual art with functional everyday objects to create a truly transcendent environment.";
-  const copyrightText = customData?.formData?.copyrightText || `© ${new Date().getFullYear()} ${logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Atom className="w-6 h-6" /><span>{brandName}</span></div>} Design Studio. All rights reserved.`;
+  const copyrightText = customData?.formData?.copyrightText || `© ${new Date().getFullYear()} ${brandName} Design Studio. All rights reserved.`;
   const socialInsta = customData?.formData?.socialInsta || "#";
   const socialTwitter = customData?.formData?.socialTwitter || "#";
   const socialFacebook = customData?.formData?.socialFacebook || "#";
@@ -275,9 +278,12 @@ function QuantumFooter() {
       <div className="max-w-[1600px] mx-auto px-6 md:px-12 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-24 mb-16">
           <div className="md:col-span-2">
-            <Link href="/templates/quantum" className="flex items-center gap-2 mb-8">
+            <Link href={basePath || "/"} className="flex items-center gap-2 mb-8">
               <Infinity className="w-6 h-6 text-[#111111]" />
-              <span className={`text-2xl font-bold tracking-tight text-[#121212] ${playfair.className}`}>{logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Atom className="w-6 h-6" /><span>{brandName}</span></div>}</span>
+              <span className={`text-2xl font-bold tracking-tight text-[#121212] ${playfair.className}`}><div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Atom className="w-6 h-6" />}
+                <span>{brandName}</span>
+              </div></span>
             </Link>
             <p className={`text-gray-500 max-w-md leading-relaxed ${inter.className}`}>
               {footerText}
@@ -286,9 +292,9 @@ function QuantumFooter() {
           <div>
             <h4 className={`text-sm font-bold text-[#121212] mb-6 tracking-wide uppercase ${inter.className}`}>Explore</h4>
             <ul className={`space-y-4 text-gray-500 ${inter.className}`}>
-              <li><Link href="/templates/quantum/products" className="hover:text-[#111111] transition-colors">Collection</Link></li>
-              <li><Link href="/templates/quantum/about" className="hover:text-[#111111] transition-colors">Philosophy</Link></li>
-              <li><Link href="/templates/quantum/contact" className="hover:text-[#111111] transition-colors">Contact</Link></li>
+              <li><Link href={`${basePath}/products`} className="hover:text-[#111111] transition-colors">Collection</Link></li>
+              <li><Link href={`${basePath}/about`} className="hover:text-[#111111] transition-colors">Philosophy</Link></li>
+              <li><Link href={`${basePath}/contact`} className="hover:text-[#111111] transition-colors">Contact</Link></li>
             </ul>
           </div>
           <div>
@@ -335,18 +341,25 @@ function ToastContainer() {
   );
 }
 
-export default function QuantumLayout({ children }: { children: ReactNode }) {
+export function QuantumLayout({ children, basePath, initialCustomData }: { children: ReactNode, basePath?: string, initialCustomData?: any }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.includes('/auth/');
 
   return (
     <QuantumProvider>
       <div className={`min-h-screen bg-[#F9F9FB] text-[#121212] selection:bg-[#111111] selection:text-white ${playfair.variable} ${inter.variable} font-sans flex flex-col overflow-x-hidden`}>
-        <QuantumNavigation />
+        <QuantumNavigation initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/quantum'} />
         <main className="flex-1">{children}</main>
-        <QuantumFooter />
+        <QuantumFooter initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/quantum'} />
         <ToastContainer />
       </div>
     </QuantumProvider>
   );
+}
+
+
+
+
+export default function Layout({ children, initialCustomData }: { children: React.ReactNode, initialCustomData?: any }) {
+  return <QuantumLayout basePath="/templates/quantum">{children}</QuantumLayout>;
 }

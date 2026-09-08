@@ -9,7 +9,7 @@ import { useCustomization } from "@/hooks/useCustomization";
 
 // Crazy 3D Card component
 function ProductCard3D({ product }: { product: any }) {
-  const { currencySymbol } = useVelocity();
+  const { basePath, currencySymbol  } = useVelocity();
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
 
@@ -35,7 +35,7 @@ function ProductCard3D({ product }: { product: any }) {
   };
 
   return (
-    <Link href={`/templates/velocity/products/${product.id}`} className="block perspective-1000">
+    <Link href={`${basePath}/products/${product.id}`} className="block perspective-1000">
       <motion.div
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -90,7 +90,8 @@ function ProductCard3D({ product }: { product: any }) {
   );
 }
 
-export default function VelocityHomePage() {
+export default function VelocityHomePage({ initialProducts, initialCustomData }: any) {
+  const { basePath } = useVelocity();
   const { currencySymbol } = useVelocity();
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: containerRef });
@@ -100,7 +101,7 @@ export default function VelocityHomePage() {
   const scale = useTransform(smoothProgress, [0, 1], [1, 1.2]);
   const yOffset = useTransform(smoothProgress, [0, 1], ["0%", "20%"]);
 
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Velocity";
   const heroSubtitle = customData?.formData?.heroSubtitle || "System // Override // Active";
   const primaryCta = customData?.formData?.primaryCta || "Initialize Sequence";
@@ -154,7 +155,7 @@ export default function VelocityHomePage() {
             {heroSubtitle}
           </motion.p>
 
-          <Link href="/templates/velocity/products">
+          <Link href={`${basePath}/products`}>
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -201,7 +202,7 @@ export default function VelocityHomePage() {
               {featuredSubtitle}
             </p>
           </div>
-          <Link href="/templates/velocity/products" className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:text-[#00f0ff] transition-colors">
+          <Link href={`${basePath}/products`} className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:text-[#00f0ff] transition-colors">
             <span className="relative">
               {viewAllText}
               <span className="absolute -bottom-1 left-0 w-full h-[1px] bg-[#00f0ff] scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
@@ -211,7 +212,7 @@ export default function VelocityHomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-          {VELOCITY_PRODUCTS.slice(0, 3).map((product) => (
+          {(initialProducts || VELOCITY_PRODUCTS).slice(0, 3).map((product: any) => (
             <ProductCard3D key={product.id} product={product} />
           ))}
         </div>

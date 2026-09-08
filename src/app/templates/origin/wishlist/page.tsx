@@ -5,7 +5,7 @@ import { useCart } from "../CartContext";
 import { Heart } from "lucide-react";
 
 export default function OriginWishlistPage() {
-  const { wishlist, addToCart, toggleWishlist , currencySymbol } = useCart();
+  const { wishlist, addToCart, toggleWishlist , currencySymbol, basePath } = useCart();
 
   return (
     <div className="w-full bg-[#fdfbf7] min-h-screen pt-12 pb-32 px-6">
@@ -21,7 +21,7 @@ export default function OriginWishlistPage() {
 
         {wishlist.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-            {wishlist.map((product) => (
+            {wishlist.map((product: any) => (
               <div
                 key={product.id}
                 className="group flex flex-col gap-4 animate-in fade-in duration-700"

@@ -20,7 +20,6 @@ export async function POST(req: Request) {
       }
 
       const supabase = getAdminClient();
-      const customerId = session.customerId || session.sub;
 
       // 1. Get Address
       const { data: address, error: addressError } = await supabase

@@ -1,4 +1,5 @@
 "use client";
+import { useCart } from "../../CartContext";
 
 import { FirebasePhoneSignup } from "@/components/auth/FirebasePhoneSignup";
 

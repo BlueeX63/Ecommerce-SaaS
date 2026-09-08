@@ -9,9 +9,9 @@ import { useState } from "react";
 
 export default function HorizonProductDetail() {
   const params = useParams();
-  const { addToCart, toggleWishlist, wishlist } = useHorizon();
+  const { addToCart, toggleWishlist, wishlist, basePath } = useHorizon();
   const id = params?.id as string;
-  const product = HORIZON_PRODUCTS.find(p => p.id === id) || HORIZON_PRODUCTS[0];
+  const product = HORIZON_PRODUCTS.find((p: any) => p.id === id) || HORIZON_PRODUCTS[0];
   
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -221,7 +221,7 @@ export default function HorizonProductDetail() {
                 {reviews.length === 0 ? (
                   <p className="font-outfit text-sm font-light text-black/50 italic">No feedback available for this asset yet.</p>
                 ) : (
-                  reviews.map(review => (
+                  reviews.map((review: any) => (
                     <div key={review.id} className="bg-white p-8 border border-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.02)]">
                       <div className="flex justify-between items-start mb-4">
                         <div>

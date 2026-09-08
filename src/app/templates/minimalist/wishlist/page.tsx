@@ -37,7 +37,7 @@ export default function StarterWishlistPage() {
           layout
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16"
         >
-          {wishlist.map((product, i) => (
+          {wishlist.map((product: any, i: number) => (
             <motion.div 
               layout
               key={product.id} 
@@ -60,7 +60,7 @@ export default function StarterWishlistPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        addToCart(product);
+                        addToCart(product as any);
                       }}
                       className="flex-1 bg-white/90 backdrop-blur-sm text-[#111111] py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#FF4D00] hover:text-white transition-colors"
                     >
@@ -70,7 +70,7 @@ export default function StarterWishlistPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        toggleWishlist(product);
+                        toggleWishlist(product as any);
                       }}
                       className="w-12 flex items-center justify-center bg-white/90 backdrop-blur-sm text-[#111111] hover:bg-[#FF4D00] hover:text-white transition-colors"
                     >

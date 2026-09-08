@@ -1,9 +1,11 @@
 import { Redis } from '@upstash/redis';
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+const redis = redisUrl && redisToken 
+  ? new Redis({ url: redisUrl, token: redisToken }) 
+  : null;
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -14,7 +16,7 @@ export async function rateLimit(
 ): Promise<{ success: boolean; remaining: number; reset: number }> {
   try {
     // If Redis is not configured
-    if (!process.env.UPSTASH_REDIS_REST_URL) {
+    if (!redis) {
       if (isProduction) {
         // In production, DENY requests if rate limiter is not configured
         console.error('CRITICAL: Rate limiter Redis not configured in production. Denying request.');

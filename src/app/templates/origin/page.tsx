@@ -5,10 +5,10 @@ import { ALL_PRODUCTS, useCart } from "./CartContext";
 import { ArrowRight } from "lucide-react";
 import { useCustomization } from "@/hooks/useCustomization";
 
-export default function OriginHomePage() {
-  const { addToCart , currencySymbol } = useCart();
-  const featuredProducts = ALL_PRODUCTS.slice(0, 4);
-  const customData = useCustomization();
+export default function OriginHomePage({ initialProducts, initialCustomData }: any) {
+  const { addToCart , currencySymbol, basePath } = useCart();
+  const featuredProducts = (initialProducts || ALL_PRODUCTS).slice(0, 4);
+  const customData = useCustomization(initialCustomData);
   
   const heroTitle = customData?.formData?.heroTitle || "Return to The Source.";
   const heroSubtitle = customData?.formData?.heroSubtitle || "Goods crafted with intention, deeply rooted in natural materials and timeless design.";
@@ -43,7 +43,7 @@ export default function OriginHomePage() {
             </p>
             <div className="animate-in slide-in-from-bottom-10 fade-in duration-700 delay-300">
               <Link 
-                href="/templates/origin/products" 
+                href="/products" 
                 className="inline-flex items-center gap-4 bg-[#fdfbf7] text-[#402c21] px-8 py-4 text-sm font-bold tracking-widest uppercase hover:bg-[#a38c7f] hover:text-[#fdfbf7] transition-colors group"
               >
                 {primaryCta}
@@ -63,7 +63,7 @@ export default function OriginHomePage() {
               <p className="text-[#402c21]/70 font-medium">{featuredDesc}</p>
             </div>
             <Link 
-              href="/templates/origin/products" 
+              href="/products" 
               className="text-sm font-bold uppercase tracking-widest text-[#402c21] hover:text-[#a38c7f] transition-colors border-b-2 border-transparent hover:border-[#a38c7f] pb-1"
             >
               {viewAllText}
@@ -71,12 +71,12 @@ export default function OriginHomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuredProducts.map((product) => (
+            {featuredProducts.map((product: any) => (
               <div
                 key={product.id}
                 className="group flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-5 duration-700"
               >
-                <Link href={`/templates/origin/products/${product.id}`} className="block relative aspect-square overflow-hidden bg-[#e5e0dc] rounded-sm">
+                <Link href={`/products/${product.id}`} className="block relative aspect-square overflow-hidden bg-[#e5e0dc] rounded-sm">
                   <img 
                     src={product.image} 
                     alt={product.name} 
@@ -87,7 +87,7 @@ export default function OriginHomePage() {
                 <div className="flex flex-col">
                   <div className="text-[10px] uppercase tracking-widest text-[#a38c7f] font-bold mb-1">{product.category}</div>
                   <div className="flex justify-between items-start gap-4">
-                    <Link href={`/templates/origin/products/${product.id}`}>
+                    <Link href={`/products/${product.id}`}>
                       <h3 className="font-serif text-lg font-bold text-[#402c21] group-hover:text-[#a38c7f] transition-colors line-clamp-1">{product.name}</h3>
                     </Link>
                     <div className="text-base font-bold text-[#402c21]">{currencySymbol}{product.price.toFixed(2)}</div>
@@ -117,7 +117,7 @@ export default function OriginHomePage() {
             {manifestoText}
           </p>
           <Link 
-            href="/templates/origin/about" 
+            href="/about" 
             className="border-b-2 border-[#a38c7f] pb-1 text-[#402c21] hover:text-[#a38c7f] font-bold tracking-widest text-xs uppercase transition-colors"
           >
             {manifestoCta}

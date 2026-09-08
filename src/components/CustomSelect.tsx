@@ -39,7 +39,7 @@ export function CustomSelect({ options, value, onChange, name, placeholder, clas
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] hover:border-black/[0.15] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm flex items-center justify-between transition-colors ${isOpen ? 'border-black/[0.15] bg-black/[0.04]' : ''}`}
+        className={`w-full px-4 py-3 bg-[#F9F9F9] border border-black/[0.05] rounded-xl focus:outline-none focus:border-black/20 focus:bg-white focus:ring-4 focus:ring-black/5 text-sm flex items-center justify-between transition-all duration-300 ${isOpen ? 'border-black/[0.15] bg-black/[0.04]' : ''}`}
       >
         <span className={selectedOption ? 'text-gray-900 font-medium' : 'text-gray-500'}>
           {selectedOption ? selectedOption.label : placeholder || 'Select an option'}

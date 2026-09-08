@@ -7,12 +7,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { QUANTUM_PRODUCTS, useQuantum } from "../../QuantumContext";
 
-export default function QuantumProductDetails({ params }: { params: Promise<{ id: string }> }) {
+export default function QuantumProductDetails({ params, initialProduct }: { params: Promise<{ id: string }>, initialProduct?: any }) {
   const resolvedParams = use(params);
-  const { addToCart, wishlist, toggleWishlist } = useQuantum();
+  const { basePath, addToCart, wishlist, toggleWishlist  } = useQuantum();
   const [activeTab, setActiveTab] = useState("description");
 
-  const product = QUANTUM_PRODUCTS.find(p => p.id === resolvedParams.id);
+  const product = initialProduct || QUANTUM_PRODUCTS.find((p: any) => p.id === resolvedParams.id);
 
   if (!product) {
     notFound();
@@ -25,7 +25,7 @@ export default function QuantumProductDetails({ params }: { params: Promise<{ id
       <div className="flex flex-col lg:flex-row h-full">
         {/* Left: Sticky Image Gallery */}
         <div className="w-full lg:w-1/2 lg:sticky lg:top-0 lg:h-screen bg-gray-100 relative overflow-hidden group">
-          <Link href="/templates/quantum/products" className="absolute top-32 left-8 z-20 flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-md rounded-full text-sm font-bold uppercase tracking-wider hover:bg-white hover:text-[#111111] transition-all font-inter shadow-sm">
+          <Link href={`${basePath}/products`} className="absolute top-32 left-8 z-20 flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-md rounded-full text-sm font-bold uppercase tracking-wider hover:bg-white hover:text-[#111111] transition-all font-inter shadow-sm">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
           

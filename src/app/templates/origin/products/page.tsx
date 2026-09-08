@@ -6,17 +6,17 @@ import { useState } from "react";
 import { Heart } from "lucide-react";
 import { useCustomization } from "@/hooks/useCustomization";
 
-export default function OriginProductsPage() {
-  const { addToCart, searchQuery, toggleWishlist, isInWishlist , currencySymbol } = useCart();
+export default function ({ initialProducts, initialCustomData }: any) {
+  const { addToCart, searchQuery, toggleWishlist, isInWishlist , currencySymbol, basePath } = useCart();
   const [activeCategory, setActiveCategory] = useState<string>("All");
   
-  const filteredProducts = ALL_PRODUCTS.filter(product => {
+  const filteredProducts = (initialProducts || ALL_PRODUCTS).filter((product: any) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === "All" || product.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   
   const shopTitle = customData?.formData?.shopTitle || "All Goods";
   const rawCategories = customData?.formData?.shopCategories || "All, Accessories, Home, Pantry, Decor, Apparel, Brewing, Apothecary, Office";
@@ -64,12 +64,12 @@ export default function OriginProductsPage() {
           <div className="w-full lg:w-3/4">
             {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-                {filteredProducts.map((product) => (
+                {filteredProducts.map((product: any) => (
                   <div
                     key={product.id}
                     className="group flex flex-col gap-4 animate-in fade-in duration-700"
                   >
-                    <Link href={`/templates/origin/products/${product.id}`} className="block relative aspect-[4/5] overflow-hidden bg-[#e5e0dc] rounded-sm">
+                    <Link href={`/products/${product.id}`} className="block relative aspect-[4/5] overflow-hidden bg-[#e5e0dc] rounded-sm">
                       <img 
                         src={product.image} 
                         alt={product.name} 
@@ -79,7 +79,7 @@ export default function OriginProductsPage() {
                     </Link>
                     <div className="flex flex-col">
                       <div className="text-[10px] uppercase tracking-widest text-[#a38c7f] font-bold mb-1">{product.category}</div>
-                      <Link href={`/templates/origin/products/${product.id}`}>
+                      <Link href={`/products/${product.id}`}>
                         <h3 className="font-serif text-xl font-bold text-[#402c21] group-hover:text-[#a38c7f] transition-colors mb-2">{product.name}</h3>
                       </Link>
                       <div className="text-base font-bold text-[#402c21]/80 mb-4">{currencySymbol}{product.price.toFixed(2)}</div>

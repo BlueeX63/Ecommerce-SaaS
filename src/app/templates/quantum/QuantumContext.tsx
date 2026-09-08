@@ -1,4 +1,5 @@
 "use client";
+import { usePathname } from "next/navigation";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
@@ -95,6 +96,7 @@ export interface CartItem extends QuantumProduct {
 }
 
 interface QuantumContextType {
+  basePath: string;
   currencySymbol: string;
   cart: CartItem[];
   addToCart: (product: QuantumProduct) => void;
@@ -117,6 +119,8 @@ interface QuantumContextType {
 const QuantumContext = createContext<QuantumContextType | undefined>(undefined);
 
 export function QuantumProvider({ children , initialCustomData }: { children: ReactNode, initialCustomData?: any  }) {
+  const pathname = usePathname();
+  const basePath = pathname?.startsWith('/templates/') ? '/templates/' + pathname.split('/')[2] : '';
 
   const symbolMap: Record<string, string> = {
     USD: "$", EUR: "€", GBP: "£", CAD: "C$", AUD: "A$", INR: "₹"
@@ -126,6 +130,7 @@ export function QuantumProvider({ children , initialCustomData }: { children: Re
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+  const { basePath } = useQuantum();
       if (event.data?.type === "MONOLITH_CUSTOMIZATION") {
         const currency = event.data.data?.formData?.currency || "USD";
         setCurrencySymbol(symbolMap[currency] || "$");
@@ -152,7 +157,7 @@ export function QuantumProvider({ children , initialCustomData }: { children: Re
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
-        return prev.map(item => 
+        return prev.map((item: any) => 
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
@@ -170,7 +175,7 @@ export function QuantumProvider({ children , initialCustomData }: { children: Re
       removeFromCart(productId);
       return;
     }
-    setCart(prev => prev.map(item => 
+    setCart(prev => prev.map((item: any) => 
       item.id === productId ? { ...item, quantity } : item
     ));
   };
@@ -233,6 +238,7 @@ export function QuantumProvider({ children , initialCustomData }: { children: Re
 
   return (
     <QuantumContext.Provider value={{
+        basePath,
         currencySymbol,
       cart,
       addToCart,

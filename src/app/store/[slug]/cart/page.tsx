@@ -5,8 +5,6 @@ import MinimalistCartPage from "@/app/templates/minimalist/cart/page";
 import EssenceCartPage from "@/app/templates/essence/cart/page";
 import OriginCartPage from "@/app/templates/origin/cart/page";
 import NexusProCartPage from "@/app/templates/nexus-pro/cart/page";
-import VelocityCartPage from "@/app/templates/velocity/cart/page";
-import QuantumCartPage from "@/app/templates/quantum/cart/page";
 
 export default async function StoreCartPage(props: any) {
   const { slug } = await (props.params || {});
@@ -41,8 +39,6 @@ export default async function StoreCartPage(props: any) {
   if (templateId === "starter-essence") PageComponent = EssenceCartPage;
   else if (templateId === "starter-origin") PageComponent = OriginCartPage;
   else if (templateId === "growth-nexus-pro") PageComponent = NexusProCartPage;
-  else if (templateId === "growth-velocity") PageComponent = VelocityCartPage;
-  else if (templateId === "growth-quantum") PageComponent = QuantumCartPage;
 
   return <PageComponent {...props} />;
 }

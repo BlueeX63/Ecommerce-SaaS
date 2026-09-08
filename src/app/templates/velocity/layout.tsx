@@ -20,7 +20,7 @@ function VelocityNavigation() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const pathname = usePathname();
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Velocity";
   const logoUrl = customData?.formData?.logoUrl || "";
 
@@ -56,10 +56,13 @@ function VelocityNavigation() {
       >
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
           
-          <Link href="/templates/velocity" className="flex items-center gap-2 group">
+          <Link href={basePath || "/"} className="flex items-center gap-2 group">
             <Zap className="w-8 h-8 text-[#00f0ff] group-hover:text-[#ff003c] transition-colors duration-500" />
             <span className={`text-2xl font-black uppercase tracking-tighter text-white ${orbitron.className}`}>
-              {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Zap className="w-6 h-6" /><span>{brandName}</span></div>}
+              <div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Zap className="w-6 h-6" />}
+                <span>{brandName}</span>
+              </div>
             </span>
           </Link>
 
@@ -81,11 +84,11 @@ function VelocityNavigation() {
           </nav>
 
           <div className="flex items-center gap-6">
-            <Link href="/templates/velocity/profile" className="relative group hidden md:block">
+            <Link href={`${basePath}/profile`} className="relative group hidden md:block">
               <User className="w-5 h-5 text-white/70 group-hover:text-[#00f0ff] transition-colors" />
             </Link>
 
-            <Link href="/templates/velocity/wishlist" className="relative group hidden md:block">
+            <Link href={`${basePath}/wishlist`} className="relative group hidden md:block">
               <Heart className="w-5 h-5 text-white/70 group-hover:text-[#ff003c] transition-colors" />
               {wishlist.length > 0 && (
                 <span className="absolute -top-2 -right-2 w-4 h-4 bg-[#ff003c] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-[0_0_10px_rgba(255,0,60,0.5)]">
@@ -180,7 +183,7 @@ function VelocityNavigation() {
                     </span>
                   </div>
                   <Link 
-                    href="/templates/velocity/checkout"
+                    href={`${basePath}/checkout`}
                     onClick={() => setIsCartOpen(false)}
                     className={`w-full py-4 font-black uppercase tracking-[0.2em] text-sm transition-colors flex items-center justify-center gap-2 group bg-[#00f0ff] text-black hover:bg-white`}
                   >
@@ -196,8 +199,8 @@ function VelocityNavigation() {
   );
 }
 
-function VelocityFooter() {
-  const customData = useCustomization();
+function VelocityFooter({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Velocity";
   const logoUrl = customData?.formData?.logoUrl || "";
   const footerText = customData?.formData?.footerText || "Engineered armor for the digital age. Pushing the boundaries of human performance with cutting-edge cybernetics.";
@@ -215,9 +218,12 @@ function VelocityFooter() {
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="md:col-span-2">
-            <Link href="/templates/velocity" className="flex items-center gap-2 mb-6">
+            <Link href={basePath || "/"} className="flex items-center gap-2 mb-6">
               <Zap className="w-6 h-6 text-[#00f0ff]" />
-              <span className={`text-xl font-black uppercase tracking-tighter text-white ${orbitron.className}`}>{logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Zap className="w-6 h-6" /><span>{brandName}</span></div>}</span>
+              <span className={`text-xl font-black uppercase tracking-tighter text-white ${orbitron.className}`}><div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Zap className="w-6 h-6" />}
+                <span>{brandName}</span>
+              </div></span>
             </Link>
             <p className={`text-white/50 text-sm max-w-sm leading-relaxed mb-6 ${spaceGrotesk.className}`}>
               {footerText}
@@ -243,8 +249,8 @@ function VelocityFooter() {
           <div className="col-span-1 md:col-span-2">
             <h4 className="text-[#00f0ff] text-[10px] font-black tracking-widest uppercase mb-6 font-space">{footerCol1}</h4>
             <ul className="space-y-4 font-space">
-              <li><Link href="/templates/velocity/products" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50 hover:shadow-[0_0_10px_rgba(0,240,255,0.5)]">Hardware</Link></li>
-              <li><Link href="/templates/velocity/products" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Enhancements</Link></li>
+              <li><Link href={`${basePath}/products`} className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50 hover:shadow-[0_0_10px_rgba(0,240,255,0.5)]">Hardware</Link></li>
+              <li><Link href={`${basePath}/products`} className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Enhancements</Link></li>
               <li><Link href="#" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Techwear</Link></li>
               <li><Link href="#" className="text-xs font-bold uppercase tracking-widest hover:text-[#ff003c] transition-colors text-[#ff003c]/70">Classified</Link></li>
             </ul>
@@ -253,8 +259,8 @@ function VelocityFooter() {
           <div className="col-span-1 md:col-span-2">
             <h4 className="text-[#00f0ff] text-[10px] font-black tracking-widest uppercase mb-6 font-space">{footerCol2}</h4>
             <ul className="space-y-4 font-space">
-              <li><Link href="/templates/velocity/about" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Origin Log</Link></li>
-              <li><Link href="/templates/velocity/contact" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Comm Link</Link></li>
+              <li><Link href={`${basePath}/about`} className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Origin Log</Link></li>
+              <li><Link href={`${basePath}/contact`} className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Comm Link</Link></li>
               <li><Link href="#" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Returns</Link></li>
               <li><Link href="#" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Support</Link></li>
             </ul>
@@ -263,9 +269,9 @@ function VelocityFooter() {
           <div className="col-span-1 md:col-span-2">
             <h4 className="text-[#00f0ff] text-[10px] font-black tracking-widest uppercase mb-6 font-space">{footerCol3}</h4>
             <ul className={`space-y-4 text-sm text-white/60 uppercase tracking-widest ${spaceGrotesk.className}`}>
-              <li><Link href="/templates/velocity/products" className="hover:text-[#00f0ff] transition-colors">Products</Link></li>
-              <li><Link href="/templates/velocity/about" className="hover:text-[#00f0ff] transition-colors">About Us</Link></li>
-              <li><Link href="/templates/velocity/contact" className="hover:text-[#00f0ff] transition-colors">Contact</Link></li>
+              <li><Link href={`${basePath}/products`} className="hover:text-[#00f0ff] transition-colors">Products</Link></li>
+              <li><Link href={`${basePath}/about`} className="hover:text-[#00f0ff] transition-colors">About Us</Link></li>
+              <li><Link href={`${basePath}/contact`} className="hover:text-[#00f0ff] transition-colors">Contact</Link></li>
             </ul>
             <ul className={`space-y-4 text-sm text-white/60 uppercase tracking-widest ${spaceGrotesk.className}`}>
               <li><Link href="#" className="hover:text-[#00f0ff] transition-colors">Terms of Service</Link></li>
@@ -282,7 +288,7 @@ function VelocityFooter() {
   );
 }
 
-export default function VelocityLayout({ children }: { children: ReactNode }) {
+export function VelocityLayout({ children, basePath, initialCustomData }: { children: ReactNode, basePath?: string, initialCustomData?: any }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.includes('/auth/');
 
@@ -291,8 +297,15 @@ export default function VelocityLayout({ children }: { children: ReactNode }) {
       <div className={`min-h-screen bg-[#050505] text-white selection:bg-[#ff003c] selection:text-white ${spaceGrotesk.variable} ${orbitron.variable} font-sans flex flex-col`}>
         <VelocityNavigation />
         <main className="flex-1">{children}</main>
-        <VelocityFooter />
+        <VelocityFooter initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/velocity'} />
       </div>
     </VelocityProvider>
   );
+}
+
+
+
+
+export default function Layout({ children, initialCustomData }: { children: React.ReactNode, initialCustomData?: any }) {
+  return <VelocityLayout basePath="/templates/velocity">{children}</VelocityLayout>;
 }

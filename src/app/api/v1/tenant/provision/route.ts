@@ -26,18 +26,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No tenant associated with user' }, { status: 400 });
     }
 
-    // 1. Update existing Tenant
-    const { error: tenantError } = await db.from('tenant').update({
+    // 1. Check if user has hit subscription limits
+    const { count: storeCount } = await db.from('tenant').select('*', { count: 'exact', head: true }).eq('created_by', session.userId);
+    // Simple check (ideally fetch plan limit from subscriptions table)
+    if (storeCount && storeCount >= 10) { // e.g., max 10 stores
+      return NextResponse.json({ error: 'Store limit reached for your subscription.' }, { status: 403 });
+    }
+
+    // 2. Insert NEW Tenant instead of updating
+    const { data: newTenant, error: tenantError } = await db.from('tenant').insert({
       tenant_name: formData.brandName,
       code: storeSlug,
-      description: `Tenant for ${formData.brandName}`
-    }).eq('tenant_id', tenantId);
+      description: `Tenant for ${formData.brandName}`,
+      created_by: session.userId
+    }).select('tenant_id').single();
 
     if (tenantError) throw tenantError;
+    
+    const newTenantId = newTenant.tenant_id;
 
-    // 2. Upsert Tenant Branding
+    // 3. Upsert Tenant Branding
     const { error: brandingError } = await db.from('tenant_branding').upsert({
-      tenant_id: tenantId,
+      tenant_id: newTenantId,
       logo_url: formData.logoUrl || formData.aboutHeroImage || '',
       primary_color: formData.primaryColor || '#000000',
       secondary_color: '#ffffff'
@@ -45,25 +55,25 @@ export async function POST(req: Request) {
 
     if (brandingError) throw brandingError;
 
-    // 3. Upsert Tenant Settings
+    // 4. Upsert Tenant Settings
     const { error: settingsError } = await db.from('tenant_settings').upsert({
-      tenant_id: tenantId,
+      tenant_id: newTenantId,
       setting_key: 'customization',
       setting_value: JSON.stringify({ ...formData, templateId })
     }, { onConflict: 'tenant_id,setting_key' });
 
     if (settingsError) throw settingsError;
     
-    // 4. Upsert Tenant Domain
+    // 5. Upsert Tenant Domain
     const { error: domainError } = await db.from('tenant_domain').upsert({
-      tenant_id: tenantId,
+      tenant_id: newTenantId,
       domain: `${storeSlug}.your-saas.com`,
       is_primary: true
     }, { onConflict: 'domain' });
 
     if (domainError) throw domainError;
 
-    return NextResponse.json({ success: true, storeSlug, tenantId });
+    return NextResponse.json({ success: true, storeSlug, tenantId: newTenantId });
   } catch (error: any) {
     console.error('Provisioning error:', error);
     return NextResponse.json({ error: 'Internal server error', details: error?.message || error }, { status: 500 });

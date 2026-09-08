@@ -87,7 +87,7 @@ export default function StarterTemplateHome({ initialCustomData, initialProducts
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-              {(initialProducts || ALL_PRODUCTS).slice(0, 4).map((product, i) => {
+              {(initialProducts || ALL_PRODUCTS).slice(0, 4).map((product: any, i: number) => {
                 const mappedProduct = {
                   id: product.product_id || product.id,
                   name: product.product_name || product.name,

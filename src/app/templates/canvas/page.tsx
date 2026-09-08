@@ -6,9 +6,8 @@ import { useCart, ALL_PRODUCTS } from "./CartContext";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function CanvasHomePage() {
-  const { currencySymbol } = useCart();
+ export default function Page({ initialCustomData }: any) {
+  const { currencySymbol, basePath } = useCart();
   const featuredProducts = ALL_PRODUCTS.slice(0, 4);
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -19,7 +18,7 @@ export default function CanvasHomePage() {
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const heroHeadline = customData?.formData?.heroHeadline || "Canvas.";
   const heroSubtext = customData?.formData?.heroSubtext || "A study in restraint. High-fidelity objects stripped of all ornamentation.";
   const primaryCta = customData?.formData?.primaryCta || "Enter Archive";
@@ -144,7 +143,7 @@ export default function CanvasHomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 border-l border-white/10">
-            {featuredProducts.map((product, index) => (
+            {featuredProducts.map((product: any, index: number) => (
               <Link 
                 key={product.id} 
                 href={`/templates/canvas/products/${product.id}`}

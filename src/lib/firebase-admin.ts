@@ -19,4 +19,10 @@ if (!getApps().length) {
   }
 }
 
-export const adminAuth = getAuth();
+let authInstance = null;
+try {
+  authInstance = getAuth();
+} catch (e) {
+  console.warn('Firebase admin getAuth() failed. Firebase features will not work.');
+}
+export const adminAuth = authInstance as any;

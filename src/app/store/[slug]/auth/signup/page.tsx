@@ -44,12 +44,19 @@ function PremiumSignupContent() {
     setIsLoading(true);
 
     try {
+      // DUMMY OTP SYSTEM
+      console.log("DUMMY OTP SYSTEM ACTIVE: Any OTP will work.");
+      setConfirmationResult({} as any); // Mock confirmation result
+      setOtpSent(true);
+      setIsLoading(false);
+      /*
       const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`; // Fallback to +91 if no country code
       const appVerifier = (window as any).recaptchaVerifier;
       const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       setConfirmationResult(confirmation);
       setOtpSent(true);
       setIsLoading(false);
+      */
     } catch (err: any) {
       setError(err.message || "Failed to send OTP. Please check the phone number.");
       setIsLoading(false);
@@ -71,9 +78,13 @@ function PremiumSignupContent() {
     setIsLoading(true);
 
     try {
+      // DUMMY OTP SYSTEM
+      const idToken = "dummy_token";
+      /*
       // Verify OTP
       const result = await confirmationResult.confirm(otp);
       const idToken = await result.user.getIdToken(true);
+      */
 
       const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
 

@@ -10,7 +10,7 @@ import { useCustomization } from "@/hooks/useCustomization";
 
 // Reusing the 3D card from home page
 function ProductCard3D({ product }: { product: any }) {
-  const { toggleWishlist, wishlist , currencySymbol } = useVelocity();
+  const { basePath, toggleWishlist, wishlist , currencySymbol  } = useVelocity();
   const isWishlisted = wishlist.some((item: any) => item.id === product.id);
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
@@ -46,7 +46,7 @@ function ProductCard3D({ product }: { product: any }) {
         style={{ transformStyle: "preserve-3d" }}
         className="relative aspect-[3/4] rounded-sm border border-[#00f0ff]/20 bg-[#050505] overflow-visible group"
       >
-        <Link href={`/templates/velocity/products/${product.id}`} className="absolute inset-0 z-10" />
+        <Link href={`${basePath}/products/${product.id}`} className="absolute inset-0 z-10" />
         <div 
           className="absolute inset-0 bg-[#00f0ff] opacity-0 group-hover:opacity-10 transition-opacity duration-300 blur-xl"
           style={{ transform: "translateZ(-20px)" }}
@@ -110,7 +110,7 @@ function ProductCard3D({ product }: { product: any }) {
   );
 }
 
-function ProductsContent() {
+function ProductsContent({ initialProducts, initialCustomData }: any) {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -129,13 +129,13 @@ function ProductsContent() {
     else setSelectedWearType("All");
   }, [searchParams]);
 
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const shopTitle = customData?.formData?.shopTitle || "Catalog";
   const rawCategories = customData?.formData?.shopCategories;
   
   const categories = rawCategories
     ? rawCategories.split(",").map((c: string) => c.trim()).filter(Boolean)
-    : ["All", ...Array.from(new Set(VELOCITY_PRODUCTS.map(p => p.category)))];
+    : ["All", ...Array.from(new Set(VELOCITY_PRODUCTS.map((p: any) => p.category)))];
     
   const wearTypes = ["All", "top", "bottom", "accessory", "footwear", "tech"];
 
@@ -144,15 +144,15 @@ function ProductsContent() {
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+      result = result.filter((p: any) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
     }
 
     if (selectedCategory !== "All") {
-      result = result.filter(p => p.category === selectedCategory);
+      result = result.filter((p: any) => p.category === selectedCategory);
     }
 
     if (selectedWearType !== "All") {
-      result = result.filter(p => p.wearType === selectedWearType);
+      result = result.filter((p: any) => p.wearType === selectedWearType);
     }
 
     if (sortBy === "price_low") result.sort((a, b) => a.price - b.price);
@@ -372,7 +372,7 @@ function ProductsContent() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 gap-y-16">
               <AnimatePresence mode="popLayout">
-                {filteredProducts.map((product, index) => (
+                {filteredProducts.map((product: any, index: number) => (
                   <motion.div 
                     layout
                     initial={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
@@ -394,10 +394,10 @@ function ProductsContent() {
   );
 }
 
-export default function ProductsPage() {
+export default function ({ initialProducts, initialCustomData }: any) {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading products...</div>}>
-      <ProductsContent />
+      <ProductsContent initialProducts={initialProducts} initialCustomData={initialCustomData} />
     </Suspense>
   );
 }

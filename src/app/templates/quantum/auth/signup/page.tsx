@@ -1,4 +1,5 @@
 "use client";
+import { useQuantum } from "../../QuantumContext";
 
 import { FirebasePhoneSignup } from "@/components/auth/FirebasePhoneSignup";
 

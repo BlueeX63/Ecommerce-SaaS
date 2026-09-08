@@ -138,6 +138,7 @@ export interface CartItem extends HorizonProduct {
 }
 
 interface HorizonContextType {
+  basePath: string;
   currencySymbol: string;
   cart: CartItem[];
   addToCart: (product: HorizonProduct) => void;
@@ -159,7 +160,7 @@ interface HorizonContextType {
 
 const HorizonContext = createContext<HorizonContextType | undefined>(undefined);
 
-export function HorizonProvider({ children , initialCustomData }: { children: ReactNode, initialCustomData?: any  }) {
+export function HorizonProvider({ children , initialCustomData , basePath = '/templates/horizon' }: { children: ReactNode, initialCustomData?: any  , basePath?: string }) {
 
   const symbolMap: Record<string, string> = {
     USD: "$", EUR: "€", GBP: "£", CAD: "C$", AUD: "A$", INR: "₹"
@@ -195,7 +196,7 @@ export function HorizonProvider({ children , initialCustomData }: { children: Re
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
-        return prev.map(item => 
+        return prev.map((item: any) => 
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
@@ -213,7 +214,7 @@ export function HorizonProvider({ children , initialCustomData }: { children: Re
       removeFromCart(productId);
       return;
     }
-    setCart(prev => prev.map(item => 
+    setCart(prev => prev.map((item: any) => 
       item.id === productId ? { ...item, quantity } : item
     ));
   };
@@ -275,7 +276,7 @@ export function HorizonProvider({ children , initialCustomData }: { children: Re
   };
 
   return (
-    <HorizonContext.Provider value={{
+    <HorizonContext.Provider value={{ basePath,
         currencySymbol,
       cart,
       addToCart,

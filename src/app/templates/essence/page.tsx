@@ -7,8 +7,8 @@ import { ALL_PRODUCTS, useCart } from "./CartContext";
 import { useRef } from "react";
 import { useCustomization } from "@/hooks/useCustomization";
 
-export default function EssenceHomePage() {
-  const { currencySymbol } = useCart();
+export default function EssenceHomePage({ initialProducts, initialCustomData }: any) {
+  const { basePath, currencySymbol  } = useCart();
   const { addToCart } = useCart();
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -16,8 +16,8 @@ export default function EssenceHomePage() {
     offset: ["start start", "end end"]
   });
 
-  const featuredProducts = ALL_PRODUCTS.slice(0, 4);
-  const customData = useCustomization();
+  const featuredProducts = (initialProducts || ALL_PRODUCTS).slice(0, 4);
+  const customData = useCustomization(initialCustomData);
   
   const preTitle = customData?.formData?.preTitle || "New Collection 2026";
   const heroTitle = customData?.formData?.heroTitle || "Timeless Form";
@@ -95,7 +95,7 @@ export default function EssenceHomePage() {
               transition={{ duration: 1, delay: 1.4 }}
             >
               <Link 
-                href="/templates/essence/products" 
+                href={`${basePath}/products`} 
                 className="group flex items-center gap-4 text-[#4A3F35] hover:text-[#A69684] transition-colors"
               >
                 <span className="text-xs uppercase tracking-[0.2em] font-bold border-b border-[#4A3F35] group-hover:border-[#A69684] pb-1">{heroCta}</span>
@@ -139,7 +139,7 @@ export default function EssenceHomePage() {
               <p className="text-[#4A3F35]/60 text-sm">{featuredDesc}</p>
             </div>
             <Link 
-              href="/templates/essence/products" 
+              href={`${basePath}/products`} 
               className="text-xs uppercase tracking-[0.2em] text-[#4A3F35] border-b border-[#4A3F35]/20 pb-1 hover:border-[#4A3F35] transition-colors"
             >
               {viewAllText}
@@ -147,7 +147,7 @@ export default function EssenceHomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-            {featuredProducts.map((product, idx) => (
+            {featuredProducts.map((product: any, idx: number) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 40 }}
@@ -156,7 +156,7 @@ export default function EssenceHomePage() {
                 transition={{ duration: 0.8, delay: idx * 0.1 }}
                 className="group cursor-pointer"
               >
-                <Link href={`/templates/essence/products/${product.id}`}>
+                <Link href={`${basePath}/products/${product.id}`}>
                   <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-[#E3D8C8]">
                     <img 
                       src={product.image} 
@@ -206,7 +206,7 @@ export default function EssenceHomePage() {
               {editorialDesc}
             </p>
             <Link 
-              href="/templates/essence/about" 
+              href={`${basePath}/about`} 
               className="text-xs uppercase tracking-[0.2em] text-[#4A3F35] border-b border-[#4A3F35] pb-1 hover:text-[#A69684] hover:border-[#A69684] transition-colors"
             >
               {editorialCta}

@@ -5,9 +5,8 @@ import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import Link from "next/link";
 import { MoveRight } from "lucide-react";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function HorizonAbout() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   
   const tTitle = customData?.formData?.aboutTitle || "We believe that aesthetic excellence is not a luxury, but a fundamental requirement for the modern digital experience.";
   const tContent1 = customData?.formData?.aboutText1 || "Uncompromising Quality.";

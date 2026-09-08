@@ -1,4 +1,5 @@
 "use client";
+import { useVelocity } from "../../VelocityContext";
 
 import { FirebasePhoneSignup } from "@/components/auth/FirebasePhoneSignup";
 

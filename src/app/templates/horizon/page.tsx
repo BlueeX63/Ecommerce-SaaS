@@ -54,7 +54,7 @@ function KineticHero() {
   const opacityOrb = useTransform(scrollYProgress, [0, 1], [1, 0]);
   const yText = useTransform(scrollYProgress, [0, 1], ["0%", "-50%"]);
 
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "HORIZON";
   const heroTitle = customData?.formData?.heroTitle || "Pure Vision.";
   const heroSubtitle = customData?.formData?.heroSubtitle || "";
@@ -148,7 +148,7 @@ function KineticHero() {
 }
 
 function ProductCard({ product, index }: { product: any; index: number }) {
-  const { currencySymbol } = useHorizon();
+  const { currencySymbol, basePath } = useHorizon();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const scrollVelocity = useVelocity(scrollY);
@@ -193,12 +193,11 @@ function ProductCard({ product, index }: { product: any; index: number }) {
     </motion.div>
   );
 }
-
-export default function HorizonHome() {
-  const { currencySymbol } = useHorizon();
+ export default function Page({ initialCustomData }: any) {
+  const { currencySymbol, basePath } = useHorizon();
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const shopTitle = customData?.formData?.shopTitle || "Curated Selection";
   const ethosTitle = customData?.formData?.ethosTitle || "Our Ethos";
   const ethosText = customData?.formData?.ethosText || "Design is not just what it looks like and feels like. \nDesign is how it works.";
@@ -237,7 +236,7 @@ export default function HorizonHome() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-32">
-            {HORIZON_PRODUCTS.slice(0, 4).map((product, idx) => (
+            {HORIZON_PRODUCTS.slice(0, 4).map((product: any, idx: number) => (
               <ProductCard key={product.id} product={product} index={idx} />
             ))}
           </div>

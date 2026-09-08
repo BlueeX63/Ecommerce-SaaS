@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export type Review = {
   id: string;
@@ -134,6 +135,7 @@ type CartItem = {
 };
 
 type ShopContextType = {
+  basePath: string;
   currencySymbol: string;
   // Cart
   cartItems: CartItem[];
@@ -166,6 +168,8 @@ type ShopContextType = {
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export function ShopProvider({ children , initialCustomData }: { children: ReactNode, initialCustomData?: any  }) {
+  const pathname = usePathname();
+  const basePath = pathname?.startsWith('/templates/') ? '/templates/' + pathname.split('/')[2] : '';
 
   const symbolMap: Record<string, string> = {
     USD: "$", EUR: "€", GBP: "£", CAD: "C$", AUD: "A$", INR: "₹"
@@ -299,6 +303,7 @@ export function ShopProvider({ children , initialCustomData }: { children: React
   return (
     <ShopContext.Provider
       value={{
+        basePath,
         currencySymbol,
         cartItems,
         addToCart,

@@ -2,10 +2,8 @@
 
 import { motion } from "framer-motion";
 
-import { useCustomization } from "@/hooks/useCustomization";
-
-export default function StarterContactPage() {
-  const customData = useCustomization();
+import { useCustomization } from "@/hooks/useCustomization"; export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
 
   const tPreTitle = customData?.formData?.contactPreTitle || "Get In Touch";
   const tTitle = customData?.formData?.contactTitle || "Contact Us";

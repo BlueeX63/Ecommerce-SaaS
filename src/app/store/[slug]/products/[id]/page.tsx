@@ -48,12 +48,16 @@ export default async function StoreProductDetailsPage({
 
   if (!product) return notFound();
 
-  let PageComponent = MinimalistProductDetailsPage;
+  const { mapDatabaseProductToTemplate } = await import("@/lib/utils/product-mapper");
+  const mappedProduct = mapDatabaseProductToTemplate(product);
+
+  let PageComponent: any = MinimalistProductDetailsPage;
   if (templateId === "starter-essence") PageComponent = EssenceProductDetailsPage;
   else if (templateId === "starter-origin") PageComponent = OriginProductDetailsPage;
   else if (templateId === "growth-nexus-pro") PageComponent = NexusProProductDetailsPage;
   else if (templateId === "growth-velocity") PageComponent = VelocityProductDetailsPage;
   else if (templateId === "growth-quantum") PageComponent = QuantumProductDetailsPage;
 
-  return <PageComponent params={params} initialProduct={product} />;
+  const FinalPageComponent = PageComponent as any;
+  return <FinalPageComponent params={params} initialProduct={mappedProduct} />;
 }

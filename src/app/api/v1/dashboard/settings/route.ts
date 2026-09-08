@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { redis } from "@/lib/redis";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -99,6 +100,11 @@ export async function POST(req: Request) {
     if (upsertError) {
       console.error(upsertError);
       return NextResponse.json({ error: "Failed to save settings" }, { status: 500 });
+    }
+
+    // 5. Clear Cache
+    if (redis) {
+      await redis.del(`tenant_settings:${tenantId}`);
     }
 
     return NextResponse.json(newCustomization);

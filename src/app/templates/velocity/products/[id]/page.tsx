@@ -7,13 +7,12 @@ import { ArrowLeft, Zap, Target, Activity, Check, Heart } from "lucide-react";
 import Link from "next/link";
 import { VELOCITY_PRODUCTS, useVelocity } from "../../VelocityContext";
 
-export default function VelocityProductDetails() {
+export default function VelocityProductDetails({ initialProduct }: any) {
   const { id } = useParams();
-  const basePath = '/templates/velocity';
   const router = useRouter();
-  const { addToCart, setIsCartOpen, toggleWishlist, wishlist , currencySymbol } = useVelocity();
+  const { addToCart, setIsCartOpen, toggleWishlist, wishlist , currencySymbol, basePath } = useVelocity();
   
-  const product = VELOCITY_PRODUCTS.find(p => p.id === id);
+  const product = initialProduct || VELOCITY_PRODUCTS.find((p: any) => p.id === id);
   const [selectedSize, setSelectedSize] = useState("L");
   const [isAdding, setIsAdding] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -49,7 +48,7 @@ export default function VelocityProductDetails() {
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
         
         <Link 
-          href="/templates/velocity/products"
+          href={`${basePath}/products`}
           className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#00f0ff] hover:text-white transition-colors mb-12 font-space"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Products
@@ -143,7 +142,7 @@ export default function VelocityProductDetails() {
               <div className="absolute top-0 left-0 w-2 h-full bg-[#ff003c]" />
               <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4 font-orbitron">Technical Specs</h3>
               <ul className="space-y-2 text-sm font-space text-white/70">
-                {product.specs.map((spec, i) => (
+                {product.specs.map((spec:any, i:any) => (
                   <li key={i} className="flex items-center gap-2">
                     <span className="text-[#00f0ff]">&gt;</span> {spec}
                   </li>
@@ -214,7 +213,7 @@ export default function VelocityProductDetails() {
               {[
                 { id: 'OP-42', rating: 5, date: '2026-07-26', text: 'Flawless integration with my neural link. The materials withstand extreme heat. Essential for Sector 4 drops.' },
                 { id: 'OP-99', rating: 4, date: '2026-07-21', text: 'Solid build quality. Took a hit from an EMP and circuitry remained intact. Sizing runs slightly large.' }
-              ].map((review, i) => (
+              ].map((review: any, i: number) => (
                 <div key={i} className="bg-white/5 border border-white/10 p-6">
                   <div className="flex justify-between items-start mb-4 border-b border-white/10 pb-4">
                     <div>
@@ -242,8 +241,8 @@ export default function VelocityProductDetails() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {VELOCITY_PRODUCTS.filter(p => p.id !== product.id).slice(0, 3).map(related => (
-              <Link key={related.id} href={`/templates/velocity/products/${related.id}`} className="group bg-[#0a0a0a] border border-white/10 overflow-hidden relative block hover:border-[#00f0ff]/50 transition-colors">
+            {VELOCITY_PRODUCTS.filter((p: any) => p.id !== product.id).slice(0, 3).map(related => (
+              <Link key={related.id} href={`${basePath}/products/${related.id}`} className="group bg-[#0a0a0a] border border-white/10 overflow-hidden relative block hover:border-[#00f0ff]/50 transition-colors">
                 <div className="aspect-[4/3] overflow-hidden relative">
                   <img src={related.image} alt={related.name} className="w-full h-full object-cover grayscale mix-blend-lighten group-hover:grayscale-0 transition-all duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent opacity-90 pointer-events-none" />

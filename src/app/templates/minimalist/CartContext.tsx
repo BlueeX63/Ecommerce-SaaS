@@ -268,7 +268,7 @@ export function CartProvider({ children, initialBasePath, initialCustomData }: {
 
   return (
     <CartContext.Provider
-      value={{
+      value={{ basePath,
         items,
         addToCart,
         removeFromCart,
@@ -281,7 +281,6 @@ export function CartProvider({ children, initialBasePath, initialCustomData }: {
         searchQuery,
         setSearchQuery,
         currencySymbol,
-        basePath,
         wishlist,
         toggleWishlist,
         isInWishlist,

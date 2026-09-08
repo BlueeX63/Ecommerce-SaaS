@@ -21,7 +21,7 @@ export default function CatalogsPage() {
   
   // New Catalog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newCatalog, setNewCatalog] = useState({ name: '', type: 'GENERAL' });
+  const [newCatalog, setNewCatalog] = useState({ name: '', type: 'SPECIAL' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -88,7 +88,7 @@ export default function CatalogsPage() {
       
       setCatalogs([data.data, ...catalogs]);
       setIsDialogOpen(false);
-      setNewCatalog({ name: '', type: 'GENERAL' });
+      setNewCatalog({ name: '', type: 'SPECIAL' });
       alert(`Catalog created successfully! URL: ${getCatalogUrl(data.data.tenant_slug, data.data.slug)}`);
     } catch (err: any) {
       setError(err.message);
@@ -225,18 +225,7 @@ export default function CatalogsPage() {
                   />
                 </div>
 
-                <div className="space-y-2 relative">
-                  <label className="text-sm font-medium text-primary">Catalog Type</label>
-                  <CustomSelect
-                    name="catalogType"
-                    value={newCatalog.type}
-                    onChange={(val) => setNewCatalog({...newCatalog, type: val})}
-                    options={[
-                      { value: "GENERAL", label: "General (Public)" },
-                      { value: "SPECIAL", label: "Special (Restricted)" }
-                    ]}
-                  />
-                </div>
+                {/* Removed Catalog Type Selection */}
                 
                 <div className="flex justify-end gap-3 mt-8">
                   <button 

@@ -1,8 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-
-const basePath = '/templates/origin';
+import { usePathname } from "next/navigation";
 
 export type Product = {
   id: string;
@@ -72,8 +71,9 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children , initialCustomData }: { children: ReactNode, initialCustomData?: any  }) {
+export function CartProvider({ children , initialCustomData, basePath = '/templates/origin' }: { children: ReactNode, initialCustomData?: any, basePath?: string  }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const pathname = usePathname();
 
   const symbolMap: Record<string, string> = {
     USD: "$", EUR: "€", GBP: "£", CAD: "C$", AUD: "A$", INR: "₹"
@@ -263,9 +263,8 @@ export function CartProvider({ children , initialCustomData }: { children: React
 
   return (
     <CartContext.Provider
-      value={{
+      value={{ basePath,
         currencySymbol,
-        basePath,
         items,
         addToCart,
         removeFromCart,

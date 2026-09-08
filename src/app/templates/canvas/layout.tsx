@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCustomization } from "@/hooks/useCustomization";
 
 function CartFlyout() {
-  const { isCartOpen, setIsCartOpen, items, removeFromCart, updateQuantity, totalPrice, currencySymbol } = useCart();
+  const { cartCount, setIsCartOpen, wishlist } = useCart();
 
   return (
     <AnimatePresence>
@@ -45,7 +45,7 @@ function CartFlyout() {
                   <p className="font-serif text-2xl italic text-white/30">Empty.</p>
                 </div>
               ) : (
-                items.map((item) => (
+                items.map((item: any) => (
                   <div key={item.product.id} className="flex gap-8 group">
                     <div className="w-24 h-32 bg-white/5 flex-shrink-0 overflow-hidden relative">
                       <img
@@ -95,7 +95,7 @@ function CartFlyout() {
                   <span className="font-serif text-2xl">{currencySymbol}{totalPrice.toFixed(2)}</span>
                 </div>
                 <Link
-                  href="/templates/canvas/cart"
+                  href={`${basePath}/cart`}
                   onClick={() => setIsCartOpen(false)}
                   className="w-full py-4 border border-white text-white flex items-center justify-between px-6 text-[10px] uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-colors duration-500"
                 >
@@ -116,7 +116,7 @@ function Navigation() {
   const { cartCount, setIsCartOpen, wishlist } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Canvas.";
   const logoUrl = customData?.formData?.logoUrl || "";
 
@@ -147,10 +147,13 @@ function Navigation() {
             
           {/* Logo */}
           <Link
-            href="/templates/canvas"
+            href={basePath || "/"}
             className="font-serif text-2xl md:text-3xl tracking-tight uppercase text-white"
           >
-            {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Square className="w-6 h-6" /><span>{brandName}</span></div>}
+            <div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Square className="w-6 h-6" />}
+                <span>{brandName}</span>
+              </div>
           </Link>
 
           {/* Desktop Links */}
@@ -171,14 +174,14 @@ function Navigation() {
           {/* Right Side */}
           <div className="flex items-center gap-3 md:gap-6 lg:gap-8">
             <Link
-              href="/templates/canvas/profile"
+              href={`${basePath}/profile`}
               className="flex items-center gap-1.5 md:gap-2 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
             >
               <User className="w-4 h-4 md:w-5 md:h-5" />
             </Link>
 
             <Link
-              href="/templates/canvas/wishlist"
+              href={`${basePath}/wishlist`}
               className="flex items-center gap-1.5 md:gap-2 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
             >
               <Heart className="w-4 h-4 md:w-5 md:h-5" />
@@ -248,8 +251,8 @@ function Navigation() {
   );
 }
 
-function Footer() {
-  const customData = useCustomization();
+function Footer({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+  const customData = useCustomization(initialCustomData);
   
   const footerText = customData?.formData?.footerText || "A study in restraint.\nObjects of uncompromising quality.";
   const socialInsta = customData?.formData?.socialInsta || "#";
@@ -268,7 +271,7 @@ function Footer() {
           
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div>
-              <Link href="/templates/canvas" className="font-serif text-4xl tracking-tight uppercase text-white block mb-8">
+              <Link href={basePath || "/"} className="font-serif text-4xl tracking-tight uppercase text-white block mb-8">
                 {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : tBrandName}
               </Link>
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 leading-loose max-w-xs">
@@ -281,9 +284,9 @@ function Footer() {
           <div className="lg:col-span-2">
             <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-8">{footerCol1}</h3>
             <ul className="space-y-4">
-              <li><Link href="/templates/canvas" className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Home</Link></li>
-              <li><Link href="/templates/canvas/products" className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Collection</Link></li>
-              <li><Link href="/templates/canvas/about" className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Maison</Link></li>
+              <li><Link href={basePath || "/"} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Home</Link></li>
+              <li><Link href={`${basePath}/products`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Collection</Link></li>
+              <li><Link href={`${basePath}/about`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Maison</Link></li>
             </ul>
           </div>
 
@@ -292,7 +295,7 @@ function Footer() {
             <ul className="space-y-4">
               <li><Link href="#" className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Shipping</Link></li>
               <li><Link href="#" className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Returns</Link></li>
-              <li><Link href="/templates/canvas/contact" className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Contact</Link></li>
+              <li><Link href={`${basePath}/contact`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Contact</Link></li>
             </ul>
           </div>
           <div className="lg:col-span-4">
@@ -326,20 +329,27 @@ function Footer() {
   );
 }
 
-export default function CanvasLayout({ children }: { children: React.ReactNode }) {
+export function CanvasLayout({ children, basePath }: { children: React.ReactNode, basePath?: string, initialCustomData?: any }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.includes('/auth/');
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black font-sans flex flex-col">
-      <CartProvider>
+      <CartProvider basePath={basePath} initialCustomData={initialCustomData}>
         <Navigation />
         <CartFlyout />
         <main className="flex-grow flex flex-col w-full">
           {children}
         </main>
-        {!isAuthPage && <Footer />}
+        {!isAuthPage && <Footer initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/canvas'} />}
       </CartProvider>
     </div>
   );
+}
+
+
+
+
+export default function Layout({ children, initialCustomData }: { children: React.ReactNode, initialCustomData?: any }) {
+  return <CanvasLayout basePath="/templates/canvas">{children}</CanvasLayout>;
 }

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { getSession } from '@/lib/auth/session';
@@ -15,52 +16,53 @@ export async function GET() {
 
     if (error) throw error;
     
-    // Auto-seed categories from customization settings if empty
-    if (categories && categories.length === 0) {
-      const { data: settingsData } = await db.from('tenant_settings')
-        .select('setting_value')
-        .eq('tenant_id', session.tenantId)
-        .eq('setting_key', 'customization')
-        .maybeSingle();
-        
-      if (settingsData && settingsData.setting_value) {
-        let customData: any = {};
-        try {
-          // Handle possible double-stringified JSON depending on how it was saved
-          customData = typeof settingsData.setting_value === 'string' 
-            ? JSON.parse(settingsData.setting_value) 
-            : settingsData.setting_value;
-          if (typeof customData === 'string') {
-            customData = JSON.parse(customData);
-          }
-        } catch (e) {
-          console.error('Error parsing customization settings', e);
+    // Auto-seed missing categories from customization settings
+    const { data: settingsData } = await db.from('tenant_settings')
+      .select('setting_value')
+      .eq('tenant_id', session.tenantId)
+      .eq('setting_key', 'customization')
+      .maybeSingle();
+      
+    if (settingsData && settingsData.setting_value) {
+      let customData: any = {};
+      try {
+        // Handle possible double-stringified JSON depending on how it was saved
+        customData = typeof settingsData.setting_value === 'string' 
+          ? JSON.parse(settingsData.setting_value) 
+          : settingsData.setting_value;
+        if (typeof customData === 'string') {
+          customData = JSON.parse(customData);
         }
+      } catch (e) {
+        console.error('Error parsing customization settings', e);
+      }
 
-        const shopCategories = customData?.shopCategories || "";
-        if (shopCategories) {
-          const catsToInsert = shopCategories
-            .split(',')
-            .map((c: string) => c.trim())
-            .filter((c: string) => c && c.toLowerCase() !== 'all');
-            
-          if (catsToInsert.length > 0) {
-            const insertData = catsToInsert.map((c: string, index: number) => ({
-              tenant_id: session.tenantId,
-              category_name: c,
-              slug: c.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-              sort_order: index,
-              created_by: session.userId
-            }));
+      const shopCategories = customData?.shopCategories || "";
+      if (shopCategories) {
+        const expectedCats = shopCategories
+          .split(',')
+          .map((c: string) => c.trim())
+          .filter((c: string) => c && c.toLowerCase() !== 'all');
+          
+        const existingCatNames = new Set(categories?.map(c => c.category_name.toLowerCase()) || []);
+        const catsToInsert = expectedCats.filter((c: string) => !existingCatNames.has(c.toLowerCase()));
+          
+        if (catsToInsert.length > 0) {
+          const insertData = catsToInsert.map((c: string, index: number) => ({
+            tenant_id: session.tenantId,
+            category_name: c,
+            slug: c.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+            sort_order: (categories?.length || 0) + index,
+            created_by: session.userId
+          }));
 
-            const { data: insertedCats, error: insertError } = await db.from('categories')
-              .insert(insertData)
-              .select('*')
-              .order('sort_order', { ascending: true });
+          const { data: insertedCats, error: insertError } = await db.from('categories')
+            .insert(insertData)
+            .select('*');
 
-            if (!insertError && insertedCats) {
-              return NextResponse.json({ data: insertedCats });
-            }
+          if (!insertError && insertedCats) {
+            categories.push(...insertedCats);
+            categories.sort((a, b) => a.sort_order - b.sort_order);
           }
         }
       }

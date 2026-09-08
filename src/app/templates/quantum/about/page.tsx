@@ -3,9 +3,8 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function QuantumAboutPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   
   const tTitle = customData?.formData?.aboutTitle || "Beyond Form. \nBeyond Function.";
   const tContent1 = customData?.formData?.aboutText1 || "Quantum was founded on a singular premise: that the objects we interact with every day should not merely serve a purpose, but should elevate our consciousness.";

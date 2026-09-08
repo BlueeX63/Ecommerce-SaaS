@@ -5,9 +5,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function CanvasAboutPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   
   const tTitle = customData?.formData?.aboutTitle || "The Shape \nOf Things.";
   const tContent1 = customData?.formData?.aboutText1 || "Canvas is an independent design house focused on creating objects of uncompromising quality. We believe that true luxury lies in restraint and negative space.";

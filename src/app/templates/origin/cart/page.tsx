@@ -5,7 +5,7 @@ import { useCart } from "../CartContext";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 
 export default function OriginCartPage() {
-  const { items, updateQuantity, removeFromCart, totalPrice, totalItems , currencySymbol } = useCart();
+  const { items, updateQuantity, removeFromCart, totalPrice, totalItems , currencySymbol, basePath } = useCart();
 
   return (
     <div className="w-full bg-[#fdfbf7] min-h-[80vh] pt-12 pb-32 px-6">
@@ -22,7 +22,7 @@ export default function OriginCartPage() {
           <div className="text-center py-24 bg-[#efebe9] rounded-sm animate-in fade-in duration-700">
             <h2 className="font-serif text-2xl font-bold text-[#402c21] mb-6">Your cart is currently empty.</h2>
             <Link 
-              href="/templates/origin/products" 
+              href="/products" 
               className="inline-flex items-center gap-4 bg-[#402c21] text-[#fdfbf7] px-8 py-4 text-xs font-bold tracking-widest uppercase hover:bg-[#a38c7f] transition-colors rounded-sm"
             >
               Continue Shopping
@@ -42,7 +42,7 @@ export default function OriginCartPage() {
               {items.map((item) => (
                 <div key={item.product.id} className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center py-6 border-b border-[#402c21]/10 group">
                   <div className="col-span-1 sm:col-span-6 flex items-center gap-6">
-                    <Link href={`/templates/origin/products/${item.product.id}`} className="shrink-0 w-24 h-24 bg-[#e5e0dc] rounded-sm overflow-hidden">
+                    <Link href={`/products/${item.product.id}`} className="shrink-0 w-24 h-24 bg-[#e5e0dc] rounded-sm overflow-hidden">
                       <img 
                         src={item.product.image} 
                         alt={item.product.name} 
@@ -50,7 +50,7 @@ export default function OriginCartPage() {
                       />
                     </Link>
                     <div className="flex flex-col gap-1">
-                      <Link href={`/templates/origin/products/${item.product.id}`}>
+                      <Link href={`/products/${item.product.id}`}>
                         <h3 className="font-serif font-bold text-[#402c21] group-hover:text-[#a38c7f] transition-colors line-clamp-1">{item.product.name}</h3>
                       </Link>
                       <div className="text-sm font-bold text-[#402c21]/70">{currencySymbol}{item.product.price.toFixed(2)}</div>
@@ -112,7 +112,7 @@ export default function OriginCartPage() {
                   <span className="font-serif text-2xl font-bold text-[#402c21]">{currencySymbol}{totalPrice.toFixed(2)}</span>
                 </div>
                 
-                <Link href="/templates/origin/checkout" className="w-full bg-[#402c21] text-[#fdfbf7] py-4 flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-widest hover:bg-[#a38c7f] transition-colors rounded-sm group">
+                <Link href="/checkout" className="w-full bg-[#402c21] text-[#fdfbf7] py-4 flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-widest hover:bg-[#a38c7f] transition-colors rounded-sm group">
                   Proceed to Checkout
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>

@@ -13,13 +13,13 @@ import { useCustomization } from "@/hooks/useCustomization";
 // Dark Brown: #402c21
 // Light Brown: #a38c7f
 
-function Header() {
+function Header({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
   const { totalItems, searchQuery, setSearchQuery, wishlist } = useCart();
   const pathname = usePathname();
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "ORIGIN.";
   const logoUrl = customData?.formData?.logoUrl || "";
 
@@ -51,8 +51,11 @@ function Header() {
         <div className="max-w-[1400px] mx-auto">
           <div className="flex items-center justify-between bg-[#fdfbf7]/90 backdrop-blur-xl border border-[#402c21]/10 rounded-full px-4 sm:px-6 md:px-8 py-3 shadow-lg">
             <div className="flex items-center gap-2 sm:gap-4 md:gap-6 lg:gap-12">
-              <Link href="/templates/origin" className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-[#402c21] flex-shrink-0">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-6 sm:h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Leaf className="w-5 h-5 md:w-6 md:h-6" /><span>{brandName}</span></div>}
+              <Link href={basePath || "/"} className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-[#402c21] flex-shrink-0">
+                <div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-6 sm:h-8 w-auto object-contain" /> : <Leaf className="w-5 h-5 md:w-6 md:h-6" />}
+                <span>{brandName}</span>
+              </div>
               </Link>
               <nav className="hidden md:flex items-center gap-3 lg:gap-6 xl:gap-8 text-xs lg:text-sm font-medium text-[#402c21]/70">
                 {['Home', 'Shop', 'About', 'Contact', 'Orders'].map((item) => {
@@ -109,18 +112,18 @@ function Header() {
                 </AnimatePresence>
               </div>
 
-              <Link href="/templates/origin/profile" className="group flex items-center gap-1.5 md:gap-2 text-xs lg:text-sm font-medium text-[#402c21] transition-colors hover:text-[#a38c7f]">
+              <Link href={`${basePath}/profile`} className="group flex items-center gap-1.5 md:gap-2 text-xs lg:text-sm font-medium text-[#402c21] transition-colors hover:text-[#a38c7f]">
                 <User className="w-4 h-4 md:w-5 md:h-5" />
               </Link>
 
-              <Link href="/templates/origin/wishlist" className="group flex items-center gap-1.5 md:gap-2 text-xs lg:text-sm font-medium text-[#402c21] transition-colors hover:text-[#a38c7f]">
+              <Link href={`${basePath}/wishlist`} className="group flex items-center gap-1.5 md:gap-2 text-xs lg:text-sm font-medium text-[#402c21] transition-colors hover:text-[#a38c7f]">
                 <Heart className="w-4 h-4 md:w-5 md:h-5" />
                 <span className="bg-[#402c21] text-[#fdfbf7] text-[9px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full transition-colors group-hover:bg-[#a38c7f]">
                   {wishlist.length}
                 </span>
               </Link>
 
-              <Link href="/templates/origin/cart" className="group flex items-center gap-1.5 md:gap-2 text-xs lg:text-sm font-medium text-[#402c21] transition-colors hover:text-[#a38c7f]">
+              <Link href={`${basePath}/cart`} className="group flex items-center gap-1.5 md:gap-2 text-xs lg:text-sm font-medium text-[#402c21] transition-colors hover:text-[#a38c7f]">
                 <span className="hidden sm:block whitespace-nowrap">Cart</span>
                 <span className="bg-[#402c21] text-[#fdfbf7] text-[9px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full transition-colors group-hover:bg-[#a38c7f]">
                   {totalItems}
@@ -176,8 +179,8 @@ function Header() {
   );
 }
 
-function Footer() {
-  const customData = useCustomization();
+function Footer({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+  const customData = useCustomization(initialCustomData);
   
   const footerText = customData?.formData?.footerText || "Embracing the earth's natural palette. Goods crafted for the modern soul.";
   const socialInsta = customData?.formData?.socialInsta || "#";
@@ -201,10 +204,10 @@ function Footer() {
         <div className="md:col-span-1">
           <h4 className="text-sm font-bold mb-6 text-[#a38c7f]">{footerCol1}</h4>
           <ul className="space-y-3 text-sm text-[#fdfbf7]/80">
-            <li><Link href="/templates/origin" className="hover:text-white transition-colors">Home</Link></li>
-            <li><Link href="/templates/origin/products" className="hover:text-white transition-colors">Shop</Link></li>
-            <li><Link href="/templates/origin/about" className="hover:text-white transition-colors">About</Link></li>
-            <li><Link href="/templates/origin/contact" className="hover:text-white transition-colors">Contact</Link></li>
+            <li><Link href={basePath || "/"} className="hover:text-white transition-colors">Home</Link></li>
+            <li><Link href={`${basePath}/products`} className="hover:text-white transition-colors">Shop</Link></li>
+            <li><Link href={`${basePath}/about`} className="hover:text-white transition-colors">About</Link></li>
+            <li><Link href={`${basePath}/contact`} className="hover:text-white transition-colors">Contact</Link></li>
           </ul>
         </div>
 
@@ -235,18 +238,18 @@ function Footer() {
   );
 }
 
-export default function OriginPreviewLayout({ children }: { children: ReactNode }) {
+export function OriginPreviewLayout({ children, basePath, initialCustomData }: { children: ReactNode, basePath?: string, initialCustomData?: any }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.includes('/auth/');
 
   return (
-    <CartProvider>
+    <CartProvider basePath={basePath} initialCustomData={initialCustomData}>
       <div className="min-h-screen flex flex-col bg-[#fdfbf7] font-sans text-[#402c21] selection:bg-[#a38c7f] selection:text-white relative">
-        {!isAuthPage && <Header />}
+        {!isAuthPage && <Header initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/origin'} />}
         <main className="flex-grow flex flex-col">
           {children}
         </main>
-        {!isAuthPage && <Footer />}
+        {!isAuthPage && <Footer initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/origin'} />}
         <ToastContainer />
       </div>
     </CartProvider>
@@ -266,4 +269,9 @@ function ToastContainer() {
       </button>
     </div>
   );
+}
+
+
+export default function Layout({ children, initialCustomData }: { children: React.ReactNode, initialCustomData?: any }) {
+  return <OriginPreviewLayout basePath="/templates/origin">{children}</OriginPreviewLayout>;
 }

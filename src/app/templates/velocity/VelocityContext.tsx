@@ -1,4 +1,5 @@
 "use client";
+import { usePathname } from "next/navigation";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
@@ -103,6 +104,7 @@ export interface CartItem extends VelocityProduct {
 }
 
 interface VelocityContextType {
+  basePath: string;
   currencySymbol: string;
   cart: CartItem[];
   addToCart: (product: VelocityProduct, size?: string) => void;
@@ -123,6 +125,8 @@ interface VelocityContextType {
 const VelocityContext = createContext<VelocityContextType | undefined>(undefined);
 
 export function VelocityProvider({ children , initialCustomData }: { children: ReactNode, initialCustomData?: any  }) {
+  const pathname = usePathname();
+  const basePath = pathname?.startsWith('/templates/') ? '/templates/' + pathname.split('/')[2] : '';
 
   const symbolMap: Record<string, string> = {
     USD: "$", EUR: "€", GBP: "£", CAD: "C$", AUD: "A$", INR: "₹"
@@ -152,7 +156,7 @@ export function VelocityProvider({ children , initialCustomData }: { children: R
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id && item.selectedSize === size);
       if (existing) {
-        return prev.map(item => 
+        return prev.map((item: any) => 
           item.id === product.id && item.selectedSize === size 
             ? { ...item, quantity: item.quantity + 1 }
             : item
@@ -171,7 +175,7 @@ export function VelocityProvider({ children , initialCustomData }: { children: R
       removeFromCart(productId, size);
       return;
     }
-    setCart(prev => prev.map(item => 
+    setCart(prev => prev.map((item: any) => 
       item.id === productId && item.selectedSize === size 
         ? { ...item, quantity }
         : item
@@ -231,6 +235,7 @@ export function VelocityProvider({ children , initialCustomData }: { children: R
 
   return (
     <VelocityContext.Provider value={{
+        basePath,
         currencySymbol,
       cart,
       addToCart,

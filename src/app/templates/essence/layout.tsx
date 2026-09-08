@@ -8,14 +8,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCustomization } from "@/hooks/useCustomization";
 
-function Header() {
-  const { totalItems, searchQuery, setSearchQuery, wishlist } = useCart();
+function Header({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+  const { toastMessage, clearToast, totalItems, searchQuery, setSearchQuery, wishlist } = useCart();
   const pathname = usePathname();
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "ESSENCE.";
   const logoUrl = customData?.formData?.logoUrl || "";
 
@@ -31,17 +31,20 @@ function Header() {
               <Menu className="w-5 h-5" />
             </button>
             <nav className="hidden xl:flex items-center gap-4 xl:gap-10 text-[11px] xl:text-[13px] font-medium tracking-[0.2em] uppercase text-[#4A3F35]/70">
-              <Link href="/templates/essence" className={`hover:text-[#4A3F35] transition-colors ${pathname === '/templates/essence' ? 'text-[#4A3F35]' : ''}`}>Home</Link>
-              <Link href="/templates/essence/products" className={`hover:text-[#4A3F35] transition-colors ${pathname === '/templates/essence/products' ? 'text-[#4A3F35]' : ''}`}>Shop</Link>
-              <Link href="/templates/essence/about" className={`hover:text-[#4A3F35] transition-colors ${pathname === '/templates/essence/about' ? 'text-[#4A3F35]' : ''}`}>About</Link>
-              <Link href="/templates/essence/contact" className={`hover:text-[#4A3F35] transition-colors ${pathname === '/templates/essence/contact' ? 'text-[#4A3F35]' : ''}`}>Contact Us</Link>
-              <Link href="/templates/essence/orders" className={`hover:text-[#4A3F35] transition-colors ${pathname === '/templates/essence/orders' ? 'text-[#4A3F35]' : ''}`}>Orders</Link>
+              <Link href={basePath || "/"} className={`hover:text-[#4A3F35] transition-colors ${pathname === (basePath || "/") ? 'text-[#4A3F35]' : ''}`}>Home</Link>
+              <Link href={`${basePath}/products`} className={`hover:text-[#4A3F35] transition-colors ${pathname === `${basePath}/products` ? 'text-[#4A3F35]' : ''}`}>Shop</Link>
+              <Link href={`${basePath}/about`} className={`hover:text-[#4A3F35] transition-colors ${pathname === `${basePath}/about` ? 'text-[#4A3F35]' : ''}`}>About</Link>
+              <Link href={`${basePath}/contact`} className={`hover:text-[#4A3F35] transition-colors ${pathname === `${basePath}/contact` ? 'text-[#4A3F35]' : ''}`}>Contact Us</Link>
+              <Link href={`${basePath}/orders`} className={`hover:text-[#4A3F35] transition-colors ${pathname === `${basePath}/orders` ? 'text-[#4A3F35]' : ''}`}>Orders</Link>
             </nav>
           </div>
           
           <div className="flex-shrink-0 px-2 md:px-4 flex justify-center">
-            <Link href="/templates/essence" className="font-heading text-2xl md:text-4xl tracking-tighter text-[#4A3F35]">
-              {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <div className="flex items-center gap-2"><Droplet className="w-6 h-6" /><span>{brandName}</span></div>}
+            <Link href={basePath || "/"} className="font-heading text-2xl md:text-4xl tracking-tighter text-[#4A3F35]">
+              <div className="flex items-center gap-2">
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Droplet className="w-6 h-6" />}
+                <span>{brandName}</span>
+              </div>
             </Link>
           </div>
 
@@ -59,8 +62,8 @@ function Header() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    if (pathname !== "/templates/essence/products") {
-                      router.push("/templates/essence/products");
+                    if (pathname !== `${basePath}/products`) {
+                      router.push(`${basePath}/products`);
                     }
                   }}
                   className="bg-transparent border-b border-[#4A3F35]/20 pb-2 text-sm focus:outline-none focus:border-[#4A3F35] text-[#4A3F35] placeholder:text-[#4A3F35]/40 font-serif italic"
@@ -80,11 +83,11 @@ function Header() {
             >
               <Search className="w-5 h-5" />
             </button>
-            <Link href="/templates/essence/profile" className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
+            <Link href={`${basePath}/profile`} className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
               <span className="text-[11px] uppercase tracking-widest font-medium hidden lg:block">Profile</span>
               <User className="w-5 h-5" />
             </Link>
-            <Link href="/templates/essence/wishlist" className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
+            <Link href={`${basePath}/wishlist`} className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
               <span className="text-[11px] uppercase tracking-widest font-medium hidden lg:block">Wishlist</span>
               <div className="relative">
                 <Heart className="w-5 h-5" />
@@ -103,7 +106,7 @@ function Header() {
               </div>
             </Link>
             
-            <Link href="/templates/essence/cart" className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
+            <Link href={`${basePath}/cart`} className="hover:text-[#4A3F35]/50 transition-colors relative text-[#4A3F35] flex items-center gap-2">
               <span className="text-[11px] uppercase tracking-widest font-medium hidden lg:block">Cart</span>
               <div className="relative">
                 <ShoppingBag className="w-5 h-5" />
@@ -135,11 +138,11 @@ function Header() {
             className="fixed inset-0 z-40 bg-[#F3EDE2] pt-32 px-8 flex flex-col xl:hidden"
           >
             <nav className="flex flex-col gap-8 text-2xl font-serif text-[#4A3F35]">
-              <Link href="/templates/essence" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
-              <Link href="/templates/essence/products" onClick={() => setIsMobileMenuOpen(false)}>Shop</Link>
-              <Link href="/templates/essence/about" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
-              <Link href="/templates/essence/contact" onClick={() => setIsMobileMenuOpen(false)}>Contact Us</Link>
-              <Link href="/templates/essence/orders" onClick={() => setIsMobileMenuOpen(false)}>Orders</Link>
+              <Link href={basePath || "/"} onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+              <Link href={`${basePath}/products`} onClick={() => setIsMobileMenuOpen(false)}>Shop</Link>
+              <Link href={`${basePath}/about`} onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+              <Link href={`${basePath}/contact`} onClick={() => setIsMobileMenuOpen(false)}>Contact Us</Link>
+              <Link href={`${basePath}/orders`} onClick={() => setIsMobileMenuOpen(false)}>Orders</Link>
             </nav>
           </motion.div>
         )}
@@ -148,8 +151,8 @@ function Header() {
   );
 }
 
-function Footer() {
-  const customData = useCustomization();
+function Footer({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+  const customData = useCustomization(initialCustomData);
   
   const footerText = customData?.formData?.footerText || "Curating spaces with intention. A collection of timeless objects for the modern sanctuary.";
   const socialInsta = customData?.formData?.socialInsta || "#";
@@ -174,7 +177,7 @@ function Footer() {
         <div className="md:col-span-2 md:col-start-7">
           <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#F3EDE2]/40 mb-6 font-bold">{footerCol1}</h4>
           <ul className="space-y-4 text-sm text-[#F3EDE2]/80">
-            <li><Link href="/templates/essence/products" className="hover:text-white transition-colors">All Products</Link></li>
+            <li><Link href={`${basePath}/products`} className="hover:text-white transition-colors">All Products</Link></li>
             <li><Link href="#" className="hover:text-white transition-colors">New Arrivals</Link></li>
             <li><Link href="#" className="hover:text-white transition-colors">Ceramics</Link></li>
             <li><Link href="#" className="hover:text-white transition-colors">Textiles</Link></li>
@@ -210,18 +213,18 @@ function Footer() {
   );
 }
 
-export default function EssencePreviewLayout({ children }: { children: ReactNode }) {
+export function EssencePreviewLayout({ children, basePath, initialCustomData }: { children: ReactNode, basePath?: string, initialCustomData?: any }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.includes('/auth/');
 
   return (
-    <CartProvider>
+    <CartProvider basePath={basePath} initialCustomData={initialCustomData}>
       <div className="min-h-screen flex flex-col bg-[#F3EDE2] font-body text-[#4A3F35] selection:bg-[#A69684] selection:text-white relative">
-        {!isAuthPage && <Header />}
+        {!isAuthPage && <Header initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/essence'} />}
         <main className="flex-grow flex flex-col">
           {children}
         </main>
-        {!isAuthPage && <Footer />}
+        {!isAuthPage && <Footer initialCustomData={initialCustomData} basePath={basePath !== undefined ? basePath : '/templates/essence'} />}
         <ToastContainer />
       </div>
     </CartProvider>
@@ -248,4 +251,9 @@ function ToastContainer() {
       )}
     </AnimatePresence>
   );
+}
+
+
+export default function Layout({ children, initialCustomData }: { children: React.ReactNode, initialCustomData?: any }) {
+  return <EssencePreviewLayout basePath="/templates/essence">{children}</EssencePreviewLayout>;
 }

@@ -6,13 +6,12 @@ import { useCart, ALL_PRODUCTS } from "../CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart } from "lucide-react";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function CanvasShopPage() {
-  const { currencySymbol } = useCart();
+ export default function ({ initialProducts, initialCustomData }: any) {
+  const { currencySymbol, basePath } = useCart();
   const { toggleWishlist, isInWishlist } = useCart();
   const [activeCategory, setActiveCategory] = useState("All");
   
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const shopTitle = customData?.formData?.shopTitle || "Collection.";
   const rawCategories = customData?.formData?.shopCategories;
   
@@ -66,7 +65,7 @@ export default function CanvasShopPage() {
       <section className="w-full pb-32">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border-l border-white/10">
           <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product, index) => (
+            {filteredProducts.map((product: any, index: number) => (
               <motion.div
                 layout
                 initial={{ opacity: 0 }}

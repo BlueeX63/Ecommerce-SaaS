@@ -4,9 +4,8 @@ import { motion } from "framer-motion";
 import { Terminal, Send, ShieldAlert, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function VelocityContactPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   
   const tPreTitle = customData?.formData?.contactPreTitle || "Contact Information";
   const tTitle = customData?.formData?.contactTitle || "Contact Us";

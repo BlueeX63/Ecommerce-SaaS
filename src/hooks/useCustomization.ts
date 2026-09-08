@@ -1,7 +1,8 @@
+"use client";
 import { useState, useEffect } from "react";
 
-export function useCustomization() {
-  const [customData, setCustomData] = useState<any>(null);
+export function useCustomization(initialData?: any) {
+  const [customData, setCustomData] = useState<any>(initialData || null);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {

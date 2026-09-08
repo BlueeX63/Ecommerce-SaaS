@@ -6,9 +6,8 @@ import { HORIZON_PRODUCTS, useHorizon } from "../HorizonContext";
 import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function HorizonProducts() {
-  const { addToCart , currencySymbol } = useHorizon();
+ export default function ({ initialProducts, initialCustomData }: any) {
+  const { addToCart , currencySymbol, basePath } = useHorizon();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured");
@@ -22,7 +21,7 @@ export default function HorizonProducts() {
     { value: "name-asc", label: "Alphabetical" }
   ];
 
-  const customData = useCustomization();
+  const customData = useCustomization(initialCustomData);
   const shopTitle = customData?.formData?.shopTitle || "Digital Vault.";
   const rawCategories = customData?.formData?.shopCategories;
 
@@ -35,7 +34,7 @@ export default function HorizonProducts() {
     if (rawCategories) {
       return rawCategories.split(",").map((c: string) => c.trim()).filter(Boolean);
     }
-    const cats = new Set(HORIZON_PRODUCTS.map(p => p.category));
+    const cats = new Set(HORIZON_PRODUCTS.map((p: any) => p.category));
     return ["All", ...Array.from(cats)];
   }, [rawCategories]);
 
@@ -46,7 +45,7 @@ export default function HorizonProducts() {
     // Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(p => 
+      result = result.filter((p: any) => 
         p.name.toLowerCase().includes(q) || 
         p.category.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q)
@@ -55,7 +54,7 @@ export default function HorizonProducts() {
 
     // Category filter
     if (selectedCategory !== "All") {
-      result = result.filter(p => p.category === selectedCategory);
+      result = result.filter((p: any) => p.category === selectedCategory);
     }
 
     // Sort
@@ -203,7 +202,7 @@ export default function HorizonProducts() {
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-24"
             >
-              {filteredProducts.map((product, idx) => (
+              {filteredProducts.map((product: any, idx: number) => (
                 <motion.div
                   key={product.id}
                   layout

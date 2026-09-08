@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function QuantumContactPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   
   const tTitle = customData?.formData?.contactTitle || "Let's Connect.";
   const tPreTitle = customData?.formData?.contactPreTitle || "Whether you're inquiring about a bespoke commission or need support with a recent acquisition, our concierge is at your disposal.";

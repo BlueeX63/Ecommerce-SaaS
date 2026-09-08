@@ -1,4 +1,5 @@
 "use client";
+import { useVelocity } from "../VelocityContext";
 import PremiumProfile from "@/components/storefront/PremiumProfile";
 
 export default function ProfilePage() {

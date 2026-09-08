@@ -6,7 +6,7 @@ import { Heart, Trash2, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
 export default function HorizonWishlist() {
-  const { wishlist, toggleWishlist, addToCart , currencySymbol } = useHorizon();
+  const { wishlist, toggleWishlist, addToCart , currencySymbol, basePath } = useHorizon();
 
   return (
     <div className="bg-[#FAFAFA] min-h-screen text-[#111] pt-40 pb-32">
@@ -38,7 +38,7 @@ export default function HorizonWishlist() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-24">
-            {wishlist.map((product, idx) => (
+            {wishlist.map((product: any, idx: number) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 50 }}

@@ -30,9 +30,19 @@ export default function OnboardingCheckoutPage() {
 
   const handleMockPayment = async () => {
     setIsProcessing(true);
-    // Simulate network request for payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    router.push("/onboarding/template-selection");
+    try {
+      const res = await fetch('/api/v1/mock-subscribe', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        router.push(`/payment-success?session_id=${data.sessionId}`);
+      } else {
+        setIsProcessing(false);
+        alert("Payment simulation failed");
+      }
+    } catch (e) {
+      setIsProcessing(false);
+      alert("Payment simulation failed");
+    }
   };
 
   if (!sessionChecked) {

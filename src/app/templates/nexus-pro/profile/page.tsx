@@ -1,4 +1,5 @@
 "use client";
+import { useShop } from "../ShopContext";
 import PremiumProfile from "@/components/storefront/PremiumProfile";
 
 export default function ProfilePage() {

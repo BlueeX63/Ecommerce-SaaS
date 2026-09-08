@@ -1,13 +1,14 @@
 "use client";
+import { useCart } from "../CartContext";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function EssenceAboutPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const { basePath } = useCart();
+  const customData = useCustomization(initialCustomData);
   
   const tTitle = customData?.formData?.aboutTitle || "Our Story";
   const tContent1 = customData?.formData?.aboutText1 || "Founded in 2026, Essence was born out of a desire to create spaces that evoke calm and clarity. We believe that the objects we surround ourselves with have a profound impact on our well-being.";
@@ -89,7 +90,7 @@ export default function EssenceAboutPage() {
         >
           <h2 className="font-serif text-3xl md:text-4xl text-[#4A3F35] mb-8">Bring Essence into your home.</h2>
           <Link 
-            href="/templates/essence/products" 
+            href={`${basePath}/products`} 
             className="inline-flex items-center gap-4 text-[#4A3F35] hover:text-[#A69684] transition-colors group"
           >
             <span className="text-xs uppercase tracking-[0.2em] font-bold border-b border-[#4A3F35] group-hover:border-[#A69684] pb-1">Explore Collection</span>

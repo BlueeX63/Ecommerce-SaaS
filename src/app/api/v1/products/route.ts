@@ -49,9 +49,6 @@ export async function POST(req: Request) {
     if (!body.productName || !body.slug) {
       return NextResponse.json({ error: 'Product name and slug are required' }, { status: 400 });
     }
-    if (!body.catalogs || body.catalogs.length === 0) {
-      return NextResponse.json({ error: 'At least one catalog assignment is required to define pricing' }, { status: 400 });
-    }
 
     let finalSlug = body.slug;
     
@@ -75,7 +72,7 @@ export async function POST(req: Request) {
         slug: finalSlug,
         sku: body.sku || null,
         description: body.description || null,
-        base_price: 0, // Default to 0 since pricing is now strictly managed via catalog assignments
+        base_price: body.basePrice ? Number(body.basePrice) : 0,
         compare_at_price: body.compareAtPrice ? Number(body.compareAtPrice) : null,
         cost_price: body.costPrice ? Number(body.costPrice) : null,
         status: body.status || 'DRAFT',

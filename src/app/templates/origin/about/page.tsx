@@ -4,9 +4,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { useCustomization } from "@/hooks/useCustomization";
-
-export default function OriginAboutPage() {
-  const customData = useCustomization();
+ export default function Page({ initialCustomData }: any) {
+  const customData = useCustomization(initialCustomData);
   
   const tTitle = customData?.formData?.aboutTitle || "Rooted in tradition, built for today.";
   const tImage = customData?.formData?.aboutHeroImage || "https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=2000&auto=format&fit=crop";

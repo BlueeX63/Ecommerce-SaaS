@@ -43,33 +43,48 @@ export async function POST(req: Request) {
         const subscriptionId = session.subscription as string;
 
         if (userId && planId) {
-          // Update user's profile in Supabase to reflect active subscription
-          // Assuming a 'profiles' table exists
-          const { error } = await supabaseAdmin
-            .from('profiles')
-            .upsert({
-              id: userId,
-              stripe_customer_id: customerId,
-              stripe_subscription_id: subscriptionId,
-              plan_id: planId,
-              subscription_status: 'active',
-              updated_at: new Date().toISOString(),
-            });
+          // Verify if a subscription record exists
+          const { data: existingSub } = await supabaseAdmin
+            .from('subscriptions')
+            .select('subscription_id')
+            .eq('stripe_subscription_id', subscriptionId)
+            .single();
 
-          if (error) {
-            console.error('Error updating user profile in Supabase:', error);
+          if (existingSub) {
+             const { error } = await supabaseAdmin
+              .from('subscriptions')
+              .update({
+                status: 'active',
+                updated_date: new Date().toISOString(),
+              })
+              .eq('stripe_subscription_id', subscriptionId);
+              
+             if (error) console.error('Error updating subscription:', error);
+          } else {
+             const { error } = await supabaseAdmin
+              .from('subscriptions')
+              .insert({
+                user_id: userId,
+                stripe_customer_id: customerId,
+                stripe_subscription_id: subscriptionId,
+                plan_id: planId,
+                status: 'active',
+                created_date: new Date().toISOString(),
+                updated_date: new Date().toISOString(),
+              });
+             if (error) console.error('Error inserting subscription:', error);
           }
         }
         break;
 
       case 'customer.subscription.deleted':
         const subscription = event.data.object as Stripe.Subscription;
-        // Handle subscription cancellation
+        
         const { error: cancelError } = await supabaseAdmin
-          .from('profiles')
+          .from('subscriptions')
           .update({
-            subscription_status: 'canceled',
-            updated_at: new Date().toISOString(),
+            status: 'canceled',
+            updated_date: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
           

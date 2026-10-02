@@ -1,0 +1,2 @@
+<claude-code-hint v="1" type="plugin" value="stripe@claude-plugins-official" />
+[server] API listening on http://localhost:4100 (development)

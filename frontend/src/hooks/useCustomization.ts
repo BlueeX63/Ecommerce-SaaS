@@ -1,0 +1,24 @@
+"use client";
+import { useState, useEffect } from "react";
+
+export function useCustomization(initialData?: any) {
+  const [customData, setCustomData] = useState<any>(initialData || null);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "MONOLITH_CUSTOMIZATION") {
+        setCustomData(event.data.data);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "MONOLITH_REQUEST_STATE" }, window.location.origin);
+    }
+    
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  return customData;
+}

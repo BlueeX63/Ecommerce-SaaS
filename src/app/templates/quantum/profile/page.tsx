@@ -1,7 +1,0 @@
-"use client";
-import { useQuantum } from "../QuantumContext";
-import PremiumProfile from "@/components/storefront/PremiumProfile";
-
-export default function ProfilePage() {
-  return <PremiumProfile basePath="/templates/quantum" theme="light" />;
-}

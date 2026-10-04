@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { backendFetch, type ApiResult } from "@/lib/api";
+import type { PaymentMethodDetails } from "@/components/storefront/PremiumPaymentSelector";
 
 export interface StoreInfo {
   tenantId: string;
@@ -9,6 +10,8 @@ export interface StoreInfo {
   customization: Record<string, unknown>;
   /** Whether the store owner purchased the Online Payment Integration add-on (UPI/netbanking vs. COD only). */
   onlinePaymentsEnabled: boolean;
+  /** Which manual payment methods the merchant enabled, and the UPI ID / bank details to show shoppers. */
+  paymentMethods: PaymentMethodDetails;
 }
 
 /**

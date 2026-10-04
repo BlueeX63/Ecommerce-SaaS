@@ -5,15 +5,39 @@ import { motion } from "framer-motion";
 
 export type PaymentMethod = "cod" | "upi" | "netbanking";
 
+export interface PaymentMethodDetails {
+  upi?: { enabled: boolean; upiId?: string };
+  netbanking?: { enabled: boolean; bankName?: string; accountName?: string; accountNumber?: string; ifscCode?: string };
+  cod?: { enabled: boolean };
+}
+
+/**
+ * Merges the Online Payment Integration add-on gate with the merchant's own per-method toggles.
+ * `onlinePaymentsEnabled === false` forces COD-only regardless of what's configured (the add-on gate
+ * always wins); otherwise only methods the merchant explicitly enabled (or left unconfigured) show up.
+ */
+export function resolveAllowedMethods(
+  onlinePaymentsEnabled: boolean | undefined,
+  configured: PaymentMethodDetails | undefined,
+): PaymentMethod[] | undefined {
+  if (onlinePaymentsEnabled === false) return ["cod"];
+  if (!configured) return undefined;
+  const all: PaymentMethod[] = ["upi", "netbanking", "cod"];
+  const enabled = all.filter((m) => configured[m]?.enabled !== false);
+  return enabled.length ? enabled : undefined;
+}
+
 type PaymentSelectorProps = {
   theme?: "dark" | "light";
   selected: PaymentMethod;
   onSelect: (method: PaymentMethod) => void;
   /** Defaults to all three. Pass ["cod"] for stores that haven't purchased Online Payment Integration. */
   allowedMethods?: PaymentMethod[];
+  /** Merchant-provided UPI ID / bank details to show the shopper once a method is selected. */
+  details?: PaymentMethodDetails;
 };
 
-export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, allowedMethods }: PaymentSelectorProps) {
+export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, allowedMethods, details }: PaymentSelectorProps) {
   const isLight = theme === "light";
   const bgClass = isLight ? "bg-black/5" : "bg-white/5";
   const activeBg = isLight ? "bg-[#111111] text-white shadow-xl" : "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.15)]";
@@ -80,11 +104,30 @@ export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, all
       </div>
 
       {selected === "upi" && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className={`mt-4 p-4 rounded-lg ${isLight ? 'bg-orange-50 text-orange-800 border border-orange-100' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'} text-sm`}>
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className={`mt-4 p-4 rounded-lg ${isLight ? 'bg-orange-50 text-orange-800 border border-orange-100' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'} text-sm space-y-2`}>
+          {details?.upi?.upiId && (
+            <p className="font-medium">
+              Pay to UPI ID: <span className="font-mono">{details.upi.upiId}</span>
+            </p>
+          )}
           <p className="font-medium flex items-center gap-2">
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span></span>
             Awaiting UPI confirmation. Please approve the request on your UPI app after placing the order.
           </p>
+        </motion.div>
+      )}
+
+      {selected === "netbanking" && details?.netbanking && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className={`mt-4 p-4 rounded-lg text-sm space-y-1.5 ${isLight ? 'bg-blue-50 text-blue-800 border border-blue-100' : 'bg-blue-500/10 text-blue-300 border border-blue-500/20'}`}
+        >
+          <p className="font-medium mb-1">Transfer to this account, then place your order:</p>
+          {details.netbanking.accountName && <p>Account Name: <span className="font-mono">{details.netbanking.accountName}</span></p>}
+          {details.netbanking.accountNumber && <p>Account Number: <span className="font-mono">{details.netbanking.accountNumber}</span></p>}
+          {details.netbanking.ifscCode && <p>IFSC Code: <span className="font-mono">{details.netbanking.ifscCode}</span></p>}
+          {details.netbanking.bankName && <p>Bank: <span className="font-mono">{details.netbanking.bankName}</span></p>}
         </motion.div>
       )}
     </div>

@@ -4,15 +4,15 @@ import { motion } from "framer-motion";
 import { useCart } from "../CartContext";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { PremiumPaymentSelector, PaymentMethod } from "@/components/storefront/PremiumPaymentSelector";
+import { PremiumPaymentSelector, PaymentMethod, PaymentMethodDetails, resolveAllowedMethods } from "@/components/storefront/PremiumPaymentSelector";
 import { useRouter } from "next/navigation";
 import { PremiumLoader } from "@/components/auth/PremiumLoader";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 type CheckoutStep = 'shipping' | 'payment' | 'placed';
 
-export default function CanvasCheckoutPage({ initialOnlinePaymentsEnabled }: { initialOnlinePaymentsEnabled?: boolean } = {}) {
-  const allowedPaymentMethods = initialOnlinePaymentsEnabled === false ? (["cod"] as const) : undefined;
+export default function CanvasCheckoutPage({ initialOnlinePaymentsEnabled, initialPaymentMethods }: { initialOnlinePaymentsEnabled?: boolean; initialPaymentMethods?: PaymentMethodDetails } = {}) {
+  const allowedPaymentMethods = resolveAllowedMethods(initialOnlinePaymentsEnabled, initialPaymentMethods);
   const { items, totalPrice, clearCart, appliedCoupon, applyCoupon, removeCoupon, discountAmount, couponError , basePath} = useCart();
   const router = useRouter();
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('shipping');
@@ -285,7 +285,7 @@ export default function CanvasCheckoutPage({ initialOnlinePaymentsEnabled }: { i
               </div>
 
               <div className="space-y-6">
-                <PremiumPaymentSelector theme="dark" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods ? [...allowedPaymentMethods] : undefined} />
+                <PremiumPaymentSelector theme="dark" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods} details={initialPaymentMethods} />
               </div>
 
           <h3 className="text-[10px] font-mono tracking-widest uppercase text-white/50 mb-6">Promotional Code</h3>

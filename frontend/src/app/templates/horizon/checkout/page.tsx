@@ -4,15 +4,15 @@ import { motion } from "framer-motion";
 import { useHorizon } from "../HorizonContext";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { PremiumPaymentSelector, PaymentMethod } from "@/components/storefront/PremiumPaymentSelector";
+import { PremiumPaymentSelector, PaymentMethod, PaymentMethodDetails, resolveAllowedMethods } from "@/components/storefront/PremiumPaymentSelector";
 import { useRouter } from "next/navigation";
 import { PremiumLoader } from "@/components/auth/PremiumLoader";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 type CheckoutStep = "shipping" | "payment" | "placed";
 
-export default function HorizonCheckoutPage({ initialOnlinePaymentsEnabled }: { initialOnlinePaymentsEnabled?: boolean } = {}) {
-  const allowedPaymentMethods = initialOnlinePaymentsEnabled === false ? (["cod"] as const) : undefined;
+export default function HorizonCheckoutPage({ initialOnlinePaymentsEnabled, initialPaymentMethods }: { initialOnlinePaymentsEnabled?: boolean; initialPaymentMethods?: PaymentMethodDetails } = {}) {
+  const allowedPaymentMethods = resolveAllowedMethods(initialOnlinePaymentsEnabled, initialPaymentMethods);
   const { cart, currencySymbol, clearCart, appliedCoupon, applyCoupon, removeCoupon, discountAmount, couponError, basePath } = useHorizon();
   const router = useRouter();
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("shipping");
@@ -224,7 +224,7 @@ export default function HorizonCheckoutPage({ initialOnlinePaymentsEnabled }: { 
               {shippingDetails.landmark && <p className="font-outfit text-xs text-black/60">Landmark: {shippingDetails.landmark}</p>}
             </div>
             <div>
-              <PremiumPaymentSelector theme="light" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods ? [...allowedPaymentMethods] : undefined} />
+              <PremiumPaymentSelector theme="light" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods} details={initialPaymentMethods} />
             </div>
           </div>
 

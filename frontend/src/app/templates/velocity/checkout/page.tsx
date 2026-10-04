@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { PremiumPaymentSelector, PaymentMethod } from "@/components/storefront/PremiumPaymentSelector";
+import { PremiumPaymentSelector, PaymentMethod, PaymentMethodDetails, resolveAllowedMethods } from "@/components/storefront/PremiumPaymentSelector";
 import { PremiumLoader } from "@/components/auth/PremiumLoader";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,12 +11,13 @@ import { useVelocity } from "../VelocityContext";
 
 export default function VelocityCheckoutPage({
   initialOnlinePaymentsEnabled,
+  initialPaymentMethods,
   initialSlug,
-}: { initialOnlinePaymentsEnabled?: boolean; initialSlug?: string } = {}) {
+}: { initialOnlinePaymentsEnabled?: boolean; initialPaymentMethods?: PaymentMethodDetails; initialSlug?: string } = {}) {
   const { basePath, cart, clearCart, setIsCartOpen, appliedCoupon, discountAmount, couponError, applyCoupon, removeCoupon , currencySymbol  } = useVelocity();
   const router = useRouter();
   const [isSuccess, setIsSuccess] = useState(false);
-  const allowedPaymentMethods = initialOnlinePaymentsEnabled === false ? (["cod"] as const) : undefined;
+  const allowedPaymentMethods = resolveAllowedMethods(initialOnlinePaymentsEnabled, initialPaymentMethods);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialOnlinePaymentsEnabled === false ? "cod" : "upi");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [couponCode, setCouponCode] = useState('');
@@ -201,7 +202,7 @@ export default function VelocityCheckoutPage({
                   </div>
                 ) : (
                   <>
-                    <PremiumPaymentSelector theme="dark" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods ? [...allowedPaymentMethods] : undefined} />
+                    <PremiumPaymentSelector theme="dark" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods} details={initialPaymentMethods} />
                     {paymentMethod === "upi" && (
                       <p className="text-xs text-[#a0a0a0] italic">Approve the request on your UPI app after placing the order.</p>
                     )}

@@ -28,5 +28,12 @@ export default async function StoreCheckoutPage(props: any) {
   else if (templateId === "starter-canvas") PageComponent = CanvasCheckoutPage;
   else if (templateId === "growth-horizon") PageComponent = HorizonCheckoutPage;
 
-  return <PageComponent {...props} initialOnlinePaymentsEnabled={store.onlinePaymentsEnabled} initialSlug={slug} />;
+  return (
+    <PageComponent
+      {...props}
+      initialOnlinePaymentsEnabled={store.onlinePaymentsEnabled}
+      initialPaymentMethods={store.paymentMethods}
+      initialSlug={slug}
+    />
+  );
 }

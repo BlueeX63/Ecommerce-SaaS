@@ -4,15 +4,15 @@ import { motion } from "framer-motion";
 import { useCart } from "../CartContext";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { PremiumPaymentSelector, PaymentMethod } from "@/components/storefront/PremiumPaymentSelector";
+import { PremiumPaymentSelector, PaymentMethod, PaymentMethodDetails, resolveAllowedMethods } from "@/components/storefront/PremiumPaymentSelector";
 import { useRouter } from "next/navigation";
 import { PremiumLoader } from "@/components/auth/PremiumLoader";
 import { ArrowLeft, Check, ArrowRight } from "lucide-react";
 
 type CheckoutStep = 'shipping' | 'payment' | 'placed';
 
-export default function OriginCheckoutPage({ initialOnlinePaymentsEnabled }: { initialOnlinePaymentsEnabled?: boolean } = {}) {
-  const allowedPaymentMethods = initialOnlinePaymentsEnabled === false ? (["cod"] as const) : undefined;
+export default function OriginCheckoutPage({ initialOnlinePaymentsEnabled, initialPaymentMethods }: { initialOnlinePaymentsEnabled?: boolean; initialPaymentMethods?: PaymentMethodDetails } = {}) {
+  const allowedPaymentMethods = resolveAllowedMethods(initialOnlinePaymentsEnabled, initialPaymentMethods);
   const { items, totalPrice, clearCart, appliedCoupon, applyCoupon, removeCoupon, discountAmount, couponError , basePath} = useCart();
   const router = useRouter();
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('shipping');
@@ -254,7 +254,7 @@ export default function OriginCheckoutPage({ initialOnlinePaymentsEnabled }: { i
             </div>
 
             <div className="bg-white/50 border border-[#402c21]/10 p-6 mb-10 rounded-sm">
-              <PremiumPaymentSelector theme="light" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods ? [...allowedPaymentMethods] : undefined} />
+              <PremiumPaymentSelector theme="light" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods} details={initialPaymentMethods} />
 
           <h3 className="text-xs font-bold uppercase tracking-widest text-[#402c21]/70 border-b border-[#402c21]/10 pb-3 mb-4">Promotional Code</h3>
               {appliedCoupon ? (

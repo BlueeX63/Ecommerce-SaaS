@@ -1,8 +1,10 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Applies repo-wide: this is a two-project workspace (frontend/, backend/), so patterns are NOT
+# root-anchored unless noted, so they also match inside those subdirectories.
 
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -12,14 +14,14 @@
 /Architecture
 
 # testing
-/coverage
+coverage/
 
-# next.js
-/.next/
-/out/
+# next.js (frontend/)
+.next/
+out/
 
-# production
-/build
+# node backend build output
+dist/
 
 # misc
 .DS_Store
@@ -31,8 +33,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files (never commit secrets; copy from .env.example instead)
+.env
+.env.local
+.env.*.local
 
 # vercel
 .vercel

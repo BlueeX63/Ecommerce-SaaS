@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Monolith — Multi-Tenant E-commerce SaaS
 
-## Getting Started
+A Shopify-style platform: merchants sign up, subscribe, pick a storefront template, and get a live store on
+a subdomain (or their own custom domain), plus a dashboard to manage products, catalogs, orders, customers,
+coupons and delivery. See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) for the full architecture.
 
-First, run the development server:
+## Layout
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+frontend/   Next.js 16 app — marketing site, merchant dashboard, storefront templates
+backend/    Node.js / Express API — auth, billing, catalog, storefront, all Supabase access
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The two run as separate processes. In development the frontend proxies every `/api/*` request to the
+backend (see `frontend/next.config.ts`), so the browser only ever talks to one origin and cookies stay
+first-party on the SaaS domain, every store subdomain, and any merchant's custom domain.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 20.19+
+- A Supabase project with the schema in `backend/supabase/migrations` applied, in order
+- Accounts for the services you want working locally: Stripe, Upstash Redis, Cloudinary, an SMTP relay,
+  Firebase (phone auth)
 
-## Learn More
+## Setup
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Backend
+cd backend
+npm install
+cp .env.example .env      # fill in real values
+npm run dev                # http://localhost:4100
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Frontend (in a second terminal)
+cd frontend
+npm install
+cp .env.example .env.local # fill in real values (BACKEND_URL defaults to http://localhost:4100)
+npm run dev                 # http://localhost:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To try a storefront locally, visit `http://<store-slug>.localhost:3000` once a store has been created
+through onboarding.
 
-## Deploy on Vercel
+### Development-only flags (backend/.env)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `ALLOW_DUMMY_OTP=true` — accepts a fixed OTP for storefront shopper sign-up instead of a real Firebase
+  phone verification. Set `NEXT_PUBLIC_DUMMY_OTP=true` in `frontend/.env.local` to match.
+- `ALLOW_MOCK_SUBSCRIBE=true` — exposes `POST /api/v1/mock-subscribe`, which activates a merchant's
+  subscription without going through Stripe.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Both flags are refused at startup when `NODE_ENV=production`.
+
+## Building for production
+
+```bash
+cd backend && npm run build && npm start
+cd frontend && npm run build && npm start
+```
+
+## Useful scripts
+
+`backend/scripts/` has small one-off Node scripts (seeding sample products, clearing a tenant's cache,
+checking users) — each reads credentials from `backend/.env`, never from source.

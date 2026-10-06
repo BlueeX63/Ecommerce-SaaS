@@ -131,7 +131,6 @@ export function QuantumProvider({ children , initialCustomData, basePath: basePa
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-  const { basePath } = useQuantum();
       if (event.data?.type === "MONOLITH_CUSTOMIZATION") {
         const currency = event.data.data?.formData?.currency || "USD";
         setCurrencySymbol(symbolMap[currency] || "$");

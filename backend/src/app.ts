@@ -21,6 +21,7 @@ import { publicRouter } from './routes/public.js';
 import { reviewsRouter, storeRouter } from './routes/store.js';
 import { storeAuthRouter } from './routes/store-auth.js';
 import { rolesRouter, usersRouter } from './routes/team.js';
+import { superAdminRouter } from './routes/super-admin.js';
 import { storeAdminRouter, tenantRouter } from './routes/tenant.js';
 import { uploadRouter } from './routes/upload.js';
 import { webhooksRouter } from './routes/webhooks.js';
@@ -81,6 +82,9 @@ export function createApp() {
   app.use('/api/v1/store', storeRouter);
   app.use('/api/v1/reviews', reviewsRouter);
   app.use('/api/v1/public', publicRouter);
+
+  // Super Admin (platform operators) - entirely separate identity from merchants/shoppers above.
+  app.use('/api/v1/super-admin', superAdminRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

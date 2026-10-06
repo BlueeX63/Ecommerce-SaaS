@@ -3,11 +3,12 @@
 import { ReactNode } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
+import { ImpersonationBanner } from "@/components/dashboard/ImpersonationBanner";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { CurrencyProvider } from "@/components/dashboard/CurrencyProvider";
 
-export default function DashboardLayout({ children, user }: { children: ReactNode, user?: any }) {
+export default function DashboardLayout({ children, user, impersonatedBy }: { children: ReactNode, user?: any, impersonatedBy?: string }) {
   const pathname = usePathname();
 
   return (
@@ -15,6 +16,7 @@ export default function DashboardLayout({ children, user }: { children: ReactNod
       <div className="min-h-screen bg-background flex">
         <Sidebar user={user} />
         <div className="flex-1 ml-[240px] flex flex-col">
+          {impersonatedBy && <ImpersonationBanner superAdminEmail={impersonatedBy} />}
           <Topbar user={user} />
           <main className="flex-1 p-8 overflow-x-hidden">
             <AnimatePresence mode="wait">

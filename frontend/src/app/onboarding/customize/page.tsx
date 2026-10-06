@@ -395,7 +395,7 @@ function ImageUploadField({ label, icon, fieldKey, value, onChange }: any) {
         <div className="w-full h-32 bg-black/40 border border-white/10 border-dashed rounded-xl flex flex-col items-center justify-center font-body text-white/30 text-xs overflow-hidden relative transition-all group-hover/upload:border-accent/50 group-hover/upload:text-white/50 group-hover/upload:bg-accent/5">
           {value ? (
             <>
-              <img src={value} className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity group-hover/upload:opacity-100 group-hover/upload:mix-blend-normal transition-all" />
+              <img src={value} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity group-hover/upload:opacity-100 group-hover/upload:mix-blend-normal transition-all" />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/upload:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                 <span className="text-white font-bold tracking-widest uppercase">Replace Image</span>
               </div>

@@ -44,7 +44,6 @@ export default async function StoreLayout({
   else if (templateId === "growth-horizon") LayoutComponent = HorizonLayout;
 
   return (
-    // @ts-ignore
     <LayoutComponent initialCustomData={customData} basePath={basePath}>
       {children}
     </LayoutComponent>

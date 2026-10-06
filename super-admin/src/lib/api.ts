@@ -5,8 +5,8 @@ import { cookies } from "next/headers";
  * Server-side client for the Node.js backend (see /backend).
  *
  * Browser code never calls this - it uses same-origin `/api/*` URLs, which next.config.ts proxies to the
- * backend so that cookies stay first-party on every storefront domain. Server Components use this helper
- * to call the backend directly, forwarding the visitor's cookies when `auth` is true.
+ * backend so the super_admin_session cookie stays first-party to this app's own origin. Server Components
+ * use this helper to call the backend directly, forwarding the visitor's cookies when `auth` is true.
  */
 export const BACKEND_URL = (process.env.BACKEND_URL || "http://localhost:4100").replace(/\/$/, "");
 
@@ -33,29 +33,13 @@ export async function backendFetch<T = unknown>(path: string, options: { auth?: 
   }
 }
 
-export interface MerchantContext {
-  user: {
-    userId: string;
-    tenantId: string | null;
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-    role?: string | null;
-  };
-  subscriptionActive: boolean;
-  plan: { id: string; name: string; maxStores: number } | null;
-  /** Purchased add-on ids, e.g. ["advanced_analytics", "custom_domain"]. */
-  featureFlags: string[];
-  hasStore: boolean;
-  stores: Array<{ tenant_id: string; tenant_name: string; code: string; custom_domain: string | null }>;
-  storesUsed: number;
-  activeStore: { tenant_id: string; tenant_name: string; code: string; custom_domain: string | null } | null;
-  /** Set when this session was created by a super admin "sign in as owner" action. */
-  impersonatedBy: string | null;
+export interface SuperAdminSession {
+  isLoggedIn: boolean;
+  email?: string;
 }
 
-/** The logged-in merchant's context (deduplicated per request), or null when there is no valid session. */
-export const getMerchantContext = cache(async (): Promise<MerchantContext | null> => {
-  const result = await backendFetch<MerchantContext>("/api/v1/auth/context", { auth: true });
+/** The logged-in super admin's session (deduplicated per request), or null when there is none. */
+export const getSuperAdminSession = cache(async (): Promise<SuperAdminSession | null> => {
+  const result = await backendFetch<SuperAdminSession>("/api/v1/super-admin/auth/session", { auth: true });
   return result.ok ? result.data : null;
 });

@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #F8F6F1;
+  --color-surface: #FFFFFF;
+  --color-primary: #0A0A0A;
+  --color-secondary: #6B6B6B;
+  --color-accent: #FF4D00;
+
+  --font-body: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-heading), ui-serif, serif;
+}
+
+* {
+  box-sizing: border-box;
+}

@@ -11,6 +11,8 @@ export interface MerchantSession {
   userId: string;
   tenantId: string | null;
   role: string;
+  /** Set only when this session was created via a super admin "sign in as owner" ticket redemption. */
+  impersonatedBy?: string;
 }
 
 function cookieOptions(expires?: Date): CookieOptions {
@@ -26,7 +28,7 @@ async function writeCookie(res: Response, session: MerchantSession) {
 /** Creates a DB-backed (revocable) session and sets the signed cookie. */
 export async function createSession(
   res: Response,
-  params: { userId: string; tenantId: string | null; role?: string; ip?: string | null; userAgent?: string | null },
+  params: { userId: string; tenantId: string | null; role?: string; ip?: string | null; userAgent?: string | null; impersonatedBy?: string },
 ) {
   const { data, error } = await db
     .from('user_sessions')
@@ -49,6 +51,7 @@ export async function createSession(
     userId: params.userId,
     tenantId: params.tenantId || null,
     role: params.role ?? 'ADMIN',
+    ...(params.impersonatedBy ? { impersonatedBy: params.impersonatedBy } : {}),
   });
 }
 
@@ -79,6 +82,7 @@ export async function getSession(req: Request): Promise<MerchantSession | null> 
     userId: payload.userId,
     tenantId: payload.tenantId || null,
     role: payload.role || 'ADMIN',
+    ...(payload.impersonatedBy ? { impersonatedBy: payload.impersonatedBy } : {}),
   };
 }
 

@@ -6,7 +6,13 @@ import { env } from '../config/env.js';
  * Each token type gets its own signing key (derived from JWT_SECRET) and audience, so a token issued for one
  * purpose (e.g. a password-reset link) can never be replayed as another (e.g. a session cookie).
  */
-export type TokenPurpose = 'merchant-session' | 'store-session' | 'password-reset' | 'team-invite';
+export type TokenPurpose =
+  | 'merchant-session'
+  | 'store-session'
+  | 'password-reset'
+  | 'team-invite'
+  | 'super-admin-session'
+  | 'impersonation-ticket';
 
 const keyCache = new Map<TokenPurpose, Uint8Array>();
 

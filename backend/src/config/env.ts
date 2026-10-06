@@ -53,6 +53,14 @@ const schema = z.object({
   ALLOW_DUMMY_OTP: flag,
   /** DEV ONLY: enable the fake "mock-subscribe" endpoint. */
   ALLOW_MOCK_SUBSCRIBE: flag,
+
+  /**
+   * Platform operators who can access the Super Admin panel, as a JSON array of
+   * [{"email": "...", "passwordHash": "<bcrypt hash>"}]. There is no DB table for this on purpose: super
+   * admin identity lives entirely outside the application database, so no SQL-injection or auth-logic bug
+   * anywhere in the app can ever grant this privilege - only whoever controls the server's deployment config.
+   */
+  SUPER_ADMINS_JSON: optionalString,
 });
 
 const parsed = schema.safeParse(process.env);

@@ -263,7 +263,9 @@ export async function getContext(req: Request, res: Response) {
     () => computeAuthContext(session.userId, session.tenantId),
     AUTH_CONTEXT_TTL_SECONDS,
   );
-  res.json(data);
+  // Per-session, not per-user, so it's merged in after the cache lookup rather than baked into it -
+  // two sessions for the same user (one normal, one impersonated) must never share this value.
+  res.json({ ...data, impersonatedBy: session.impersonatedBy ?? null });
 }
 
 // ---------------------------------------------------------------------------------------------

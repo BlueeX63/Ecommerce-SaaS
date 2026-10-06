@@ -49,7 +49,9 @@ export async function list(req: Request, res: Response) {
   const [{ data, error, count }, { data: tenant }] = await Promise.all([
     db
       .from('users')
-      .select(`${USER_COLUMNS}, user_roles(roles(role_name))`, { count: 'exact' })
+      // `user_roles` has two FKs to `users` (user_id, assigned_by) - PostgREST can't infer which one an
+      // implicit embed means, so the relationship must be named explicitly or every request 500s.
+      .select(`${USER_COLUMNS}, user_roles!user_roles_user_id_fkey(roles(role_name))`, { count: 'exact' })
       .eq('tenant_id', tenantId)
       .range(page.offset, page.offset + page.limit - 1),
     db.from('tenant').select('created_by').eq('tenant_id', tenantId).maybeSingle(),

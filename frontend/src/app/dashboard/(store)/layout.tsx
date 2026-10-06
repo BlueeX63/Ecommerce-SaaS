@@ -29,6 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         storesUsed: context.storesUsed,
         subscriptionActive: context.subscriptionActive,
       }}
+      impersonatedBy={context.impersonatedBy ?? undefined}
     >
       {children}
     </ClientLayout>

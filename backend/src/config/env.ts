@@ -61,6 +61,16 @@ const schema = z.object({
    * anywhere in the app can ever grant this privilege - only whoever controls the server's deployment config.
    */
   SUPER_ADMINS_JSON: optionalString,
+
+  /**
+   * AI features (product copy, product images, store assistant chat and voice agent). Keys stay on the server:
+   * the browser only ever receives short-lived, session-scoped tokens. Endpoints answer 503 while unset.
+   */
+  ANTHROPIC_API_KEY: optionalString,
+  OPENAI_API_KEY: optionalString,
+  AI_TEXT_MODEL: z.string().trim().min(1).default('claude-sonnet-5-5'),
+  AI_IMAGE_MODEL: z.string().trim().min(1).default('gpt-image-2'),
+  AI_REALTIME_MODEL: z.string().trim().min(1).default('gpt-realtime-2.1'),
 });
 
 const parsed = schema.safeParse(process.env);

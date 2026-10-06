@@ -11,8 +11,6 @@ import {
 } from '../lib/validation.js';
 import { slugify } from '../lib/sanitize.js';
 import { tenantCtx } from '../middleware/auth.js';
-import { generateProductCopy } from '../services/ai-assist.js';
-import { getEntitlements, hasFeature, upgradeMessage } from '../services/entitlements.js';
 import { assertOwned, assertOwnedOrNull } from '../services/ownership.js';
 import { invalidateTenantCache } from '../services/tenants.js';
 
@@ -42,21 +40,6 @@ const createSchema = z.object({
 });
 
 const updateSchema = z.object(productFields).partial();
-
-export async function aiAssist(req: Request, res: Response) {
-  const { userId } = tenantCtx(req);
-  const entitlements = await getEntitlements(userId);
-  if (!hasFeature(entitlements, 'ai_tools')) {
-    throw new ApiError(403, upgradeMessage('ai_tools'), undefined, 'UPGRADE_REQUIRED');
-  }
-
-  const body = parse(
-    z.object({ productName: z.string().trim().min(1, 'Product name is required').max(200), category: optionalText(100) }),
-    req.body,
-  );
-
-  res.json(generateProductCopy(body));
-}
 
 export async function list(req: Request, res: Response) {
   const { tenantId } = tenantCtx(req);

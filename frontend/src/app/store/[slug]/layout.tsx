@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getStore } from "@/lib/store";
 import { resolveStoreBasePath } from "@/lib/store-base-path";
+import { StoreAssistant } from "@/components/storefront/StoreAssistant";
 
 import { StarterPreviewLayout as MinimalistLayout } from "@/app/templates/minimalist/layout";
 import { EssencePreviewLayout as EssenceLayout } from "@/app/templates/essence/layout";
@@ -44,8 +45,11 @@ export default async function StoreLayout({
   else if (templateId === "growth-horizon") LayoutComponent = HorizonLayout;
 
   return (
-    <LayoutComponent initialCustomData={customData} basePath={basePath}>
-      {children}
-    </LayoutComponent>
+    <>
+      <LayoutComponent initialCustomData={customData} basePath={basePath}>
+        {children}
+      </LayoutComponent>
+      {store.aiAssistantEnabled && <StoreAssistant slug={slug} storeName={store.name} />}
+    </>
   );
 }

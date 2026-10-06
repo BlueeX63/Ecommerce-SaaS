@@ -35,6 +35,8 @@ export async function getStore(req: Request, res: Response) {
     customization,
     // Only the one boolean the storefront needs to render checkout - never the merchant's plan/addons.
     onlinePaymentsEnabled: hasFeature(entitlements, 'online_payments'),
+    // Whether the storefront AI assistant (chat + voice) is switched on for this store.
+    aiAssistantEnabled: hasFeature(entitlements, 'ai_tools'),
     // Only enabled methods, and only the detail fields the merchant actually filled in - never a secret,
     // this is exactly what the merchant wants shoppers to see in order to pay them.
     paymentMethods: publicPaymentMethods(paymentMethods),

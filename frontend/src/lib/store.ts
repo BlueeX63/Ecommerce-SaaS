@@ -10,6 +10,8 @@ export interface StoreInfo {
   customization: Record<string, unknown>;
   /** Whether the store owner purchased the Online Payment Integration add-on (UPI/netbanking vs. COD only). */
   onlinePaymentsEnabled: boolean;
+  /** Whether the store owner has the AI add-on, which enables the shopper assistant (chat and voice). */
+  aiAssistantEnabled: boolean;
   /** Which manual payment methods the merchant enabled, and the UPI ID / bank details to show shoppers. */
   paymentMethods: PaymentMethodDetails;
 }

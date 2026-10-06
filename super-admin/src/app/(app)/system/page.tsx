@@ -18,6 +18,7 @@ const INTEGRATION_LABELS: Record<string, string> = {
   cloudinary: "Cloudinary (image uploads)",
   smtp: "SMTP (transactional email)",
   firebase: "Firebase (shopper phone verification)",
+  ai: "AI providers (Anthropic + OpenAI)",
 };
 
 const FLAG_LABELS: Record<string, string> = {

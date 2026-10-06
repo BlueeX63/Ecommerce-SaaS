@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Save, ArrowLeft, Image as ImageIcon, X, Plus, Bot, Lock, Loader2 } from "lucide-react";
+import { Save, ArrowLeft, Image as ImageIcon, X, Plus, Bot, Lock, Loader2, Sparkles } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 import Link from "next/link";
 
@@ -15,6 +15,7 @@ export default function NewProductPage() {
   const [catalogs, setCatalogs] = useState<{value: string, label: string}[]>([]);
   const [hasAiTools, setHasAiTools] = useState(false);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [aiImageBusy, setAiImageBusy] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/v1/auth/context')
@@ -124,33 +125,94 @@ export default function NewProductPage() {
     });
   };
 
+  /** Gate for every AI action: without the add-on, send the merchant to billing instead. */
+  const ensureAiTools = () => {
+    if (hasAiTools) return true;
+    router.push("/dashboard/settings/billing");
+    return false;
+  };
+
+  const callAi = async (path: string, body: Record<string, unknown>) => {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "The AI request failed. Please try again.");
+    return data;
+  };
+
+  const setImageUrl = (index: number, url: string) => {
+    setFormData(prev => {
+      const newUrls = [...prev.imageUrls];
+      newUrls[index] = url;
+      return { ...prev, imageUrls: newUrls };
+    });
+  };
+
+  /** Fills description, SKU and category from the product name. An existing SKU or category is never overwritten. */
   const handleAiAssist = async () => {
-    if (!hasAiTools) {
-      router.push('/dashboard/settings/billing');
-      return;
-    }
+    if (!ensureAiTools()) return;
     if (!formData.productName.trim()) {
-      alert('Enter a product name first.');
+      alert("Enter a product name first.");
       return;
     }
     setIsGeneratingAi(true);
     try {
-      const category = categories.find(c => c.value === formData.categoryId)?.label;
-      const res = await fetch('/api/v1/products/ai-assist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productName: formData.productName, category }),
+      const listing = await callAi("/api/v1/ai/product-listing", {
+        productName: formData.productName,
+        description: formData.description || undefined,
       });
-      const data = await res.json();
-      if (res.ok) {
-        setFormData(prev => ({ ...prev, description: data.description }));
-      } else {
-        alert(data.error || 'Failed to generate description');
-      }
-    } catch {
-      alert('Failed to generate description');
+      setFormData(prev => ({
+        ...prev,
+        description: listing.description,
+        sku: prev.sku || listing.sku || "",
+        categoryId: prev.categoryId || listing.categoryId || "",
+      }));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to generate the listing");
     } finally {
       setIsGeneratingAi(false);
+    }
+  };
+
+  /** Creates a studio-style photo for an empty image slot from the product name. */
+  const handleGenerateImage = async (index: number) => {
+    if (!ensureAiTools()) return;
+    if (!formData.productName.trim()) {
+      alert("Enter a product name first.");
+      return;
+    }
+    setAiImageBusy(index);
+    try {
+      const category = categories.find(c => c.value === formData.categoryId)?.label;
+      const data = await callAi("/api/v1/ai/product-image/generate", {
+        productName: formData.productName,
+        category,
+        description: formData.description || undefined,
+      });
+      setImageUrl(index, data.url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Could not generate an image");
+    } finally {
+      setAiImageBusy(null);
+    }
+  };
+
+  /** Re-shoots an existing image on a clean white studio background. */
+  const handleCleanImage = async (index: number) => {
+    if (!ensureAiTools()) return;
+    const current = formData.imageUrls[index];
+    if (!current) return;
+    setAiImageBusy(index);
+    try {
+      const data = await callAi("/api/v1/ai/product-image/clean", { imageUrl: current });
+      setImageUrl(index, data.url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Could not clean up this image");
+    } finally {
+      setAiImageBusy(null);
     }
   };
 
@@ -328,8 +390,12 @@ export default function NewProductPage() {
               
               <div className="flex flex-col gap-4">
                 {/* Primary Image Slot */}
-                <ImageUploadSlot 
-                  url={formData.imageUrls[0]} 
+                <ImageUploadSlot
+                  url={formData.imageUrls[0]}
+                  aiBusy={aiImageBusy === 0}
+                  hasAiTools={hasAiTools}
+                  onGenerate={() => handleGenerateImage(0)}
+                  onClean={() => handleCleanImage(0)}
                   isUploading={uploadingIndex === 0} 
                   isDisabled={uploadingIndex !== null && uploadingIndex !== 0}
                   onUpload={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e, 0)} 
@@ -343,7 +409,11 @@ export default function NewProductPage() {
                   {[1, 2, 3].map((index) => (
                     <ImageUploadSlot 
                       key={index}
-                      url={formData.imageUrls[index]} 
+                      url={formData.imageUrls[index]}
+                      aiBusy={aiImageBusy === index}
+                      hasAiTools={hasAiTools}
+                      onGenerate={() => handleGenerateImage(index)}
+                      onClean={() => handleCleanImage(index)}
                       isUploading={uploadingIndex === index} 
                       isDisabled={uploadingIndex !== null && uploadingIndex !== index}
                       onUpload={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e, index)} 
@@ -468,14 +538,25 @@ export default function NewProductPage() {
   );
 }
 
-function ImageUploadSlot({ url, isUploading, isDisabled, onUpload, onRemove, label, isPrimary }: any) {
+function ImageUploadSlot({ url, isUploading, isDisabled, onUpload, onRemove, onGenerate, onClean, aiBusy, hasAiTools, label, isPrimary }: any) {
   return (
     <div className={`relative bg-black/[0.02] border-2 border-dashed border-black/[0.08] rounded-xl overflow-hidden group ${isPrimary ? 'aspect-video' : 'aspect-square'}`}>
       {url ? (
         <>
           <img src={url} alt={label} className="object-cover w-full h-full" />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-             <button 
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+            {onClean && (
+              <button
+                type="button"
+                onClick={onClean}
+                disabled={aiBusy}
+                title={hasAiTools ? "Re-shoot on a clean white studio background" : "AI Product Tools is a paid add-on"}
+                className="bg-white text-primary px-3 py-1.5 rounded-lg shadow-md text-xs font-bold hover:bg-black/5 transition-colors flex items-center gap-1.5 disabled:opacity-60"
+              >
+                {hasAiTools ? <Sparkles className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />} Clean up with AI
+              </button>
+            )}
+             <button
                 type="button" 
                 onClick={onRemove}
                 className="bg-white text-red-600 px-3 py-1.5 rounded-lg shadow-md text-xs font-bold hover:bg-red-50 transition-colors flex items-center gap-1.5"
@@ -483,6 +564,11 @@ function ImageUploadSlot({ url, isUploading, isDisabled, onUpload, onRemove, lab
                 <X className="w-3.5 h-3.5" /> Remove
               </button>
           </div>
+          {aiBusy && (
+            <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center gap-2 text-xs font-medium text-primary">
+              <Loader2 className="w-5 h-5 animate-spin" /> Working on it…
+            </div>
+          )}
           {isPrimary && (
             <div className="absolute top-3 left-3 bg-[#FF4D00] text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-[0.1em] shadow-sm">
               Primary
@@ -506,6 +592,17 @@ function ImageUploadSlot({ url, isUploading, isDisabled, onUpload, onRemove, lab
                  <ImageIcon className={`text-black/30 mb-2 ${isPrimary ? 'w-8 h-8' : 'w-6 h-6'}`} />
                  <span className={`font-medium text-primary ${isPrimary ? 'text-sm' : 'text-xs'}`}>{label}</span>
                  {isPrimary && <span className="text-[10px] text-secondary mt-1">Recommended: 16:9 ratio</span>}
+                 {onGenerate && (
+                   <button
+                     type="button"
+                     onClick={onGenerate}
+                     disabled={aiBusy || isDisabled}
+                     className="relative z-20 mt-3 flex items-center gap-1.5 text-[11px] font-medium text-[#FF4D00] hover:text-[#e64500] disabled:opacity-50"
+                   >
+                     {aiBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hasAiTools ? <Sparkles className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                     Generate with AI
+                   </button>
+                 )}
                </>
              )}
           </div>

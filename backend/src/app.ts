@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './lib/http.js';
 import { csrfGuard, noStore } from './middleware/security.js';
+import { aiRouter } from './routes/ai.js';
 import { apiKeysRouter } from './routes/api-keys.js';
 import { authRouter } from './routes/auth.js';
 import { billingRouter, billingV1Router, devBillingRouter, webhookRouter } from './routes/billing.js';
@@ -60,6 +61,7 @@ export function createApp() {
   app.use('/api/v1/tenant', tenantRouter);
   app.use('/api/v1/dashboard', dashboardRouter);
   app.use('/api/v1/products', productsRouter);
+  app.use('/api/v1/ai', aiRouter);
   app.use('/api/v1/categories', categoriesRouter);
   app.use('/api/v1/catalogs', catalogsRouter);
   app.use('/api/v1/coupons', couponsRouter);

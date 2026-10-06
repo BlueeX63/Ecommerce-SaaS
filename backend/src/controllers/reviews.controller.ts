@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { db } from '../lib/supabase.js';
 import { str, uuid, parse } from '../lib/http.js';
 import { requireStoreTenant } from '../services/tenants.js';
-import { assertActiveProduct, me, reviewFields } from './store.controller.js';
+import { me, reviewFields } from './store.controller.js';
+import { assertActiveProduct } from '../services/cart.js';
 
 // ---------------------------------------------------------------------------------------------
 // /api/v1/reviews  (public read of approved reviews; write requires a logged-in shopper)

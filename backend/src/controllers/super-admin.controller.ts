@@ -471,6 +471,7 @@ export function getSystemStatus(_req: Request, res: Response) {
       cloudinary: Boolean(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET),
       smtp: Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
       firebase: Boolean(env.FIREBASE_PROJECT_ID && env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY),
+      ai: Boolean(env.ANTHROPIC_API_KEY && env.OPENAI_API_KEY),
     },
     devFlags: {
       allowDummyOtp: Boolean(env.ALLOW_DUMMY_OTP),

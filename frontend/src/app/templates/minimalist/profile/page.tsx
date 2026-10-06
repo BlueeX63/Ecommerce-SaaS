@@ -25,5 +25,5 @@ const theme: AccountTheme = {
 };
 
 export default function ProfilePage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/minimalist"} defaultTab="profile" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/minimalist"} defaultTab="profile" theme={theme} />;
 }

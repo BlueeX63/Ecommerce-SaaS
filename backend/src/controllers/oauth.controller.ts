@@ -46,26 +46,12 @@ export async function googleCallback(req: Request, res: Response) {
     const firstName = (parts[0] || 'User').slice(0, 100);
     const lastName = (parts.length > 1 ? parts.slice(1).join(' ') : 'User').slice(0, 100);
 
-    const tenantName = `${firstName} Store`.slice(0, 150);
-    const base = slugify(tenantName, 40) || 'store';
-
-    let tenant: { tenant_id: string } | null = null;
-    for (let attempt = 0; attempt < 5 && !tenant; attempt++) {
-      const suffix = attempt === 0 ? '' : `-${Math.random().toString(36).slice(2, 6)}`;
-      const { data: created, error: tenantError } = await db
-        .from('tenant')
-        .insert({ tenant_name: tenantName, code: `${base}${suffix}`.slice(0, 50), status: 'ACTIVE' })
-        .select('tenant_id')
-        .single();
-      if (created) tenant = created;
-      else if (tenantError?.code !== '23505') break;
-    }
-    if (!tenant) return fail();
-
+    // A new account starts with no store. Stores are created only after a plan is purchased (see
+    // tenant.controller provision), so signing up never leaves a store behind that the merchant did not ask for.
     const { data: newUser, error: userError } = await db
       .from('users')
       .insert({
-        tenant_id: tenant.tenant_id,
+        tenant_id: null,
         first_name: firstName,
         last_name: lastName,
         email,
@@ -76,12 +62,8 @@ export async function googleCallback(req: Request, res: Response) {
       .select('*')
       .single();
 
-    if (userError || !newUser) {
-      await db.from('tenant').delete().eq('tenant_id', tenant.tenant_id);
-      return fail();
-    }
+    if (userError || !newUser) return fail();
 
-    await db.from('tenant').update({ created_by: newUser.user_id }).eq('tenant_id', tenant.tenant_id);
     user = newUser;
 
     // Ask the user to confirm their name on first dashboard visit.

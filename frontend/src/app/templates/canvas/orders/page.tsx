@@ -26,5 +26,5 @@ const theme: AccountTheme = {
 };
 
 export default function CanvasOrdersPage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/canvas"} defaultTab="orders" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/canvas"} defaultTab="orders" theme={theme} />;
 }

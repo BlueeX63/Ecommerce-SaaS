@@ -25,5 +25,5 @@ const theme: AccountTheme = {
 };
 
 export default function NexusProOrdersPage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/nexus-pro"} defaultTab="orders" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/nexus-pro"} defaultTab="orders" theme={theme} />;
 }

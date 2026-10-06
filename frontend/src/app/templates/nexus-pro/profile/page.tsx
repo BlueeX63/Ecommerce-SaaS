@@ -25,5 +25,5 @@ const theme: AccountTheme = {
 };
 
 export default function NexusProProfilePage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/nexus-pro"} defaultTab="profile" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/nexus-pro"} defaultTab="profile" theme={theme} />;
 }

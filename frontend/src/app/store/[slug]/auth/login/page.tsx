@@ -41,8 +41,13 @@ function PremiumLoginContent() {
       });
       const data = await res.json();
       if (res.ok) {
-        if (data.catalogSlug && next === `/store/${slug}`) {
-          router.push(`/store/${slug}/c/${data.catalogSlug}`);
+        // The server only returns this shopper's own catalogs. A VIP catalog they are not on goes to the store.
+        const allowed: string[] = Array.isArray(data.catalogSlugs) ? data.catalogSlugs : [];
+        const requested = next.match(/\/c\/([a-z0-9][a-z0-9-]*)$/)?.[1];
+        if (requested) {
+          router.push(allowed.includes(requested) ? next : `/store/${slug}`);
+        } else if (allowed.length && next === `/store/${slug}`) {
+          router.push(`/store/${slug}/c/${allowed[0]}`);
         } else {
           router.push(next);
         }
@@ -51,7 +56,7 @@ function PremiumLoginContent() {
         setError(data.error || "Failed to login.");
         setIsLoading(false);
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred.");
       setIsLoading(false);
     }
@@ -97,7 +102,7 @@ function PremiumLoginContent() {
             href={`/store/${slug}/auth/signup`} 
             className="text-xs font-bold uppercase tracking-widest text-black/50 hover:text-black transition-colors cursor-pointer"
           >
-            Don't have an account? <span className="text-black border-b border-black">Create One</span>
+            Don&apos;t have an account? <span className="text-black border-b border-black">Create One</span>
           </Link>
         </div>
       </form>

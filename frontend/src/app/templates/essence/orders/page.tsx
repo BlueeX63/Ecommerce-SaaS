@@ -25,5 +25,5 @@ const theme: AccountTheme = {
 };
 
 export default function EssenceOrdersPage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/essence"} defaultTab="orders" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/essence"} defaultTab="orders" theme={theme} />;
 }

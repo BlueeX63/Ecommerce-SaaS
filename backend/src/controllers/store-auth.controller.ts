@@ -143,6 +143,8 @@ export async function login(req: Request, res: Response) {
       last_name: customer.last_name,
       email: customer.email,
     },
+    // Only this shopper's own catalogs - the storefront uses these to send them to the right place after login.
+    catalogSlugs: catalogs.map((c) => c.slug),
     catalogSlug: catalogs[0]?.slug,
   });
 }

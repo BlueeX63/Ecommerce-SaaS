@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CreditCard, Wallet, Banknote } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -51,6 +52,15 @@ export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, all
   ];
   const methods = allowedMethods ? allMethods.filter((m) => allowedMethods.includes(m.id)) : allMethods;
 
+  // Payment instructions (UPI ID, bank details) are revealed only after the shopper confirms the method with
+  // "Continue to payment". Changing the method hides them again.
+  const [confirmed, setConfirmed] = useState(false);
+  const choose = (method: PaymentMethod) => {
+    setConfirmed(false);
+    onSelect(method);
+  };
+  const needsDetails = selected === "upi" || (selected === "netbanking" && !!details?.netbanking);
+
   return (
     <div className="w-full space-y-4">
       <h3 className={`text-xs font-bold uppercase tracking-widest ${isLight ? 'text-[#111111]' : 'text-white'} border-b ${borderClass} pb-3`}>
@@ -66,7 +76,7 @@ export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, all
             <button
               key={method.id}
               type="button"
-              onClick={() => onSelect(method.id)}
+              onClick={() => choose(method.id)}
               className={`relative flex items-center gap-4 p-4 sm:p-5 rounded-xl border border-transparent transition-all duration-300 text-left ${isActive ? activeBg : `${bgClass} ${inactiveText}`}`}
             >
               <span className={`flex items-center justify-center w-11 h-11 rounded-lg shrink-0 ${isActive ? (isLight ? 'bg-white/15' : 'bg-black/10') : (isLight ? 'bg-black/5' : 'bg-white/10')}`}>
@@ -103,8 +113,18 @@ export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, all
         })}
       </div>
 
-      {selected === "upi" && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className={`mt-4 p-4 rounded-lg ${isLight ? 'bg-orange-50 text-orange-800 border border-orange-100' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'} text-sm space-y-2`}>
+      {needsDetails && !confirmed && (
+        <button
+          type="button"
+          onClick={() => setConfirmed(true)}
+          className={`w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-colors ${isLight ? "bg-[#111111] text-white hover:bg-black/85" : "bg-white text-black hover:bg-white/85"}`}
+        >
+          Continue to payment
+        </button>
+      )}
+
+      {confirmed && selected === "upi" && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`p-4 rounded-lg ${isLight ? 'bg-orange-50 text-orange-800 border border-orange-100' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'} text-sm space-y-2`}>
           {details?.upi?.upiId && (
             <p className="font-medium">
               Pay to UPI ID: <span className="font-mono">{details.upi.upiId}</span>
@@ -117,11 +137,11 @@ export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, all
         </motion.div>
       )}
 
-      {selected === "netbanking" && details?.netbanking && (
+      {confirmed && selected === "netbanking" && details?.netbanking && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          className={`mt-4 p-4 rounded-lg text-sm space-y-1.5 ${isLight ? 'bg-blue-50 text-blue-800 border border-blue-100' : 'bg-blue-500/10 text-blue-300 border border-blue-500/20'}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className={`p-4 rounded-lg text-sm space-y-1.5 ${isLight ? 'bg-blue-50 text-blue-800 border border-blue-100' : 'bg-blue-500/10 text-blue-300 border border-blue-500/20'}`}
         >
           <p className="font-medium mb-1">Transfer to this account, then place your order:</p>
           {details.netbanking.accountName && <p>Account Name: <span className="font-mono">{details.netbanking.accountName}</span></p>}

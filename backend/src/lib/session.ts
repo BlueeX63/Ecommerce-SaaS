@@ -19,9 +19,17 @@ function cookieOptions(expires?: Date): CookieOptions {
   return { httpOnly: true, secure: isProd, sameSite: 'lax', path: '/', ...(expires ? { expires } : {}) };
 }
 
+/**
+ * A super admin's "sign in as owner" session is deliberately short-lived: it must not outlive the support task
+ * that opened it, and it is replaced as soon as anyone signs in normally in this browser.
+ */
+const IMPERSONATION_TTL_MS = 60 * 60 * 1000;
+
 async function writeCookie(res: Response, session: MerchantSession) {
-  const expires = new Date(Date.now() + SESSION_TTL_MS);
-  const token = await signToken('merchant-session', { ...session }, '7d');
+  const impersonating = !!session.impersonatedBy;
+  const ttlMs = impersonating ? IMPERSONATION_TTL_MS : SESSION_TTL_MS;
+  const expires = new Date(Date.now() + ttlMs);
+  const token = await signToken('merchant-session', { ...session }, impersonating ? '1h' : '7d');
   res.cookie(SESSION_COOKIE, token, cookieOptions(expires));
 }
 

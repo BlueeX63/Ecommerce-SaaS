@@ -26,5 +26,5 @@ const theme: AccountTheme = {
 };
 
 export default function CanvasProfilePage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/canvas"} defaultTab="profile" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/canvas"} defaultTab="profile" theme={theme} />;
 }

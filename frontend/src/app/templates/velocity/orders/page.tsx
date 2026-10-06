@@ -26,5 +26,5 @@ const theme: AccountTheme = {
 };
 
 export default function VelocityOrdersPage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/velocity"} defaultTab="orders" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/velocity"} defaultTab="orders" theme={theme} />;
 }

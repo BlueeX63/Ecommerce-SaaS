@@ -25,5 +25,5 @@ const theme: AccountTheme = {
 };
 
 export default function QuantumProfilePage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/quantum"} defaultTab="profile" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/quantum"} defaultTab="profile" theme={theme} />;
 }

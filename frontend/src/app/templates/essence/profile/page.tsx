@@ -25,5 +25,5 @@ const theme: AccountTheme = {
 };
 
 export default function EssenceProfilePage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/essence"} defaultTab="profile" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/essence"} defaultTab="profile" theme={theme} />;
 }

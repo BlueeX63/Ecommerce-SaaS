@@ -26,5 +26,5 @@ const theme: AccountTheme = {
 };
 
 export default function HorizonOrdersPage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/horizon"} defaultTab="orders" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/horizon"} defaultTab="orders" theme={theme} />;
 }

@@ -25,5 +25,5 @@ const theme: AccountTheme = {
 };
 
 export default function OriginProfilePage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/origin"} defaultTab="profile" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/origin"} defaultTab="profile" theme={theme} />;
 }

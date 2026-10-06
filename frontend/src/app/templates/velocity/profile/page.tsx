@@ -26,5 +26,5 @@ const theme: AccountTheme = {
 };
 
 export default function VelocityProfilePage({ basePath }: { basePath?: string } = {}) {
-  return <AccountCenter basePath={basePath || "/templates/velocity"} defaultTab="profile" theme={theme} />;
+  return <AccountCenter basePath={basePath ?? "/templates/velocity"} defaultTab="profile" theme={theme} />;
 }

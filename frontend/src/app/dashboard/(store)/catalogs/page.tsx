@@ -8,6 +8,14 @@ import { Pagination } from "@/components/dashboard/Pagination";
 
 const PAGE_LIMIT = 50;
 
+/** A row of catalog_customers: a registered customer, or a phone-only entry for someone not yet registered. */
+type CatalogMember = {
+  customer_id: string | null;
+  phone_number: string | null;
+  added_date: string;
+  customers: { first_name: string; last_name: string; email: string | null } | null;
+};
+
 type Catalog = {
   catalog_id: string;
   catalog_name: string;
@@ -46,6 +54,8 @@ export default function CatalogsPage() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [isCreatingNewCustomer, setIsCreatingNewCustomer] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ firstName: '', lastName: '', phoneNumber: '', email: '' });
+  const [members, setMembers] = useState<CatalogMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
 
   const fetchCatalogs = async () => {
     setIsLoading(true);
@@ -117,9 +127,29 @@ export default function CatalogsPage() {
     }
   };
 
+  const loadMembers = async (catalogId: string) => {
+    setMembersLoading(true);
+    try {
+      const res = await fetch(`/api/v1/catalogs/${catalogId}/customers`);
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(data.data || []);
+      } else {
+        setMembers([]);
+      }
+    } catch {
+      setMembers([]);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
   const openManageCustomers = async (catalog: Catalog) => {
     setManagingCatalog(catalog);
     setActiveDropdown(null);
+    setSelectedCustomerId('');
+    setMembers([]);
+    void loadMembers(catalog.catalog_id);
     try {
       const res = await fetch('/api/v1/customers?limit=100');
       if (res.ok) {
@@ -175,6 +205,7 @@ export default function CatalogsPage() {
         alert('Customer assigned successfully!');
         setManagingCatalog(null);
         setSelectedCustomerId('');
+        void loadMembers(managingCatalog.catalog_id);
         setIsCreatingNewCustomer(false);
         setNewCustomer({ firstName: '', lastName: '', phoneNumber: '', email: '' });
       } else {
@@ -263,6 +294,33 @@ export default function CatalogsPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              <div className="px-6 pt-6">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-black/50 mb-3">
+                  In this catalog {!membersLoading && `(${members.length})`}
+                </h3>
+                {membersLoading ? (
+                  <p className="text-sm text-secondary py-3">Loading customers…</p>
+                ) : members.length === 0 ? (
+                  <p className="text-sm text-secondary py-3">No customers have access yet.</p>
+                ) : (
+                  <ul className="max-h-56 overflow-y-auto divide-y divide-black/5 border border-black/5 rounded-lg">
+                    {members.map((m, i) => {
+                      const name = m.customers ? `${m.customers.first_name} ${m.customers.last_name}` : 'Phone-only entry';
+                      const detail = m.customers?.email || m.phone_number || '';
+                      return (
+                        <li key={`${m.customer_id ?? m.phone_number}-${i}`} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-primary truncate">{name}</p>
+                            <p className="text-xs text-secondary truncate">{detail}</p>
+                          </div>
+                          <span className="text-xs text-secondary shrink-0">{new Date(m.added_date).toLocaleDateString()}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
               <form onSubmit={handleAssignCustomer} className="p-6 space-y-4">
                 <p className="text-sm text-secondary mb-4">
                   Assign a customer to the <strong className="text-primary">{managingCatalog.catalog_name}</strong> catalog.
@@ -284,7 +342,7 @@ export default function CatalogsPage() {
                       name="customerId"
                       value={selectedCustomerId}
                       onChange={setSelectedCustomerId}
-                      options={availableCustomers}
+                      options={availableCustomers.filter((c) => !members.some((m) => m.customer_id === c.value))}
                       placeholder="Choose a customer..."
                     />
                   </div>

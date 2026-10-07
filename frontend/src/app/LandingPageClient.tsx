@@ -35,6 +35,28 @@ export default function LandingPageClient({ initialIsLoggedIn, initialHasStore, 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNavHidden, setIsNavHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  // Auto-hiding nav: slides up out of view once the page scrolls down past a small threshold, and comes
+  // straight back as soon as the user scrolls up - so it never blocks the page, but is never more than a
+  // scroll-up away.
+  useEffect(() => {
+    const SHOW_NEAR_TOP = 80;
+    const handleScroll = () => {
+      const y = window.scrollY;
+      if (y < SHOW_NEAR_TOP) {
+        setIsNavHidden(false);
+      } else if (y > lastScrollY.current) {
+        setIsNavHidden(true);
+      } else if (y < lastScrollY.current) {
+        setIsNavHidden(false);
+      }
+      lastScrollY.current = y;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleLogout = async () => {
     await fetch('/api/v1/auth/logout', { method: 'POST' });
@@ -66,74 +88,80 @@ export default function LandingPageClient({ initialIsLoggedIn, initialHasStore, 
   return (
     <main className="min-h-screen bg-[#F8F7F5] font-body relative w-full overflow-x-hidden">
 
-      {/* Navigation */}
-      <nav className="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-6 md:px-8 py-6 max-w-[1600px] mx-auto">
-        
-        {/* Logo (Left on mobile, Right on desktop) */}
-        <div className="flex items-center gap-3 cursor-pointer order-1 md:order-2">
-          <motion.img
-            initial={{ opacity: 0, rotate: -90 }}
-            animate={{ opacity: 1, rotate: 0 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            src="/logo.png"
-            alt="Monolith Logo"
-            className="w-8 h-8 md:w-10 md:h-10 object-contain mix-blend-multiply rounded-md"
-          />
-          <span className="font-heading text-xl md:text-2xl tracking-tighter uppercase text-primary pt-1">
-            Monolith
-          </span>
-        </div>
+      {/* Navigation - a floating pill, fixed to the top and centered, with its own solid dark background so
+          it stays legible over anything behind it. The primary CTA lives inside it as a bright chip at the
+          end, the way the reference does with its contact pill. */}
+      <motion.nav
+        animate={{ y: isNavHidden ? -120 : 0 }}
+        transition={{ type: "spring", stiffness: 220, damping: 28, mass: 0.9 }}
+        className="fixed top-5 md:top-6 inset-x-0 z-50 px-4 flex justify-end md:justify-center"
+      >
+        {/* Desktop: the floating pill */}
+        <div className="hidden md:flex items-center gap-1 bg-primary rounded-full pl-2 pr-2 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.25)] max-w-full">
+          {/* Mark */}
+          <a
+            href="#home"
+            onClick={(e) => scrollTo(e, 'home')}
+            className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-accent flex items-center justify-center shrink-0 cursor-pointer"
+          >
+            <span className="font-heading font-black text-white text-sm">M</span>
+          </a>
 
-        {/* Links & Profile (Hidden on mobile, Left on desktop) */}
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-secondary order-2 md:order-1">
-          {isLoggedIn && (
-            <div className="flex items-center mr-2 relative">
-              <div 
+          <div className="flex items-center text-xs font-bold uppercase tracking-wider">
+            <a href="#features" onClick={(e) => scrollTo(e, 'features')} className="px-3.5 py-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+              Arsenal
+            </a>
+            <a href="#benefits" onClick={(e) => scrollTo(e, 'benefits')} className="px-3.5 py-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+              Benefits
+            </a>
+            <TransitionLink href="/templates" className="px-3.5 py-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+              Templates
+            </TransitionLink>
+            <a href="#about" onClick={(e) => scrollTo(e, 'about')} className="px-3.5 py-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+              Mission
+            </a>
+            <a href="#pricing" onClick={(e) => scrollTo(e, 'pricing')} className="px-3.5 py-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+              Pricing
+            </a>
+            <Link href="/dashboard" className="px-3.5 py-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+              Dashboard
+            </Link>
+          </div>
+
+          {/* Right end: account avatar when signed in, otherwise the Start Building chip */}
+          {isLoggedIn ? (
+            <div className="relative ml-1">
+              <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 border border-white/15 flex items-center justify-center cursor-pointer hover:bg-white/15 transition-colors"
               >
                 <span className="text-sm font-bold text-accent">
                   {user ? `${user.first_name?.[0] || ''}${user.last_name !== '-' ? user.last_name?.[0] || '' : ''}`.toUpperCase() : 'U'}
                 </span>
-              </div>
+              </button>
               <ProfileDropdown isOpen={isDropdownOpen} setIsOpen={setIsDropdownOpen} user={user} logout={handleLogout} />
             </div>
+          ) : (
+            <TransitionLink
+              href="/signup"
+              className="ml-1 flex items-center gap-1.5 bg-white text-primary rounded-full pl-4 pr-3 py-2 text-xs font-bold uppercase tracking-wider hover:bg-white/90 transition-colors cursor-pointer"
+            >
+              Start Building <ArrowRight className="w-3.5 h-3.5" />
+            </TransitionLink>
           )}
-          <a href="#home" onClick={(e) => scrollTo(e, 'home')} className="text-primary font-bold hover:text-primary transition-colors cursor-pointer">Home</a>
-          <a href="#features" onClick={(e) => scrollTo(e, 'features')} className="hover:text-primary transition-colors cursor-pointer">Arsenal</a>
-          <a href="#benefits" onClick={(e) => scrollTo(e, 'benefits')} className="hover:text-primary transition-colors cursor-pointer">Benefits</a>
-          <TransitionLink href="/templates" className="hover:text-primary transition-colors cursor-pointer">Templates</TransitionLink>
-          <a href="#about" onClick={(e) => scrollTo(e, 'about')} className="hover:text-primary transition-colors cursor-pointer">Mission</a>
-          <a href="#pricing" onClick={(e) => scrollTo(e, 'pricing')} className="hover:text-primary transition-colors cursor-pointer">Pricing</a>
-          <Link href="/dashboard" className="hover:text-primary transition-colors cursor-pointer">Dashboard</Link>
         </div>
 
-        {/* Mobile Menu Icon & Profile (Hidden on desktop) */}
-        <div className="flex md:hidden items-center gap-3 order-2">
-          {isLoggedIn && (
-            <div className="relative">
-              <div 
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-9 h-9 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
-              >
-                <span className="text-sm font-bold text-accent">
-                  {user ? `${user.first_name?.[0] || ''}${user.last_name !== '-' ? user.last_name?.[0] || '' : ''}`.toUpperCase() : 'U'}
-                </span>
-              </div>
-              <ProfileDropdown isOpen={isDropdownOpen} setIsOpen={setIsDropdownOpen} user={user} logout={handleLogout} isMobile={true} />
-            </div>
-          )}
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-primary focus:outline-none">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              {isMobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-              )}
-            </svg>
-          </button>
-        </div>
-      </nav>
+        {/* Mobile: no bar, just the trigger itself */}
+        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 text-primary focus:outline-none" aria-label="Toggle menu">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            {isMobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            )}
+          </svg>
+        </button>
+      </motion.nav>
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
@@ -141,7 +169,7 @@ export default function LandingPageClient({ initialIsLoggedIn, initialHasStore, 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="fixed inset-0 z-40 bg-[#F8F7F5] pt-24 px-6 flex flex-col md:hidden"
+          className="fixed inset-0 z-40 bg-[#F8F7F5] pt-24 px-6 pb-10 flex flex-col md:hidden"
         >
           <div className="flex flex-col gap-6 text-2xl font-heading text-primary">
             <a href="#home" onClick={(e) => scrollTo(e, 'home')}>Home</a>
@@ -152,84 +180,84 @@ export default function LandingPageClient({ initialIsLoggedIn, initialHasStore, 
             <a href="#pricing" onClick={(e) => scrollTo(e, 'pricing')}>Pricing</a>
             <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
           </div>
+
+          {/* Account access - this is the only place it's reachable on mobile now that the nav is just the
+              hamburger. */}
+          <div className="mt-auto pt-8 border-t border-black/10">
+            {isLoggedIn ? (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="text-sm font-bold uppercase tracking-wider text-secondary"
+              >
+                Log Out
+              </button>
+            ) : (
+              <div className="flex items-center gap-4">
+                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-bold uppercase tracking-wider text-secondary">
+                  Log In
+                </Link>
+                <TransitionLink
+                  href="/signup"
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary text-white rounded-full py-3.5 text-sm font-bold uppercase tracking-wider"
+                >
+                  Start Building <ArrowRight className="w-4 h-4" />
+                </TransitionLink>
+              </div>
+            )}
+          </div>
         </motion.div>
       )}
 
       {/* Hero Section */}
-      <section className="relative min-h-screen pt-32 pb-20 px-8 max-w-[1600px] mx-auto flex items-center bg-[#F8F7F5] overflow-hidden">
-
-        {/* Right-Aligned Focal Image */}
-        <div className="absolute top-1/2 -right-[10%] lg:-right-[5%] -translate-y-1/2 w-[600px] lg:w-[900px] pointer-events-none z-10">
-          <motion.img
-            initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
-            src="/hero-sculpture.png"
-            alt="Premium Ecommerce Abstract"
-            className="w-full h-auto object-contain mix-blend-multiply"
-            style={{
-              WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 80%)',
-              maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 80%)'
-            }}
-          />
+      <section className="relative overflow-hidden bg-[#F8F7F5] pt-24 md:pt-10 px-8 pb-10 md:pb-16">
+        <div className="max-w-[1600px] mx-auto">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="font-bold uppercase text-[13px] md:text-sm tracking-[0.1em] leading-[1.3] text-[#111111]"
+          >
+            Commerce<br />Built To<br />Outlast.
+          </motion.p>
+          <span className="inline-block w-10 h-[2px] bg-accent mt-3" />
         </div>
 
-        <div className="relative z-20 w-full grid grid-cols-12 gap-8 items-center h-full">
-
-          {/* Left Content */}
-          <div className="col-span-12 lg:col-span-8 pt-10">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="font-heading text-6xl md:text-[90px] lg:text-[110px] leading-[0.95] tracking-tight text-[#111111] uppercase max-w-4xl mb-8"
-            >
-              FIRST ECOMMERCE<br /><span className="text-accent">GUIDANCE</span> YOU<br />SHOULD TRUST
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="text-[#111111] text-base md:text-xl max-w-xl mb-12 leading-relaxed font-bold bg-white/20 backdrop-blur-sm p-4 rounded-xl shadow-[0_4px_30px_rgba(0,0,0,0.05)] border border-white/50 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:shadow-none lg:border-none"
-            >
-              Helping individuals and businesses move forward with trusted ecommerce strategies and proven conversions.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center gap-4"
-            >
-              {!isLoggedIn && (
-                <TransitionLink
-                  href="/signup"
-                  text="Get Started"
-                  className="bg-accent text-white px-9 py-4 rounded-full text-sm font-medium tracking-wide flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent/30 transition-all active:scale-95"
-                >
-                  Get Started <ArrowRight className="w-4 h-4" />
-                </TransitionLink>
-              )}
-              <button className="bg-[#F8F7F5] text-primary px-9 py-4 rounded-full text-sm font-medium tracking-wide hover:bg-accent/5 transition-colors border border-accent">
-                Learn More
-              </button>
-            </motion.div>
-          </div>
+        {/* Giant wordmark with the model photo overlapping it, like the reference. The photo is landscape
+            (the walking pose is wider than it is tall), so on a narrow phone it can't fill the same tall box
+            by height alone without cropping - below md it fills the box by cropping in slightly (object-cover)
+            so the figure stays large enough to cross the text, the way it does on desktop; at md+ there's
+            enough width that filling by height (object-contain) never needs to crop anything. */}
+        <div className="relative mx-auto max-w-[1600px] px-2 h-[66vh] md:h-screen flex items-center justify-center mt-2">
+          <motion.h1
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-x-0 top-[34%] md:top-1/2 -translate-y-1/2 text-center font-heading font-extrabold uppercase leading-none select-none pointer-events-none z-0 tracking-[0.02em]"
+            style={{ fontSize: "clamp(3.4rem, 15.5vw, 13.5rem)" }}
+          >
+            <span className="text-[#111111]">Mono</span>
+            <span className="text-accent">lith</span>
+          </motion.h1>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 w-full h-full flex items-end justify-center"
+          >
+            <img
+              src="/hero-model-cutout.png"
+              alt="A model walking, styled editorially - standing in for every brand built on Monolith"
+              className="w-full h-full object-cover object-[center_12%] md:h-[104%] md:w-auto md:object-contain md:object-bottom"
+              style={{
+                WebkitMaskImage: "linear-gradient(to bottom, black 86%, transparent 98%)",
+                maskImage: "linear-gradient(to bottom, black 86%, transparent 98%)",
+              }}
+            />
+          </motion.div>
         </div>
-
-        {/* Floating Socials (Cleaned up, no other stat cards) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 1 }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 hidden md:flex bg-white/80 backdrop-blur-md rounded-full px-8 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.06)] items-center gap-8 border border-black/5 z-30"
-        >
-          <Link href="#" className="bg-primary text-white p-2 rounded-xl hover:scale-110 hover:-translate-y-1 transition-all"><InstagramIcon /></Link>
-          <Link href="#" className="text-secondary hover:text-primary transition-colors"><FacebookIcon /></Link>
-          <Link href="#" className="text-secondary hover:text-primary transition-colors"><TwitterIcon /></Link>
-        </motion.div>
-
       </section>
 
       {/* Standard Card Features Section */}
@@ -441,43 +469,53 @@ const NormalCardFeaturesSection = () => {
     {
       title: "Headless Core.",
       desc: "Decouple your frontend from your backend. Enjoy millisecond query times powered by our global edge caching infrastructure.",
-      icon: <Code2 className="w-7 h-7 text-primary" />
+      icon: <Code2 className="w-7 h-7 text-white/70" />
     },
     {
       title: "Visual Canvas.",
       desc: "Experience true WYSIWYG editing. Drag, drop, and publish raw React components flawlessly without engineering help.",
-      icon: <LayoutTemplate className="w-7 h-7 text-primary" />
+      icon: <LayoutTemplate className="w-7 h-7 text-white/70" />
     },
     {
       title: "Edge Analytics.",
       desc: "Privacy-first, cookieless analytics and conversion heatmaps processed directly at the edge with zero performance impact.",
-      icon: <BarChart3 className="w-7 h-7 text-primary" />
+      icon: <BarChart3 className="w-7 h-7 text-white/70" />
     }
   ];
 
   return (
     <section id="features" className="py-32 relative z-20 overflow-hidden bg-[#F8F7F5] border-t border-black/5">
 
-      {/* Abstract Background Layer */}
+      {/* A real material surface instead of a drawn pattern - brushed plaster, close in tone to the page
+          background, multiplied in so it reads as texture rather than a photo sitting on top. Fades out
+          toward the bottom edge so it never competes with the sections below. */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] rounded-full bg-gradient-to-br from-black/[0.03] to-transparent blur-3xl" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-[#FF4D00]/[0.05] to-transparent blur-3xl" />
-        <div className="absolute inset-0 bg-[url('/features-bg.png')] bg-cover bg-center opacity-[0.15] mix-blend-multiply" />
+        <img
+          src="https://images.unsplash.com/photo-1666013942481-f2810d442e45?q=80&w=2400&auto=format&fit=crop"
+          alt=""
+          className="w-full h-full object-cover mix-blend-multiply opacity-80"
+          style={{
+            WebkitMaskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
+            maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
+          }}
+        />
       </div>
 
       <div className="max-w-[1400px] mx-auto px-8 relative z-10">
 
         {/* Header */}
         <div className="text-center max-w-4xl mx-auto mb-20 md:mb-24">
-          <h2 className="font-heading text-6xl md:text-8xl tracking-tighter uppercase leading-[0.9] text-primary mb-8">
-            The <span className="text-[#FF4D00]">Arsenal.</span>
+          <h2 className="font-heading font-extrabold text-6xl md:text-8xl tracking-tight uppercase leading-[0.9] text-primary mb-8">
+            The <span className="text-accent">Arsenal.</span>
           </h2>
           <p className="text-lg md:text-xl text-secondary font-medium leading-relaxed max-w-2xl mx-auto">
             A comprehensive suite of enterprise-grade tools built into a relentlessly simple interface.
           </p>
         </div>
 
-        {/* Cards Grid */}
+        {/* Cards Grid - matte black panels, staggered rather than aligned, each carrying its own oversized
+            ghost index number bleeding off the top edge. No shadow anywhere: depth comes from the stagger,
+            the hairline border and the accent rule that draws in on hover, not from blur. */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {features.map((feat, i) => (
             <motion.div
@@ -486,19 +524,23 @@ const NormalCardFeaturesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.7, delay: i * 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="group relative bg-white/50 backdrop-blur-2xl p-10 md:p-12 rounded-[40px] border border-white/60 shadow-[0_20px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+              className={`group relative bg-primary border border-white/10 hover:border-white/25 rounded-[40px] p-10 md:p-12 overflow-hidden transition-colors duration-500 ${
+                i === 1 ? "md:mt-12" : i === 2 ? "md:mt-6" : ""
+              }`}
             >
-              {/* Subtle hover gradient inside card */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 pointer-events-none" />
+              <div className="absolute top-0 left-0 h-[2px] bg-accent w-0 group-hover:w-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+              <span className="absolute top-1 right-5 font-heading font-black text-white/[0.06] group-hover:text-white/[0.1] transition-colors duration-500 text-[7rem] md:text-[8rem] leading-none select-none pointer-events-none">
+                0{i + 1}
+              </span>
 
               <div className="relative z-10">
-                <div className="w-16 h-16 rounded-[20px] bg-white shadow-[0_10px_20px_rgba(0,0,0,0.04)] border border-black/5 flex items-center justify-center mb-10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                <div className="w-14 h-14 border border-white/15 group-hover:border-accent flex items-center justify-center mb-10 transition-colors duration-500">
                   {feat.icon}
                 </div>
-                <h3 className="font-heading text-3xl md:text-4xl tracking-tighter uppercase text-primary mb-6">
+                <h3 className="font-heading font-extrabold text-3xl md:text-4xl tracking-tight uppercase text-white mb-5">
                   {feat.title}
                 </h3>
-                <p className="text-secondary font-medium text-lg leading-relaxed group-hover:text-primary transition-colors duration-300">
+                <p className="text-white/50 font-medium text-lg leading-relaxed group-hover:text-white/70 transition-colors duration-300">
                   {feat.desc}
                 </p>
               </div>

@@ -8,7 +8,9 @@
   --color-accent: #FF4D00;
 
   --font-body: var(--font-body), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-heading), ui-serif, serif;
+  /* The app's heading font (Archivo - see app/layout.tsx): bold, condensed, grotesk, used for every
+     heading across the dashboard, auth and marketing pages. Storefront templates keep their own fonts below. */
+  --font-heading: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
   --font-accent: var(--font-accent), ui-sans-serif, system-ui, sans-serif;
 
   /* Template-specific display fonts: each template loads its own font via next/font and scopes

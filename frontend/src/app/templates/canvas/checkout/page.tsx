@@ -288,7 +288,7 @@ export default function CanvasCheckoutPage({ initialOnlinePaymentsEnabled, initi
                 <PremiumPaymentSelector theme="dark" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods} details={initialPaymentMethods} />
               </div>
 
-          <h3 className="text-[10px] font-mono tracking-widest uppercase text-white/50 mb-6">Promotional Code</h3>
+          <h3 className="text-[10px] font-mono tracking-widest uppercase text-white/50 mt-8 pt-6 border-t border-white/10 mb-6">Promotional Code</h3>
               {appliedCoupon ? (
                 <div className="flex items-center justify-between bg-white/5 p-4 border border-white/20">
                   <div>

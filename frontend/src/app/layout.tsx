@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, Inter, Space_Grotesk } from "next/font/google";
+import { Archivo, Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { SmoothScroll } from "@/components/lenis";
 import { TransitionProvider } from "@/components/TransitionProvider";
-
-const dmSerif = DM_Serif_Display({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-heading",
-});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,6 +13,13 @@ const inter = Inter({
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-accent",
+});
+
+/** The app's heading font: bold, condensed, grotesk - the same family as the landing page's giant wordmark. */
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["600", "800", "900"],
+  variable: "--font-heading",
 });
 
 export const metadata: Metadata = {
@@ -32,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSerif.variable} ${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${archivo.variable} ${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="min-h-full flex flex-col font-body bg-background text-primary selection:bg-accent selection:text-white antialiased">
         <AuthProvider>
           <SmoothScroll />

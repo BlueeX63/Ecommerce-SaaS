@@ -273,7 +273,7 @@ export default function StarterCheckoutPage({ initialOnlinePaymentsEnabled, init
           <div className="bg-white p-6 border border-black/5 mb-8">
             <PremiumPaymentSelector theme="light" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods} details={initialPaymentMethods} />
 
-          <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] border-b border-black/10 pb-3 mb-4">Promotional Code</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-[#111111] mt-8 pt-6 border-t border-black/10 mb-4">Promotional Code</h3>
             {appliedCoupon ? (
               <div className="flex items-center justify-between">
                 <div>

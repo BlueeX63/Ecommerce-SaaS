@@ -256,7 +256,7 @@ export default function EssenceCheckoutPage({ initialOnlinePaymentsEnabled, init
             <div className="bg-[#E3D8C8]/30 p-6 mb-10">
               <PremiumPaymentSelector theme="light" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods} details={initialPaymentMethods} />
 
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4A3F35]/70 border-b border-[#4A3F35]/10 pb-3 mb-4">Promotional Code</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4A3F35]/70 mt-8 pt-6 border-t border-[#4A3F35]/10 mb-4">Promotional Code</h3>
               {appliedCoupon ? (
                 <div className="flex items-center justify-between">
                   <div>

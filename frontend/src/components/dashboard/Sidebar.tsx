@@ -87,7 +87,7 @@ export function Sidebar({ user }: { user?: any }) {
               className="absolute top-[100%] left-4 right-4 bg-white border border-black/5 shadow-xl rounded-xl mt-2 py-2 z-50 overflow-hidden"
             >
               <div className="px-3 pb-2 text-xs font-accent text-secondary tracking-widest uppercase">Your Stores</div>
-              <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+              <div className="max-h-[200px] overflow-y-auto scrollbar-hide">
                 {user?.stores?.map((store: any) => (
                   <button
                     key={store.tenant_id}
@@ -119,7 +119,7 @@ export function Sidebar({ user }: { user?: any }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 min-h-0 py-6 px-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 min-h-0 py-6 px-4 space-y-1 overflow-y-auto scrollbar-hide">
         {navItems.map((item) => {
           const isActive = item.href === "/" ? pathname === "/" : pathname === item.href || pathname?.startsWith(`${item.href}/`);
           const Icon = item.icon;

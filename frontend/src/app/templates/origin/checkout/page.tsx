@@ -256,7 +256,7 @@ export default function OriginCheckoutPage({ initialOnlinePaymentsEnabled, initi
             <div className="bg-white/50 border border-[#402c21]/10 p-6 mb-10 rounded-sm">
               <PremiumPaymentSelector theme="light" selected={paymentMethod} onSelect={setPaymentMethod} allowedMethods={allowedPaymentMethods} details={initialPaymentMethods} />
 
-          <h3 className="text-xs font-bold uppercase tracking-widest text-[#402c21]/70 border-b border-[#402c21]/10 pb-3 mb-4">Promotional Code</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-[#402c21]/70 mt-8 pt-6 border-t border-[#402c21]/10 mb-4">Promotional Code</h3>
               {appliedCoupon ? (
                 <div className="flex items-center justify-between">
                   <div>

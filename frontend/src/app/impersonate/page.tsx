@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ShieldAlert } from "lucide-react";
 
@@ -14,8 +14,13 @@ function ImpersonateRedeemContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  // Development runs effects twice (Strict Mode). The ticket is single-use, so the redeem must happen exactly
+  // once; a second attempt would fail and flash "Could not sign in" even though the first one succeeded.
+  const redeemed = useRef(false);
 
   useEffect(() => {
+    if (redeemed.current) return;
+    redeemed.current = true;
     const ticket = searchParams?.get("ticket");
     if (!ticket) {
       setError("Missing sign-in link.");

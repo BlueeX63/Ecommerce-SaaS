@@ -3,6 +3,7 @@ import { limit } from '../lib/rate-limit.js';
 import { requireSuperAdmin } from '../middleware/super-admin.js';
 import * as authController from '../controllers/super-admin-auth.controller.js';
 import * as superAdminController from '../controllers/super-admin.controller.js';
+import * as merchantsController from '../controllers/super-admin-merchants.controller.js';
 
 export const superAdminRouter = Router();
 
@@ -28,6 +29,13 @@ superAdminRouter.get('/orders', superAdminController.listOrders);
 superAdminRouter.get('/system-status', superAdminController.getSystemStatus);
 
 superAdminRouter.get('/tenants', superAdminController.listTenants);
+
+// --- Merchants (every account in the users table) -------------------------------------------------
+superAdminRouter.get('/merchants', merchantsController.listMerchants);
+superAdminRouter.get('/merchants/:id', merchantsController.getMerchantDetail);
+superAdminRouter.post('/merchants/:id/suspend', merchantsController.suspendMerchant);
+superAdminRouter.post('/merchants/:id/reactivate', merchantsController.reactivateMerchant);
+superAdminRouter.post('/merchants/:id/revoke-sessions', merchantsController.revokeMerchantSessions);
 superAdminRouter.get('/tenants/:id', superAdminController.getTenantDetail);
 superAdminRouter.post('/tenants/:id/suspend', superAdminController.suspendTenant);
 superAdminRouter.post('/tenants/:id/reactivate', superAdminController.reactivateTenant);

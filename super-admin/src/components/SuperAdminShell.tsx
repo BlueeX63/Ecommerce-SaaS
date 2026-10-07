@@ -3,10 +3,11 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Store, ShoppingBag, ScrollText, Activity, LogOut, ShieldCheck } from "lucide-react";
+import { LayoutGrid, Store, Users, ShoppingBag, ScrollText, Activity, LogOut, ShieldCheck } from "lucide-react";
 
 const navItems = [
   { name: "Overview", href: "/", icon: LayoutGrid },
+  { name: "Merchants", href: "/merchants", icon: Users },
   { name: "Stores", href: "/tenants", icon: Store },
   { name: "Orders", href: "/orders", icon: ShoppingBag },
   { name: "Audit log", href: "/audit-log", icon: ScrollText },

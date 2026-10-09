@@ -12,6 +12,7 @@ export type TokenPurpose =
   | 'password-reset'
   | 'team-invite'
   | 'super-admin-session'
+  | 'employee-session'
   | 'impersonation-ticket';
 
 const keyCache = new Map<TokenPurpose, Uint8Array>();

@@ -43,6 +43,8 @@ export interface Quote {
     maxDate: string;
     basis: FulfillmentPlan['basis'];
     shipFrom: FulfillmentPlan['shipFrom'];
+    notes: string[];
+    confidence: 'high' | 'medium' | 'low';
   };
   allInStock: boolean;
   unavailable: Array<{ productId: string; name: string }>;
@@ -187,7 +189,7 @@ export async function buildQuote(input: QuoteInput): Promise<Quote> {
       deliveryOptionId,
     },
     total: fromCents(totalCents),
-    delivery: { ...plan.eta, basis: plan.basis, shipFrom: plan.shipFrom },
+    delivery: { ...plan.eta, basis: plan.basis, shipFrom: plan.shipFrom, notes: plan.factors.notes, confidence: plan.factors.confidence },
     allInStock: plan.allInStock,
     unavailable,
     internal: {

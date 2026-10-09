@@ -16,6 +16,26 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Stock: a fixed number of units, or "rather not say" (unlimited: stock isn't tracked).
+  type StockMode = "tracked" | "unlimited" | null;
+  const [stockMode, setStockMode] = useState<StockMode>(null);
+  const [stockQty, setStockQty] = useState("");
+  const [stockWarehouseId, setStockWarehouseId] = useState("");
+  const [warehouses, setWarehouses] = useState<{ value: string; label: string; primary: boolean }[]>([]);
+  const [stockSummary, setStockSummary] = useState<{ tracked: boolean; perWarehouse: { warehouseId: string; name: string; quantity: number }[] } | null>(null);
+  const [stockDirty, setStockDirty] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/v1/warehouses", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const list = (d?.data ?? []).filter((w: any) => w.is_active);
+        setWarehouses(list.map((w: any) => ({ value: w.warehouse_id, label: w.warehouse_name, primary: !!w.is_primary })));
+        setStockWarehouseId((cur) => cur || list.find((w: any) => w.is_primary)?.warehouse_id || list[0]?.warehouse_id || "");
+      })
+      .catch(() => undefined);
+  }, []);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [categories, setCategories] = useState<{value: string, label: string}[]>([]);
@@ -96,6 +116,14 @@ export function ProductForm({ productId }: { productId?: string }) {
         const images = [...(p.product_images ?? [])]
           .sort((a: any, b: any) => Number(!!b.is_primary) - Number(!!a.is_primary) || (a.sort_order ?? 0) - (b.sort_order ?? 0))
           .map((i: any) => i.image_url as string);
+        if (p.stock) {
+          setStockSummary(p.stock);
+          setStockMode(p.stock.tracked ? "tracked" : "unlimited");
+          if (p.stock.tracked && p.stock.perWarehouse.length === 1) {
+            setStockQty(String(p.stock.perWarehouse[0].quantity));
+            setStockWarehouseId(p.stock.perWarehouse[0].warehouseId);
+          }
+        }
         setFormData((prev) => ({
           ...prev,
           productName: p.product_name ?? "",
@@ -257,6 +285,13 @@ export function ProductForm({ productId }: { productId?: string }) {
     }
   };
 
+  const multiWarehouseTracked = isEdit && !!stockSummary?.tracked && stockSummary.perWarehouse.length > 1;
+  const qtyValid = /^\d+$/.test(stockQty.trim());
+  const stockValid = isEdit ? !stockDirty || stockMode === "unlimited" || (stockMode === "tracked" && qtyValid) : stockMode === "unlimited" || (stockMode === "tracked" && qtyValid && !!stockWarehouseId);
+
+  const stockPayload = () =>
+    stockMode === "tracked" ? { mode: "tracked", quantity: Number(stockQty), warehouseId: stockWarehouseId || undefined } : { mode: "unlimited" };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -278,6 +313,7 @@ export function ProductForm({ productId }: { productId?: string }) {
               threeDModelUrl: formData.threeDModelUrl,
               status: formData.status,
               imageUrls: images,
+              ...(stockDirty ? { stock: stockPayload() } : {}),
             }),
           })
         : await fetch("/api/v1/products", {
@@ -288,6 +324,7 @@ export function ProductForm({ productId }: { productId?: string }) {
               // Filter out empty slots, ensuring primary image stays at index 0 if it exists
               imageUrls: images,
               catalogs: formData.catalogs.filter((c) => c.catalogId !== ""),
+              stock: stockPayload(),
             }),
           });
 
@@ -641,11 +678,81 @@ export function ProductForm({ productId }: { productId?: string }) {
                 className="w-full px-4 py-3 bg-[#F9F9F9] border border-black/[0.05] rounded-xl focus:outline-none focus:border-black/20 focus:bg-white focus:ring-4 focus:ring-black/5 text-sm transition-all duration-300 placeholder:text-black/30 font-mono uppercase"
               />
             </div>
+
+            <div className="pt-2">
+              <label className="block text-[12px] font-bold tracking-widest uppercase text-black/50 mb-3">Stock *</label>
+              <div className="space-y-3" role="radiogroup" aria-label="Stock">
+                <label className={`block cursor-pointer rounded-xl border p-4 transition-colors ${stockMode === "tracked" ? "border-black bg-black/[0.03]" : "border-black/10 hover:bg-black/[0.02]"} ${multiWarehouseTracked ? "opacity-70" : ""}`}>
+                  <input
+                    type="radio"
+                    name="stockMode"
+                    className="sr-only"
+                    checked={stockMode === "tracked"}
+                    disabled={multiWarehouseTracked}
+                    onChange={() => {
+                      setStockMode("tracked");
+                      setStockDirty(true);
+                    }}
+                  />
+                  <span className="block text-sm font-medium text-primary">I have a fixed number of units</span>
+                  <span className="block text-xs text-secondary mt-0.5">Orders reduce this number, and you&apos;re alerted when it runs out.</span>
+                  {stockMode === "tracked" && !multiWarehouseTracked && (
+                    <div className="mt-3 grid grid-cols-2 gap-3" onClick={(e) => e.preventDefault()}>
+                      <input
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        placeholder="Units in stock"
+                        aria-label="Units in stock"
+                        value={stockQty}
+                        onChange={(e) => {
+                          setStockQty(e.target.value);
+                          setStockDirty(true);
+                        }}
+                        className="w-full px-3 py-2 bg-white border border-black/[0.1] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/5"
+                      />
+                      {warehouses.length > 1 && !isEdit ? (
+                        <CustomSelect value={stockWarehouseId} onChange={setStockWarehouseId} options={warehouses.map((w) => ({ value: w.value, label: w.primary ? `${w.label} (main)` : w.label }))} />
+                      ) : (
+                        <span className="self-center text-xs text-secondary truncate">{warehouses.find((w) => w.value === stockWarehouseId)?.label ?? "Your warehouse"}</span>
+                      )}
+                    </div>
+                  )}
+                </label>
+
+                <label className={`block cursor-pointer rounded-xl border p-4 transition-colors ${stockMode === "unlimited" ? "border-black bg-black/[0.03]" : "border-black/10 hover:bg-black/[0.02]"}`}>
+                  <input
+                    type="radio"
+                    name="stockMode"
+                    className="sr-only"
+                    checked={stockMode === "unlimited"}
+                    onChange={() => {
+                      setStockMode("unlimited");
+                      setStockDirty(true);
+                    }}
+                  />
+                  <span className="block text-sm font-medium text-primary">Rather not say</span>
+                  <span className="block text-xs text-secondary mt-0.5">Stock is unlimited: it can always be ordered and is never marked out of stock.</span>
+                </label>
+              </div>
+
+              {multiWarehouseTracked && stockSummary && (
+                <div className="mt-3 rounded-xl bg-black/[0.03] p-3 text-xs text-secondary space-y-1">
+                  <p className="font-medium text-primary">Stock by warehouse</p>
+                  {stockSummary.perWarehouse.map((w) => (
+                    <p key={w.warehouseId} className="flex justify-between"><span>{w.name}</span><span className="tabular-nums">{w.quantity}</span></p>
+                  ))}
+                  <p>Adjust these from <a href="/dashboard/inventory" className="underline">Inventory</a>.</p>
+                </div>
+              )}
+              {!isEdit && stockMode === null && <p className="mt-2 text-xs text-secondary">Choose one to continue.</p>}
+              {warehouses.length === 0 && stockMode === "tracked" && <p className="mt-2 text-xs text-red-600">Add your warehouse first so we know where this stock is.</p>}
+            </div>
           </div>
 
           <button
             type="submit"
-            disabled={isLoading || !formData.productName || !formData.slug || !formData.categoryId}
+            disabled={isLoading || !formData.productName || !formData.slug || !formData.categoryId || !stockValid}
             className="group relative w-full flex items-center justify-center gap-2 px-6 py-4 bg-black text-white rounded-[20px] overflow-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-500 hover:shadow-[0_20px_40px_rgb(0,0,0,0.2)] hover:-translate-y-1 active:translate-y-0 active:shadow-none"
           >
             <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300 ease-[0.16,1,0.3,1] rounded-[16px]" />

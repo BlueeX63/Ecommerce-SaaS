@@ -96,6 +96,7 @@ function PaymentSuccessContent() {
     );
   }
 
+  const hasStore = !!context?.hasStore || (context?.stores.length ?? 0) > 0;
   const purchasedAddons = addonCatalog.filter((a) => context?.featureFlags.includes(a.id));
 
   return (
@@ -137,13 +138,28 @@ function PaymentSuccessContent() {
         })}
       </div>
 
-      <Link
-        href="/onboarding/template-selection"
-        className="group relative flex items-center gap-3 py-5 px-10 rounded-2xl bg-[#FF4D00] text-white overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,77,0,0.3)] hover:scale-[1.02] active:scale-[0.98]"
-      >
-        <span className="relative z-10 font-accent font-bold uppercase tracking-widest text-sm">Create Your Store</span>
-        <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
-      </Link>
+      {hasStore ? (
+        <>
+          <p className="text-white/50 mb-8 text-sm max-w-sm leading-relaxed text-center">
+            Your upgrade is already active on your existing store{(context?.stores.length ?? 0) > 1 ? "s" : ""} — nothing else to set up.
+          </p>
+          <Link
+            href="/dashboard/overview"
+            className="group relative flex items-center gap-3 py-5 px-10 rounded-2xl bg-[#FF4D00] text-white overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,77,0,0.3)] hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <span className="relative z-10 font-accent font-bold uppercase tracking-widest text-sm">Go to Dashboard</span>
+            <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </>
+      ) : (
+        <Link
+          href="/onboarding/template-selection"
+          className="group relative flex items-center gap-3 py-5 px-10 rounded-2xl bg-[#FF4D00] text-white overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,77,0,0.3)] hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <span className="relative z-10 font-accent font-bold uppercase tracking-widest text-sm">Create Your Store</span>
+          <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
+        </Link>
+      )}
     </Screen>
   );
 }

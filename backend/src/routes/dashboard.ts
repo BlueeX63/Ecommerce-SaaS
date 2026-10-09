@@ -31,3 +31,7 @@ dashboardRouter.post('/support-requests/:id/respond', limit('support-respond', 1
 dashboardRouter.get('/refunds', supportController.listRefunds);
 dashboardRouter.post('/refunds/:id/action', limit('refund-action', 120, 10 * 60_000, (req) => req.merchant?.userId), supportController.actOnRefund);
 dashboardRouter.patch('/orders/:id/shipping', supportController.updateShipping);
+
+// --- notifications -----------------------------------------------------------------------------------
+dashboardRouter.get('/notifications', dashboardController.listNotifications);
+dashboardRouter.post('/notifications/read', dashboardController.markNotificationsRead);

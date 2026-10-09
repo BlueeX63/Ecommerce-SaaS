@@ -13,7 +13,8 @@ import { slugify } from '../lib/sanitize.js';
 import { tenantCtx } from '../middleware/auth.js';
 import { assertOwned, assertOwnedOrNull } from '../services/ownership.js';
 import { invalidateTenantCache } from '../services/tenants.js';
-import { getTenantStockSummary } from '../services/fulfillment.js';
+import { getStockByProduct, getTenantStockSummary } from '../services/fulfillment.js';
+import { makeUnlimited, setStock } from '../services/stock.js';
 
 const PRODUCT_STATUS = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']);
 
@@ -30,8 +31,29 @@ const productFields = {
   threeDModelUrl: optionalHttpUrl(255),
 };
 
+/**
+ * How much of a product the merchant has. "unlimited" means stock isn't tracked (the product can always be ordered);
+ * "tracked" records an opening quantity at a warehouse, and orders then draw it down.
+ */
+const stockSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('unlimited') }),
+  z.object({ mode: z.literal('tracked'), quantity: z.coerce.number().int().min(0).max(10_000_000), warehouseId: optionalUuid }),
+]);
+
+/** The warehouse initial stock goes to: the one chosen, else the primary, else the only one. */
+async function resolveStockWarehouse(tenantId: string, requested?: string): Promise<string> {
+  if (requested) {
+    await assertOwned('warehouses', requested, tenantId, 'warehouse');
+    return requested;
+  }
+  const { data } = await db.from('warehouses').select('warehouse_id, is_primary').eq('tenant_id', tenantId).eq('is_active', true).order('is_primary', { ascending: false }).order('created_date');
+  if (!data?.length) throw badRequest('Add your warehouse (dispatch location) before tracking stock.');
+  return data[0].warehouse_id;
+}
+
 const createSchema = z.object({
   ...productFields,
+  stock: stockSchema,
   imageUrls: z.array(httpUrl(255)).max(10).optional(),
   primaryImageUrl: optionalHttpUrl(255),
   catalogs: z
@@ -56,6 +78,7 @@ const updateSchema = z.object({
   threeDModelUrl: z.preprocess((v) => (v === null ? '' : v), z.union([z.literal(''), httpUrl(255)])).optional(),
   /** When present, replaces the product's images (first = primary). */
   imageUrls: z.array(httpUrl(255)).max(10).optional(),
+  stock: stockSchema.optional(),
 });
 
 export async function list(req: Request, res: Response) {
@@ -105,7 +128,21 @@ export async function getById(req: Request, res: Response) {
   if (error) throw error;
   if (!product) throw notFound('Product not found');
 
-  res.json({ data: product });
+  const stockRows = (await getStockByProduct(tenantId, [id])).get(id) ?? [];
+  const warehouseIds = [...new Set(stockRows.map((r) => r.warehouseId))];
+  const { data: warehouses } = warehouseIds.length
+    ? await db.from('warehouses').select('warehouse_id, warehouse_name').eq('tenant_id', tenantId).in('warehouse_id', warehouseIds)
+    : { data: [] as Array<{ warehouse_id: string; warehouse_name: string }> };
+  const stock = {
+    tracked: stockRows.length > 0,
+    perWarehouse: warehouseIds.map((w) => ({
+      warehouseId: w,
+      name: warehouses?.find((x) => x.warehouse_id === w)?.warehouse_name ?? 'Warehouse',
+      quantity: stockRows.filter((r) => r.warehouseId === w).reduce((sum, r) => sum + r.available, 0),
+    })),
+  };
+
+  res.json({ data: { ...product, stock } });
 }
 
 export async function create(req: Request, res: Response) {
@@ -114,6 +151,8 @@ export async function create(req: Request, res: Response) {
 
   const categoryId = await assertOwnedOrNull('categories', body.categoryId, tenantId, 'category');
   for (const entry of body.catalogs ?? []) await assertOwned('catalogs', entry.catalogId, tenantId, 'catalog');
+
+  const stockWarehouseId = body.stock.mode === 'tracked' ? await resolveStockWarehouse(tenantId, body.stock.warehouseId) : null;
 
   let slug = slugify(body.slug, 200);
   if (!slug) throw badRequest('Slug is required');
@@ -169,6 +208,24 @@ export async function create(req: Request, res: Response) {
     if (catalogError) console.error('[products] failed to assign catalogs', catalogError);
   }
 
+  if (body.stock.mode === 'tracked' && stockWarehouseId) {
+    try {
+      await setStock({
+        tenantId,
+        warehouseId: stockWarehouseId,
+        productId: product.product_id,
+        quantity: body.stock.quantity,
+        reason: 'Opening stock',
+        type: 'PURCHASE_RECEIPT',
+        actor: { userId },
+      });
+    } catch (error) {
+      // Don't leave a product behind whose stock could not be recorded.
+      await db.from('products').delete().eq('product_id', product.product_id).eq('tenant_id', tenantId);
+      throw error;
+    }
+  }
+
   await invalidateTenantCache(tenantId);
   res.status(201).json({ message: 'Product created successfully', data: product });
 }
@@ -204,6 +261,15 @@ export async function update(req: Request, res: Response) {
     throw error;
   }
   if (!data) throw notFound('Product not found');
+
+  if (body.stock) {
+    if (body.stock.mode === 'unlimited') {
+      await makeUnlimited(tenantId, id);
+    } else {
+      const warehouseId = await resolveStockWarehouse(tenantId, body.stock.warehouseId);
+      await setStock({ tenantId, warehouseId, productId: id, quantity: body.stock.quantity, reason: 'Edited on the product page', actor: { userId } });
+    }
+  }
 
   if (body.imageUrls) {
     await db.from('product_images').delete().eq('product_id', id);

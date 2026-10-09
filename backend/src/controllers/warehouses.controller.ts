@@ -16,15 +16,16 @@ const warehouseFields = {
   latitude: optionalNumber(-90, 90),
   longitude: optionalNumber(-180, 180),
   dispatchHours: optionalNumber(0, 24 * 14),
+  dailyCapacity: optionalNumber(1, 100_000),
 };
 
 export async function list(req: Request, res: Response) {
   const { tenantId } = tenantCtx(req);
   const { data, error } = await db
     .from('warehouses')
-    .select('*')
+    .select('*, warehouse_employees(count)')
     .eq('tenant_id', tenantId)
-    .order('created_date', { ascending: false });
+    .order('created_date', { ascending: true });
   if (error) throw error;
   res.json({ data });
 }
@@ -51,6 +52,9 @@ export async function create(req: Request, res: Response) {
   }
   if ((latitude !== undefined || longitude !== undefined) && !isValidPoint(latitude, longitude)) throw badRequest('Invalid coordinates');
 
+  const { count: existing } = await db.from('warehouses').select('warehouse_id', { count: 'exact', head: true }).eq('tenant_id', tenantId);
+  const isFirst = (existing ?? 0) === 0;
+
   const { data, error } = await db
     .from('warehouses')
     .insert({
@@ -63,7 +67,9 @@ export async function create(req: Request, res: Response) {
       country: body.country ?? null,
       latitude: latitude ?? null,
       longitude: longitude ?? null,
-      dispatch_hours: body.dispatchHours ?? 24,
+      dispatch_hours: Math.round(body.dispatchHours ?? 24),
+      daily_capacity: Math.round(body.dailyCapacity ?? 50),
+      is_primary: isFirst,
       created_by: userId,
     })
     .select()
@@ -88,7 +94,8 @@ export async function update(req: Request, res: Response) {
   if (body.state !== undefined) update.state_province = body.state;
   if (body.postalCode !== undefined) update.postal_code = body.postalCode;
   if (body.country !== undefined) update.country = body.country;
-  if (body.dispatchHours !== undefined) update.dispatch_hours = body.dispatchHours;
+  if (body.dispatchHours !== undefined) update.dispatch_hours = Math.round(body.dispatchHours);
+  if (body.dailyCapacity !== undefined) update.daily_capacity = Math.round(body.dailyCapacity);
   if (body.isActive !== undefined) update.is_active = body.isActive;
 
   if (body.latitude !== undefined && body.longitude !== undefined) {

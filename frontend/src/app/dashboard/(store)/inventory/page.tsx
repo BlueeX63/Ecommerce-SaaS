@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, MapPin, Box, X, Pencil, Power } from "lucide-react";
+import { Plus, Search, MapPin, Box, X, Pencil, Power, Users, Route } from "lucide-react";
+import { WarehouseEmployeesModal } from "@/components/dashboard/WarehouseEmployeesModal";
+import { WarehouseRoutesModal } from "@/components/dashboard/WarehouseRoutesModal";
 import { CustomSelect } from "@/components/CustomSelect";
 
 import { TableSkeletonRows } from "@/components/dashboard/Skeletons";
@@ -16,10 +18,13 @@ type Warehouse = {
   latitude: number | null;
   longitude: number | null;
   dispatch_hours: number | null;
+  daily_capacity: number | null;
+  is_primary: boolean | null;
+  warehouse_employees?: Array<{ count: number }>;
   is_active: boolean;
 };
 
-const EMPTY_LOCATION = { warehouseName: "", addressLine1: "", city: "", state: "", postalCode: "", country: "India", dispatchHours: "24" };
+const EMPTY_LOCATION = { warehouseName: "", addressLine1: "", city: "", state: "", postalCode: "", country: "India", dispatchHours: "24", dailyCapacity: "50" };
 
 type InventoryRow = {
   inventory_id: string;
@@ -45,6 +50,8 @@ export default function InventoryPage() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
   const [busyWarehouseId, setBusyWarehouseId] = useState<string | null>(null);
+  const [employeesFor, setEmployeesFor] = useState<Warehouse | null>(null);
+  const [routesFor, setRoutesFor] = useState<Warehouse | null>(null);
 
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [products, setProducts] = useState<ProductOption[]>([]);
@@ -94,6 +101,7 @@ export default function InventoryPage() {
       postalCode: w.postal_code ?? "",
       country: w.country ?? "",
       dispatchHours: String(w.dispatch_hours ?? 24),
+      dailyCapacity: String(w.daily_capacity ?? 50),
     });
     setLocationError(null);
     setIsLocationModalOpen(true);
@@ -116,6 +124,7 @@ export default function InventoryPage() {
           postalCode: locationForm.postalCode || undefined,
           country: locationForm.country || undefined,
           dispatchHours: locationForm.dispatchHours === "" ? undefined : Number(locationForm.dispatchHours),
+          dailyCapacity: locationForm.dailyCapacity === "" ? undefined : Number(locationForm.dailyCapacity),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -299,6 +308,17 @@ export default function InventoryPage() {
                   How long this warehouse needs to pack and hand over an order. We find its map position from the address / PIN code, then use it to estimate delivery time for shoppers near it.
                 </p>
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-primary">Orders packed per day</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={locationForm.dailyCapacity}
+                  onChange={(e) => setLocationForm({ ...locationForm, dailyCapacity: e.target.value })}
+                  className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                />
+                <p className="text-xs text-secondary">When this warehouse has more open orders than it can pack in a day, delivery estimates add a day or more.</p>
+              </div>
               {locationError && <p className="text-sm text-red-600">{locationError}</p>}
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setIsLocationModalOpen(false)} className="px-4 py-2 text-sm font-medium text-secondary hover:text-primary transition-colors">
@@ -385,6 +405,11 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {employeesFor && (
+        <WarehouseEmployeesModal warehouseId={employeesFor.warehouse_id} warehouseName={employeesFor.warehouse_name} onClose={() => setEmployeesFor(null)} onChanged={fetchWarehouses} />
+      )}
+      {routesFor && <WarehouseRoutesModal warehouseId={routesFor.warehouse_id} warehouseName={routesFor.warehouse_name} onClose={() => setRoutesFor(null)} />}
+
       <div className="bg-surface rounded-2xl border border-black/[0.04] shadow-sm overflow-hidden">
         <div className="p-4 border-b border-black/[0.04] flex justify-between items-center bg-black/[0.01]">
           <h3 className="font-medium text-primary">Warehouse Locations</h3>
@@ -417,6 +442,7 @@ export default function InventoryPage() {
                     <td className="px-6 py-4 font-medium text-primary flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-secondary" />
                       {w.warehouse_name}
+                      {w.is_primary && <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold uppercase rounded-full bg-black text-white">Main</span>}
                     </td>
                     <td className="px-6 py-4 text-secondary">
                       {[w.city, w.state_province, w.postal_code].filter(Boolean).join(", ") || w.country || "-"}
@@ -437,6 +463,13 @@ export default function InventoryPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => setEmployeesFor(w)} className="p-1.5 text-secondary hover:bg-black/5 hover:text-primary rounded-md transition-colors flex items-center gap-1 text-xs" title="Employees">
+                          <Users className="w-4 h-4" />
+                          <span className="tabular-nums">{w.warehouse_employees?.[0]?.count ?? 0}</span>
+                        </button>
+                        <button onClick={() => setRoutesFor(w)} className="p-1.5 text-secondary hover:bg-black/5 hover:text-primary rounded-md transition-colors" title="Shipping routes">
+                          <Route className="w-4 h-4" />
+                        </button>
                         <button onClick={() => openEditLocation(w)} className="p-1.5 text-secondary hover:bg-black/5 hover:text-primary rounded-md transition-colors" title="Edit">
                           <Pencil className="w-4 h-4" />
                         </button>

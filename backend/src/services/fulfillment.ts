@@ -2,6 +2,8 @@ import { db } from '../lib/supabase.js';
 import { fetchWithCache, kvDel } from '../lib/kv.js';
 import { ApiError } from '../lib/http.js';
 import type { CheckoutSettings } from './checkout-settings.js';
+import { buildEta, refineEta, type Eta, type EtaFactors } from './eta.js';
+import { syncOutOfStockAlerts } from './notifications.js';
 import { haversineKm, isValidPoint, roughDistanceKm, type AddressParts, type GeoPoint } from './geo.js';
 
 export interface Warehouse {
@@ -14,6 +16,7 @@ export interface Warehouse {
   latitude: number | null;
   longitude: number | null;
   dispatch_hours: number | null;
+  daily_capacity: number | null;
 }
 
 export interface StockRow {
@@ -37,23 +40,17 @@ export interface LinePlan {
   distanceKm: number | null;
 }
 
-export interface Eta {
-  minDays: number;
-  maxDays: number;
-  minDate: string;
-  maxDate: string;
-}
-
 export interface FulfillmentPlan {
   lines: LinePlan[];
   allInStock: boolean;
   shipFrom: { warehouseId: string; name: string; city: string | null; state: string | null; distanceKm: number | null; approximate: boolean } | null;
   eta: Eta;
+  factors: EtaFactors;
   /** 'warehouse': derived from real warehouse locations. 'default': the store's configured fallback range. */
   basis: 'warehouse' | 'default';
 }
 
-const WAREHOUSE_COLUMNS = 'warehouse_id, warehouse_name, city, state_province, postal_code, country, latitude, longitude, dispatch_hours';
+const WAREHOUSE_COLUMNS = 'warehouse_id, warehouse_name, city, state_province, postal_code, country, latitude, longitude, dispatch_hours, daily_capacity';
 
 export async function getActiveWarehouses(tenantId: string): Promise<Warehouse[]> {
   const { data, error } = await db.from('warehouses').select(WAREHOUSE_COLUMNS).eq('tenant_id', tenantId).eq('is_active', true);
@@ -100,32 +97,6 @@ function warehouseDistance(warehouse: Warehouse, destination: Destination): { km
     destination,
   );
   return { km: rough, approximate: true };
-}
-
-function addDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  d.setHours(20, 0, 0, 0);
-  return d.toISOString();
-}
-
-export function buildEta(minDays: number, maxDays: number): Eta {
-  const min = Math.max(1, Math.round(minDays));
-  const max = Math.max(min, Math.round(maxDays));
-  return { minDays: min, maxDays: max, minDate: addDays(min), maxDate: addDays(max) };
-}
-
-/**
- * Days to deliver from a warehouse `km` away: handling time at the warehouse, then road travel at `kmPerDay`.
- * A quarter-day of travel is absorbed by same-day courier runs, so nearby orders arrive the day after dispatch.
- */
-export function etaForDistance(km: number | null, dispatchHours: number | null, settings: CheckoutSettings): Eta {
-  if (km === null) return buildEta(settings.eta.defaultMinDays, settings.eta.defaultMaxDays);
-  const handlingDays = Math.ceil(Math.max(0, (dispatchHours ?? 24) / 24));
-  const travelDays = Math.ceil(Math.max(0, km / settings.eta.kmPerDay - 0.25));
-  const min = Math.max(1, handlingDays + travelDays);
-  const max = min + 1 + Math.floor(km / 800);
-  return buildEta(min, max);
 }
 
 /**
@@ -196,7 +167,14 @@ export async function planFulfillment(
   const placed = linePlans.filter((l) => l.warehouseId);
 
   if (placed.length === 0) {
-    return { lines: linePlans, allInStock, shipFrom: null, basis: 'default', eta: buildEta(settings.eta.defaultMinDays, settings.eta.defaultMaxDays) };
+    return {
+      lines: linePlans,
+      allInStock,
+      shipFrom: null,
+      basis: 'default',
+      eta: buildEta(settings.eta.defaultMinDays, settings.eta.defaultMaxDays),
+      factors: { notes: [], confidence: 'low', sampleSize: 0 },
+    };
   }
 
   // The slowest line decides the delivery date.
@@ -204,12 +182,15 @@ export async function planFulfillment(
   const origin = byId.get(slowest.warehouseId!)!;
   const { km, approximate } = distanceOf(origin);
 
+  const refined = await refineEta({ tenantId, warehouse: origin, km, destination: { postalCode: destination.postalCode, state: destination.state }, settings });
+
   return {
     lines: linePlans,
     allInStock,
     shipFrom: { warehouseId: origin.warehouse_id, name: origin.warehouse_name, city: origin.city, state: origin.state_province, distanceKm: km === null ? null : Math.round(km), approximate },
-    eta: etaForDistance(km, origin.dispatch_hours, settings),
-    basis: km === null ? 'default' : 'warehouse',
+    eta: refined.eta,
+    factors: refined.factors,
+    basis: km === null && refined.factors.sampleSize === 0 ? 'default' : 'warehouse',
   };
 }
 
@@ -280,6 +261,7 @@ export async function allocateStock(tenantId: string, orderId: string, plan: Ful
     throw error;
   } finally {
     void invalidateStockCache(tenantId);
+    void syncOutOfStockAlerts(tenantId, plan.lines.filter((l) => l.tracked).map((l) => l.productId));
   }
 }
 

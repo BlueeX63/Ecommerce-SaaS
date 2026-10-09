@@ -184,6 +184,8 @@ export async function deliveryEstimate(req: Request, res: Response) {
   res.json({
     inStock: plan.allInStock,
     eta: plan.eta,
+    notes: plan.factors.notes,
+    confidence: plan.factors.confidence,
     basis: plan.basis,
     shipFrom: plan.shipFrom ? { city: plan.shipFrom.city, distanceKm: plan.shipFrom.distanceKm, approximate: plan.shipFrom.approximate } : null,
     delivery: publicCheckoutConfig(settings),

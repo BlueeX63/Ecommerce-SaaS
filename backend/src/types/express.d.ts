@@ -1,6 +1,7 @@
 import type { MerchantSession } from '../lib/session.js';
 import type { ShopperSession } from '../lib/store-session.js';
 import type { SuperAdminSession } from '../lib/super-admin-session.js';
+import type { EmployeeContext } from '../lib/employee-session.js';
 
 export interface ShopperCustomer {
   customer_id: string;
@@ -20,6 +21,8 @@ declare global {
       shopper?: ShopperSession & { customer: ShopperCustomer };
       /** Set by requireSuperAdmin. */
       superAdmin?: SuperAdminSession;
+      /** Set by requireEmployee. */
+      employee?: EmployeeContext;
     }
   }
 }

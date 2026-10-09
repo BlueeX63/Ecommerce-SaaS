@@ -9,6 +9,7 @@ interface Estimate {
   inStock: boolean;
   eta: { minDate: string; maxDate: string };
   basis: "warehouse" | "default";
+  notes?: string[];
   shipFrom: { city: string | null; distanceKm: number | null; approximate: boolean } | null;
   delivery: { deliveryFee: number; freeDeliveryAbove: number };
 }
@@ -121,6 +122,7 @@ export function DeliveryEstimate({
                   ? `Ships from ${estimate.shipFrom.city ?? "our warehouse"}${estimate.shipFrom.distanceKm !== null ? ` · ${estimate.shipFrom.distanceKm.toLocaleString("en-IN")} km away${estimate.shipFrom.approximate ? " (approx.)" : ""}` : ""}`
                   : "Standard delivery estimate"}
               </p>
+              {estimate.notes && estimate.notes.length > 0 && <p className={`text-xs ${muted}`}>{estimate.notes.join(" · ")}</p>}
             </>
           ) : (
             <p className="text-amber-600">Currently out of stock at our warehouses.</p>

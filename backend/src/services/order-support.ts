@@ -8,7 +8,7 @@ import { textClient } from './ai/clients.js';
 import { consumeAiQuota } from './ai/quota.js';
 import { getStoreEntitlements, hasFeature } from './entitlements.js';
 import { getCheckoutSettings } from './checkout-settings.js';
-import { etaForDistance } from './fulfillment.js';
+import { etaForDistance } from './eta.js';
 import { geocode, haversineKm, isValidPoint, roughDistanceKm } from './geo.js';
 
 /** Customers may change where/who an order is delivered to for this long after placing it. */

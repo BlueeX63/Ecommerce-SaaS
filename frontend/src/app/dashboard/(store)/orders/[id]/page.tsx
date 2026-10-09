@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Package, User, Truck, Tag, CreditCard, MapPin, StickyNote, Loader2, Plus, Building2, RotateCcw, Banknote, Pencil, Phone,
+  ArrowLeft, Package, User, Truck, Tag, CreditCard, MapPin, StickyNote, Loader2, Plus, Building2, RotateCcw, Banknote, Pencil, Phone, Warehouse,
 } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 import { useCurrency } from "@/components/dashboard/CurrencyProvider";
@@ -40,6 +40,7 @@ interface OrderDetail {
   shipping_total: number;
   discount_total: number;
   grand_total: number;
+  warehouses: { warehouse_id: string; warehouse_name: string; city: string | null; state_province: string | null } | null;
   payment_method: string | null;
   tax_inclusive: boolean | null;
   tax_breakdown: Array<{ label: string; ratePercent: number; amount: number }> | null;
@@ -450,6 +451,18 @@ export default function OrderDetailPage() {
             {order.customers?.phone_number && <p className="text-sm text-secondary">{order.customers.phone_number}</p>}
             {order.dealers?.contact_email && <p className="text-sm text-secondary">{order.dealers.contact_email}</p>}
             {order.dealers?.contact_phone && <p className="text-sm text-secondary">{order.dealers.contact_phone}</p>}
+          </InfoCard>
+
+          <InfoCard icon={<Warehouse className="w-4 h-4" />} title="Handled by">
+            {order.warehouses ? (
+              <>
+                <p className="text-sm font-medium text-primary">{order.warehouses.warehouse_name}</p>
+                <p className="text-xs text-secondary mt-0.5">{[order.warehouses.city, order.warehouses.state_province].filter(Boolean).join(", ")}</p>
+                <p className="text-xs text-secondary mt-2">The nearest warehouse with stock. Its team can update this order&apos;s status.</p>
+              </>
+            ) : (
+              <p className="text-sm text-secondary">No warehouse assigned — the items in this order don&apos;t have tracked stock.</p>
+            )}
           </InfoCard>
 
           <InfoCard icon={<MapPin className="w-4 h-4" />} title="Delivery">

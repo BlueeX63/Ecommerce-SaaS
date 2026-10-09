@@ -66,6 +66,19 @@ function encodedPlanIdFromMetadata(metadata: { planTier?: string; addons?: strin
   return encodePlanId(tier, addons);
 }
 
+/** After a new subscription is paid, cancel the one it replaces so the merchant is never billed twice. */
+async function retirePreviousSubscription(userId: string, newSubscriptionId: string) {
+  if (!stripe) return;
+  const previous = await getActiveSubscription(userId);
+  const oldId = previous?.stripe_subscription_id;
+  if (!oldId || oldId === newSubscriptionId || !oldId.startsWith('sub_')) return;
+  try {
+    await stripe.subscriptions.cancel(oldId);
+  } catch (error) {
+    console.warn(`[billing] failed to cancel previous subscription ${oldId}`, error);
+  }
+}
+
 async function saveSubscription(update: SubscriptionUpdate) {
   let { data: row } = await db
     .from('subscriptions')
@@ -77,11 +90,18 @@ async function saveSubscription(update: SubscriptionUpdate) {
   if (!row && update.userId) {
     ({ data: row } = await db
       .from('subscriptions')
-      .select('subscription_id, user_id')
+      .select('subscription_id, user_id, stripe_subscription_id, status')
       .eq('user_id', update.userId)
       .order('created_date', { ascending: false })
       .limit(1)
       .maybeSingle());
+  }
+
+  // A late "canceled / updated" event for a subscription this user has since replaced must not overwrite the
+  // row that now belongs to their new subscription.
+  const current = row as { stripe_subscription_id?: string; status?: string } | null;
+  if (current?.stripe_subscription_id && current.stripe_subscription_id !== update.stripeSubscriptionId && current.status === 'active' && update.status !== 'active') {
+    return;
   }
 
   const fields: Record<string, unknown> = {
@@ -154,17 +174,8 @@ export async function checkout(req: Request, res: Response) {
 
   const { data: user } = await db.from('users').select('email').eq('user_id', session.userId).maybeSingle();
 
-  // Upgrading/changing plan: cancel the existing Stripe subscription first so the merchant is never
-  // billed twice. The webhook's `customer.subscription.deleted` event will mark the old row canceled;
-  // the new checkout below creates (or re-uses, see saveSubscription) the row for the new plan.
-  const active = await getActiveSubscription(session.userId);
-  if (active?.stripe_subscription_id?.startsWith('sub_')) {
-    try {
-      await stripe.subscriptions.cancel(active.stripe_subscription_id);
-    } catch (error) {
-      console.warn(`[billing] failed to cancel previous subscription ${active.stripe_subscription_id}`, error);
-    }
-  }
+  // Changing plan / adding an add-on: the previous subscription is cancelled only once the new payment has
+  // succeeded (see retirePreviousSubscription), so abandoning checkout never costs the merchant their plan.
 
   const lineItems = [
     {
@@ -224,6 +235,7 @@ export async function confirmCheckout(req: Request, res: Response) {
   }
   if (!paid || !subscriptionId) return void res.json({ active: false });
 
+  await retirePreviousSubscription(req.merchant!.userId, subscriptionId);
   await saveSubscription({
     userId: req.merchant!.userId,
     stripeSubscriptionId: subscriptionId,
@@ -283,6 +295,7 @@ export async function stripeWebhook(req: Request, res: Response) {
         const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
         const userId = session.metadata?.userId;
         if (session.mode === 'subscription' && paid && subscriptionId && userId) {
+          await retirePreviousSubscription(userId, subscriptionId);
           await saveSubscription({
             userId,
             stripeSubscriptionId: subscriptionId,

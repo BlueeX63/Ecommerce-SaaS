@@ -126,6 +126,12 @@ function LoginContent() {
             Sign up
           </Link>
         </p>
+        <p className="text-gray-500 font-medium text-xs mt-3">
+          Work at a warehouse?{" "}
+          <a href={process.env.NEXT_PUBLIC_EMPLOYEE_URL || "http://localhost:3002"} className="text-gray-900 hover:text-[#F04438] transition-colors underline underline-offset-4 ml-1">
+            Employee login
+          </a>
+        </p>
       </div>
     </motion.div>
   );

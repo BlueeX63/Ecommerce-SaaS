@@ -20,6 +20,7 @@ type Order = {
   created_date: string;
   customers: { first_name: string; last_name: string; email: string } | null;
   dealers: { company_name: string } | null;
+  warehouses: { warehouse_name: string; city: string | null } | null;
 };
 
 export default function OrdersPage() {
@@ -95,6 +96,7 @@ export default function OrdersPage() {
                 <th className="px-6 py-4 font-medium text-primary">Order</th>
                 <th className="px-6 py-4 font-medium text-primary">Date</th>
                 <th className="px-6 py-4 font-medium text-primary">Customer/Dealer</th>
+                <th className="px-6 py-4 font-medium text-primary">Handled by</th>
                 <th className="px-6 py-4 font-medium text-primary text-center">Payment</th>
                 <th className="px-6 py-4 font-medium text-primary text-center">Fulfillment</th>
                 <th className="px-6 py-4 font-medium text-primary text-right">Total</th>
@@ -103,10 +105,10 @@ export default function OrdersPage() {
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {isLoading ? (
-                <TableSkeletonRows rows={6} cols={7} first="text" />
+                <TableSkeletonRows rows={6} cols={8} first="text" />
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-secondary">
+                  <td colSpan={8} className="px-6 py-12 text-center text-secondary">
                     <ShoppingCart className="w-12 h-12 text-black/10 mx-auto mb-3" />
                     <p>{orders.length === 0 ? "No orders yet." : "No orders match your search."}</p>
                   </td>
@@ -126,6 +128,9 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-6 py-4 text-secondary">
                       {o.customers ? `${o.customers.first_name} ${o.customers.last_name}` : o.dealers ? o.dealers.company_name : 'Guest'}
+                    </td>
+                    <td className="px-6 py-4 text-secondary">
+                      {o.warehouses ? o.warehouses.warehouse_name : <span title="No warehouse assigned (stock isn't tracked)">—</span>}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Search, LogOut, Settings, CreditCard, LayoutDashboard } from "lucide-react";
 
 import { useRouter } from "next/navigation";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 
 export function Topbar({ user }: { user?: any }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -29,10 +30,7 @@ export function Topbar({ user }: { user?: any }) {
 
       {/* Right Actions */}
       <div className="flex items-center gap-6">
-        {/* Notification Bell */}
-        <button className="relative p-2 text-secondary hover:text-primary transition-colors group" title="Notifications">
-          <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
-        </button>
+        <NotificationBell />
 
         {/* User Avatar & Dropdown */}
         <div className="relative">

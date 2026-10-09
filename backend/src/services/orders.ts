@@ -5,6 +5,7 @@ import { getStoreEntitlements, hasFeature } from './entitlements.js';
 import { getCustomization } from './tenants.js';
 import { dispatchWebhookEvent } from './webhooks.js';
 import { allocateStock } from './fulfillment.js';
+import { syncOutOfStockAlerts } from './notifications.js';
 import { buildQuote } from './quote.js';
 import { consumeCoupon, fromCents, releaseCoupon, type OrderLineInput } from './pricing.js';
 
@@ -83,6 +84,7 @@ export async function placeOrder(input: PlaceOrderInput) {
   });
 
   if (quote.unavailable.length > 0) {
+    void syncOutOfStockAlerts(tenantId, quote.unavailable.map((u) => u.productId));
     const names = quote.unavailable.map((u) => u.name).join(', ');
     throw new ApiError(409, `${names} ${quote.unavailable.length > 1 ? 'are' : 'is'} out of stock right now.`);
   }

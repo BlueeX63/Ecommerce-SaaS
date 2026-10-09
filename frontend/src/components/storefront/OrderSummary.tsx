@@ -97,6 +97,7 @@ export function OrderSummary({ theme, symbol, lines, quote, loading, error, fall
               ) : (
                 <p className={`mt-1 text-xs ${theme.muted}`}>Standard delivery estimate. Enter your PIN code for a precise date.</p>
               )}
+              {eta.notes && eta.notes.length > 0 && <p className={`mt-1 text-xs ${theme.muted}`}>{eta.notes.join(" · ")}</p>}
             </div>
           </div>
         </div>

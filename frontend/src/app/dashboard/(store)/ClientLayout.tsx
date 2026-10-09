@@ -7,12 +7,14 @@ import { ImpersonationBanner } from "@/components/dashboard/ImpersonationBanner"
 import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { CurrencyProvider } from "@/components/dashboard/CurrencyProvider";
+import { WarehouseSetupGate } from "@/components/dashboard/WarehouseSetupGate";
 
 export default function DashboardLayout({ children, user, impersonatedBy }: { children: ReactNode, user?: any, impersonatedBy?: string }) {
   const pathname = usePathname();
 
   return (
     <CurrencyProvider>
+      <WarehouseSetupGate />
       <div className="min-h-screen bg-background flex">
         <Sidebar user={user} />
         <div className="flex-1 ml-[240px] flex flex-col">

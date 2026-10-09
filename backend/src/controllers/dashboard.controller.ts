@@ -392,3 +392,34 @@ export async function saveCheckoutSettings(req: Request, res: Response) {
   await invalidateTenantCache(tenantId);
   res.json({ message: 'Checkout settings updated', data: next });
 }
+
+// ---------------------------------------------------------------------------------------------
+// Notifications (out-of-stock alerts, ...)
+// ---------------------------------------------------------------------------------------------
+
+export async function listNotifications(req: Request, res: Response) {
+  const { tenantId } = tenantCtx(req);
+  const { data, error } = await db
+    .from('admin_notifications')
+    .select('notification_id, type, title, body, product_id, warehouse_id, is_read, created_date')
+    .eq('tenant_id', tenantId)
+    .order('is_read', { ascending: true })
+    .order('created_date', { ascending: false })
+    .limit(30);
+  if (error) throw error;
+  const { count } = await db.from('admin_notifications').select('notification_id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_read', false);
+  res.json({ data, unread: count ?? 0 });
+}
+
+export async function markNotificationsRead(req: Request, res: Response) {
+  const { tenantId } = tenantCtx(req);
+  const body = parse(z.object({ ids: z.array(z.string().uuid()).max(100).optional(), all: z.boolean().optional() }), req.body ?? {});
+  let query = db.from('admin_notifications').update({ is_read: true }).eq('tenant_id', tenantId).eq('is_read', false);
+  if (!body.all) {
+    if (!body.ids?.length) throw badRequest('Nothing to mark');
+    query = query.in('notification_id', body.ids);
+  }
+  const { error } = await query;
+  if (error) throw error;
+  res.json({ success: true });
+}

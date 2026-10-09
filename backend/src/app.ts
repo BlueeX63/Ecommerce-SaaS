@@ -11,6 +11,7 @@ import { billingRouter, billingV1Router, devBillingRouter, webhookRouter } from 
 import { catalogsRouter } from './routes/catalogs.js';
 import { categoriesRouter } from './routes/categories.js';
 import { couponsRouter } from './routes/coupons.js';
+import { employeeRouter } from './routes/employee.js';
 import { customersRouter, dealersRouter } from './routes/crm.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { invoicesRouter, paymentsRouter } from './routes/finance.js';
@@ -84,6 +85,9 @@ export function createApp() {
   app.use('/api/v1/store', storeRouter);
   app.use('/api/v1/reviews', reviewsRouter);
   app.use('/api/v1/public', publicRouter);
+
+  // Warehouse employee panel - its own identity (employee_session cookie), scoped to one warehouse.
+  app.use('/api/v1/employee', employeeRouter);
 
   // Super Admin (platform operators) - entirely separate identity from merchants/shoppers above.
   app.use('/api/v1/super-admin', superAdminRouter);

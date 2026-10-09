@@ -10,7 +10,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const tabs = [
     { name: "General", path: "/dashboard/settings", icon: Settings },
     { name: "Storefront Content", path: "/dashboard/settings/customize", icon: Palette },
-    { name: "Delivery & Payments", path: "/dashboard/settings/delivery", icon: Truck },
+    { name: "Payment Methods", path: "/dashboard/settings/delivery", icon: Truck },
     { name: "Taxes & Delivery Fees", path: "/dashboard/settings/checkout", icon: Receipt },
     { name: "Team & Roles", path: "/dashboard/settings/team", icon: Users },
     { name: "API Keys", path: "/dashboard/settings/api-keys", icon: Key },

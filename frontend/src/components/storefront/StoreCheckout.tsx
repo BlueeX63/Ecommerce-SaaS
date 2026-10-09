@@ -96,8 +96,7 @@ export function StoreCheckout({
   const [locating, setLocating] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
-  const [deliveryOptions, setDeliveryOptions] = useState<Array<{ delivery_option_id: string; name: string; price: number; estimated_days: string | null }>>([]);
-  const [deliveryOptionId, setDeliveryOptionId] = useState<string | null>(null);
+  const deliveryOptionId: string | null = null; // delivery speed options were retired; the fee comes from store settings
   const [offers, setOffers] = useState<Array<{ code: string; discount_type: string; discount_amount: number }>>([]);
 
   const [form, setForm] = useState({ name: "", phone: "", address: "", landmark: "", city: "", state: "", zip: "", country: "India" });
@@ -129,19 +128,10 @@ export function StoreCheckout({
     };
   }, [basePath, router]);
 
-  // Optional extras the merchant may have configured: delivery speeds and public promo codes.
+  // Public promo codes the merchant has published.
   useEffect(() => {
     if (isCheckingAuth) return;
     const q = slug ? `?slug=${encodeURIComponent(slug)}` : "";
-    fetch(`/api/v1/store/delivery-options${q}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows) => {
-        if (Array.isArray(rows) && rows.length) {
-          setDeliveryOptions(rows);
-          setDeliveryOptionId((cur) => cur ?? rows[0].delivery_option_id);
-        }
-      })
-      .catch(() => undefined);
     fetch(`/api/v1/store/coupons/public${q}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((rows) => Array.isArray(rows) && setOffers(rows.slice(0, 4)))
@@ -387,24 +377,6 @@ export function StoreCheckout({
                   </label>
                   <input id="co-country" autoComplete="country-name" value={form.country} onChange={set("country")} className={inputClass} />
                 </div>
-
-                {deliveryOptions.length > 0 && (
-                  <fieldset className="flex flex-col gap-2">
-                    <legend className={`mb-1 text-[11px] font-bold uppercase tracking-widest ${theme.label}`}>Delivery speed</legend>
-                    {deliveryOptions.map((opt) => (
-                      <label key={opt.delivery_option_id} className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3.5 text-sm ${theme.border} ${deliveryOptionId === opt.delivery_option_id ? theme.chip : ""}`}>
-                        <span className="flex items-center gap-3">
-                          <input type="radio" name="delivery-option" checked={deliveryOptionId === opt.delivery_option_id} onChange={() => setDeliveryOptionId(opt.delivery_option_id)} className="h-4 w-4" />
-                          <span>
-                            <span className="block font-medium">{opt.name}</span>
-                            {opt.estimated_days && <span className={`block text-xs ${theme.muted}`}>{opt.estimated_days}</span>}
-                          </span>
-                        </span>
-                        <span className="tabular-nums">{Number(opt.price) === 0 ? "Free" : money(currencySymbol, Number(opt.price))}</span>
-                      </label>
-                    ))}
-                  </fieldset>
-                )}
 
                 <div className="flex flex-wrap items-center gap-3">
                   <button

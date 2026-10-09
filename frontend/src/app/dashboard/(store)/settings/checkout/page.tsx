@@ -164,9 +164,6 @@ export default function CheckoutSettingsPage() {
             </Field>
           </div>
         )}
-        <p className="text-xs text-secondary max-w-xl">
-          Prefer speed-based pricing (Standard / Express)? Add <Link href="/dashboard/settings/delivery" className="underline">delivery options</Link> — shoppers pick one at checkout and its price replaces the charge above.
-        </p>
       </section>
 
       {/* ----------------------------------------------------------------- taxes */}

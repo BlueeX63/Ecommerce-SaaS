@@ -67,6 +67,21 @@ Run `backend/supabase/migrations/020_logistics_support_refunds.sql` before deplo
 
 ---
 
+### Warehouses, employee panel & smarter delivery times
+
+Also run `backend/supabase/migrations/021_employees_routes_notifications.sql`.
+
+| Area | What it does |
+|---|---|
+| **Delivery-time estimator** | Distance model, then the warehouse's configured *shipping routes* (state / PIN prefix → transit days), then a blend with how long recent *delivered* orders to the same area actually took, then extra days when the warehouse's open orders exceed its daily capacity. Shoppers see the reasons ("Based on 12 recent deliveries to this area"). `backend/src/services/eta.ts` |
+| **Warehouse setup** | A new store is asked for its dispatch location before anything else (`WarehouseSetupGate`). More warehouses are added under Inventory; each has employees, routes, dispatch time and capacity. |
+| **Stock on products** | Creating a product requires either a unit count (tracked, drawn down by orders) or "Rather not say" (unlimited: no stock records, never out of stock). |
+| **Employee panel** | Separate app in `employee/` (port 3002, deploy it on e.g. `employee.yourstore.com`; set `NEXT_PUBLIC_EMPLOYEE_URL` in `frontend`). Merchants create credentials per warehouse (Inventory → Employees). Employees see only their warehouse: orders it is fulfilling (status + payment status), products & stock, warehouse settings. Separate `employee_session` cookie; deactivating or resetting a password signs them out immediately. |
+| **Order routing** | An order is handled by the nearest warehouse that has all its items in stock; the dashboard shows which one ("Handled by"). |
+| **Alerts** | When a tracked product reaches zero at a warehouse (or everywhere), the dashboard bell raises an out-of-stock notification; it clears when stock returns. |
+
+---
+
 ## 2. Tech Stack
 
 | Layer | Technology |

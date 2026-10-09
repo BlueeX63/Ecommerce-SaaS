@@ -5,8 +5,7 @@ import { badRequest, notFound, pageMeta, pagination, parse, uuid } from '../lib/
 import { optionalText, optionalUuid, requiredMoney } from '../lib/validation.js';
 import { tenantCtx } from '../middleware/auth.js';
 import { assertOwnedOrNull, assertVariantOwned } from '../services/ownership.js';
-import { restockOrder } from '../services/fulfillment.js';
-import { queueRefundForCancelledOrder } from '../services/refunds.js';
+import { updateOrder } from '../services/order-updates.js';
 
 // Must match the `orders.status` CHECK constraint exactly - see migrations/011_delivery_and_coupons.sql,
 // which replaces the narrower constraint from 006_orders.sql and adds RETURN_REQUESTED. The DB rejects
@@ -53,7 +52,7 @@ export async function list(req: Request, res: Response) {
 
   const { data, error, count } = await db
     .from('orders')
-    .select('*, customers(first_name, last_name, email), dealers(company_name)', { count: 'exact' })
+    .select('*, customers(first_name, last_name, email), dealers(company_name), warehouses(warehouse_name, city)', { count: 'exact' })
     .eq('tenant_id', tenantId)
     .order('created_date', { ascending: false })
     .range(page.offset, page.offset + page.limit - 1);
@@ -69,7 +68,7 @@ export async function getById(req: Request, res: Response) {
   const { data: order, error } = await db
     .from('orders')
     .select(
-      '*, customers(customer_id, first_name, last_name, email, phone_number, company_name), dealers(*), order_items(*), fulfillments(*)',
+      '*, customers(customer_id, first_name, last_name, email, phone_number, company_name), dealers(*), order_items(*), fulfillments(*), warehouses(warehouse_id, warehouse_name, city, state_province)',
     )
     .eq('order_id', id)
     .eq('tenant_id', tenantId)
@@ -147,32 +146,7 @@ export async function update(req: Request, res: Response) {
     req.body,
   );
 
-  const update: Record<string, unknown> = {};
-  if (body.status) update.status = body.status;
-  if (body.paymentStatus) update.payment_status = body.paymentStatus;
-  if (body.fulfillmentStatus) update.fulfillment_status = body.fulfillmentStatus;
-  if (body.notes !== undefined) update.notes = body.notes;
-  if (Object.keys(update).length === 0) throw badRequest('Nothing to update');
-
-  const { data: before } = await db.from('orders').select('status').eq('order_id', id).eq('tenant_id', tenantId).maybeSingle();
-  if (!before) throw notFound('Order not found');
-
-  const { data, error } = await db
-    .from('orders')
-    .update(update)
-    .eq('order_id', id)
-    .eq('tenant_id', tenantId)
-    .select('order_id, customer_id, status, payment_status, payment_method, grand_total, currency')
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) throw notFound('Order not found');
-
-  // Cancelling from the dashboard behaves like the shopper cancelling: stock goes back, and an order that was
-  // already paid online gets a refund request queued.
-  if (body.status === 'CANCELLED' && before.status !== 'CANCELLED') {
-    await restockOrder(tenantId, id).catch((e) => console.error('[orders] restock failed', e));
-    await queueRefundForCancelledOrder(tenantId, data).catch((e) => console.error('[orders] refund queue failed', e));
-  }
+  await updateOrder({ tenantId, orderId: id, patch: body });
 
   res.json({ message: 'Order updated successfully' });
 }
@@ -211,9 +185,13 @@ export async function createFulfillment(req: Request, res: Response) {
   if (error) throw error;
 
   // Keep the order's own fulfillment_status roughly in sync with its shipments.
-  const orderFulfillmentStatus = status === 'DELIVERED' || status === 'SHIPPED' ? 'FULFILLED' : undefined;
-  if (orderFulfillmentStatus) {
-    await db.from('orders').update({ fulfillment_status: orderFulfillmentStatus }).eq('order_id', orderId).eq('tenant_id', tenantId);
+  if (status === 'DELIVERED' || status === 'SHIPPED') {
+    // Keep the order itself in step with its shipment, including the timestamps the delivery estimator learns from.
+    await updateOrder({
+      tenantId,
+      orderId,
+      patch: { status, fulfillmentStatus: 'FULFILLED' },
+    }).catch((e) => console.error('[orders] failed to sync order with shipment', e));
   }
 
   res.status(201).json({ message: 'Fulfillment recorded successfully', data: fulfillment });

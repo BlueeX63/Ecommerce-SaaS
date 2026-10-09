@@ -5,7 +5,7 @@ import { ApiError, badRequest, str, uuid, parse } from '../lib/http.js';
 import { optionalText, optionalUuid } from '../lib/validation.js';
 import { tenantCtx } from '../middleware/auth.js';
 import { assertOwned, assertVariantOwned } from '../services/ownership.js';
-import { ensureDefaultVariant, invalidateStockCache } from '../services/fulfillment.js';
+import { adjustStock, stockVariantFor } from '../services/stock.js';
 
 export async function list(req: Request, res: Response) {
   const { tenantId } = tenantCtx(req);
@@ -57,63 +57,10 @@ export async function adjust(req: Request, res: Response) {
     await assertVariantOwned(variantId, tenantId);
   } else {
     await assertOwned('products', body.productId!, tenantId, 'product');
-    const { data: product } = await db.from('products').select('sku').eq('product_id', body.productId!).eq('tenant_id', tenantId).maybeSingle();
-    variantId = await ensureDefaultVariant(body.productId!, product?.sku ?? null);
+    variantId = await stockVariantFor(tenantId, body.productId!);
   }
 
-  let inv: any = null;
+  const inv = await adjustStock({ tenantId, warehouseId: body.warehouseId, variantId, change: body.quantityChange, reason: body.reason, actor: { userId } });
 
-  // Optimistic concurrency: retry if another request changed the stock between our read and write.
-  for (let attempt = 0; attempt < 3 && !inv; attempt++) {
-    const { data: current } = await db
-      .from('inventory')
-      .select('*')
-      .eq('variant_id', variantId)
-      .eq('warehouse_id', body.warehouseId)
-      .eq('tenant_id', tenantId)
-      .maybeSingle();
-
-    if (!current) {
-      if (body.quantityChange < 0) throw badRequest('Insufficient stock');
-      const { data: created, error } = await db
-        .from('inventory')
-        .insert({
-          tenant_id: tenantId,
-          variant_id: variantId,
-          warehouse_id: body.warehouseId,
-          quantity_available: body.quantityChange,
-        })
-        .select()
-        .single();
-      if (error?.code === '23505') continue; // created concurrently - re-read
-      if (error) throw error;
-      inv = created;
-    } else {
-      const next = current.quantity_available + body.quantityChange;
-      if (next < 0) throw badRequest('Insufficient stock');
-      const { data: updated, error } = await db
-        .from('inventory')
-        .update({ quantity_available: next, last_updated: new Date().toISOString() })
-        .eq('inventory_id', current.inventory_id)
-        .eq('tenant_id', tenantId)
-        .eq('quantity_available', current.quantity_available)
-        .select()
-        .maybeSingle();
-      if (error) throw error;
-      inv = updated;
-    }
-  }
-  if (!inv) throw new ApiError(409, 'Inventory changed concurrently. Please retry.');
-
-  await db.from('inventory_transactions').insert({
-    tenant_id: tenantId,
-    inventory_id: inv.inventory_id,
-    transaction_type: 'MANUAL_ADJUSTMENT',
-    quantity_change: body.quantityChange,
-    notes: body.reason || 'Manual adjustment via API',
-    created_by: userId,
-  });
-
-  await invalidateStockCache(tenantId);
   res.status(201).json({ message: 'Inventory adjusted successfully', data: inv });
 }

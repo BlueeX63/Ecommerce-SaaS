@@ -21,6 +21,9 @@ export interface Quote {
     maxDate: string;
     basis: "warehouse" | "default";
     shipFrom: { warehouseId: string; name: string; city: string | null; state: string | null; distanceKm: number | null; approximate: boolean } | null;
+    /** Why the date is what it is, e.g. "Based on 12 recent deliveries to this area". */
+    notes?: string[];
+    confidence?: "high" | "medium" | "low";
   };
   allInStock: boolean;
   unavailable: Array<{ productId: string; name: string }>;

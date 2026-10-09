@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Same design tokens as the merchant dashboard, so the two panels read as one product. */
+@theme inline {
+  --color-background: #F8F6F1;
+  --color-surface: #FFFFFF;
+  --color-primary: #0A0A0A;
+  --color-secondary: #6B6B6B;
+  --color-accent: #FF4D00;
+
+  --font-body: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  --font-accent: var(--font-accent), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-shimmer {
+  background-image: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.65) 50%, rgba(0, 0, 0, 0) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer { animation: none; }
+}

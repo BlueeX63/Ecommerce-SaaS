@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, Search, Briefcase, Pencil, UserX, UserCheck, X } from "lucide-react";
 import { Pagination } from "@/components/dashboard/Pagination";
 
+import { TableSkeletonRows } from "@/components/dashboard/Skeletons";
 const PAGE_LIMIT = 50;
 
 type Dealer = {
@@ -308,11 +309,7 @@ export default function DealersPage() {
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <span className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" />
-                  </td>
-                </tr>
+                <TableSkeletonRows rows={6} cols={6} first="text" />
               ) : filteredDealers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-secondary">

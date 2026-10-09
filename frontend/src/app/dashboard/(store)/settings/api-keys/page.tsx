@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Key, Plus, Trash2, Copy, Check, ShieldAlert, Loader2 } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 
+import { CardGridSkeleton } from "@/components/dashboard/Skeletons";
 interface ApiKey {
   api_key_id: string;
   key_name: string;
@@ -170,7 +171,7 @@ export default function ApiKeysSettingsPage() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary/40" /></div>
+        <CardGridSkeleton count={2} />
       ) : keys.length === 0 && !showForm ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed border-black/10 rounded-xl bg-black/[0.02]">
           <Key className="w-8 h-8 text-black/20 mb-3" />

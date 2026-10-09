@@ -25,6 +25,14 @@ storeRouter.get('/profile', requireShopper, storeController.getProfile);
 storeRouter.get('/orders', requireShopper, storeController.listOrders);
 storeRouter.post('/orders/:id/cancel', requireShopper, storeController.cancelOrder);
 storeRouter.post('/orders/:id/return', requireShopper, storeController.requestReturn);
+storeRouter.post('/quote', requireShopper, limit('quote', 60, 60_000, (req) => req.shopper?.customerId), storeController.quote);
+
+// --- Order help (AI-assisted address/phone changes) and refunds -----------------------------------
+storeRouter.get('/orders/:id/support', requireShopper, storeController.getOrderSupport);
+storeRouter.post('/orders/:id/support/messages', requireShopper, limit('order-support', 30, 10 * 60_000, (req) => req.shopper?.customerId), storeController.sendOrderSupportMessage);
+storeRouter.post('/orders/:id/support/escalate', requireShopper, limit('order-support', 30, 10 * 60_000, (req) => req.shopper?.customerId), storeController.escalateOrderSupport);
+storeRouter.post('/orders/:id/support/:requestId/confirm', requireShopper, limit('order-support-confirm', 10, 10 * 60_000, (req) => req.shopper?.customerId), storeController.confirmOrderSupportChange);
+storeRouter.post('/orders/:id/refund', requireShopper, limit('order-refund', 5, 10 * 60_000, (req) => req.shopper?.customerId), storeController.applyForRefund);
 storeRouter.post('/orders', requireShopper, limit('place-order', 10, 60_000, (req) => req.shopper?.customerId), storeController.createOrder);
 storeRouter.post('/checkout', requireShopper, limit('checkout', 5, 60_000, (req) => req.shopper?.customerId), storeController.checkout);
 

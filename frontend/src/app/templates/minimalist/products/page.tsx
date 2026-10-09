@@ -3,7 +3,8 @@
 import { motion } from "framer-motion";
 import { Plus, Heart, PackageOpen } from "lucide-react";
 import { useCart, ALL_PRODUCTS } from "../CartContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { ProductToolbar, ResultsNote, useProductBrowser, LIGHT_TOOLBAR, DARK_TOOLBAR, type ToolbarTheme } from "@/components/storefront/ProductToolbar";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -29,21 +30,24 @@ export default function ({ initialProducts, initialCustomData }: any) {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  const productSource = (initialProducts || ALL_PRODUCTS).map((p: any) => ({
-    id: p.product_id || p.id,
-    name: p.product_name || p.name,
-    price: Number(p.base_price || p.price),
-    image: p.product_images?.[0]?.image_url || p.three_d_model_url || p.image || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=2000&auto=format&fit=crop",
-    category: p.categories?.category_name || p.category || "Uncategorized"
-  }));
+  const productSource = useMemo(
+    () =>
+      (initialProducts || ALL_PRODUCTS).map((p: any) => ({
+        id: p.product_id || p.id,
+        name: p.product_name || p.name,
+        price: Number(p.base_price || p.price),
+        image: p.product_images?.[0]?.image_url || p.three_d_model_url || p.image || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=2000&auto=format&fit=crop",
+        category: p.categories?.category_name || p.category || "Uncategorized",
+        description: p.description || "",
+        sku: p.sku || "",
+        stockStatus: p.stock_status || p.stockStatus || "untracked",
+        createdAt: p.created_date || p.createdAt || null,
+      })),
+    [initialProducts],
+  );
 
-  const filteredProducts = productSource.filter((p: any) => {
-    const matchesCategory = activeCategory === "All" || p.category === activeCategory;
-    const matchesSearch = searchQuery.trim() === "" || 
-                          p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          p.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const browser = useProductBrowser(productSource, { query: searchQuery, category: activeCategory });
+  const filteredProducts = browser.results;
 
   const tTitle = customData?.formData?.shopTitle || "Collection";
   const tDescription = customData?.formData?.shopDescription || "Explore our full range of minimalist essentials. Carefully designed for longevity and timeless style.";
@@ -93,6 +97,13 @@ export default function ({ initialProducts, initialCustomData }: any) {
         </motion.div>
       </div>
 
+      {productSource.length > 0 && (
+        <div className="mb-10 flex flex-col gap-3">
+          <ProductToolbar browser={browser} theme={LIGHT_TOOLBAR} symbol={currencySymbol} />
+          <ResultsNote browser={browser} total={productSource.length} theme={LIGHT_TOOLBAR} />
+        </div>
+      )}
+
       {initialProducts && initialProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 bg-[#F8F7F5] rounded-xl border border-black/5">
           <PackageOpen className="w-16 h-16 text-black/20 mb-4" />
@@ -101,8 +112,9 @@ export default function ({ initialProducts, initialCustomData }: any) {
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 bg-[#F8F7F5] rounded-xl border border-black/5">
-          <p className="text-lg font-medium text-black/60">No products match your search.</p>
-          <button onClick={() => setActiveCategory("All")} className="mt-4 text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#FF4D00]">Clear Filters</button>
+          <p className="text-lg font-medium text-black/60">No products match{searchQuery.trim() ? ` “${searchQuery.trim()}”` : " your filters"}.</p>
+          <p className="mt-1 text-sm text-black/40">Check the spelling, or try a broader search.</p>
+          <button onClick={() => { setActiveCategory("All"); browser.reset(); }} className="mt-4 text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#FF4D00]">Clear Filters</button>
         </div>
       ) : (
         <motion.div 
@@ -125,6 +137,7 @@ export default function ({ initialProducts, initialCustomData }: any) {
                     className="absolute inset-0 w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-700 ease-[0.16,1,0.3,1]"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
+                  {product.stockStatus === "out_of_stock" && <span className="absolute left-3 top-3 z-10 bg-black/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white">Sold out</span>}
                   
                   {/* Add to cart overlay button */}
                   <div className="absolute bottom-4 left-4 right-4 flex gap-2 translate-y-[150%] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
@@ -134,7 +147,8 @@ export default function ({ initialProducts, initialCustomData }: any) {
                         e.stopPropagation();
                         addToCart(product as any);
                       }}
-                      className="flex-1 bg-white/90 backdrop-blur-sm text-[#111111] py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#FF4D00] hover:text-white transition-colors"
+                      disabled={product.stockStatus === "out_of_stock"}
+                      className="flex-1 disabled:cursor-not-allowed disabled:opacity-50 bg-white/90 backdrop-blur-sm text-[#111111] py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#FF4D00] hover:text-white transition-colors"
                     >
                       Add to Cart <Plus className="w-4 h-4" />
                     </button>

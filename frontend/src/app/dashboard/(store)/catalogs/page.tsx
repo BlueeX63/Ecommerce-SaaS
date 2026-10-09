@@ -6,6 +6,7 @@ import { Plus, Search, Store, MoreVertical, X, Trash2, Users } from "lucide-reac
 import { CustomSelect } from "@/components/CustomSelect";
 import { Pagination } from "@/components/dashboard/Pagination";
 
+import { TableSkeletonRows } from "@/components/dashboard/Skeletons";
 const PAGE_LIMIT = 50;
 
 /** A row of catalog_customers: a registered customer, or a phone-only entry for someone not yet registered. */
@@ -417,11 +418,7 @@ export default function CatalogsPage() {
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <span className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" />
-                  </td>
-                </tr>
+                <TableSkeletonRows rows={6} cols={6} first="text" />
               ) : catalogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-secondary">

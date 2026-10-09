@@ -10,6 +10,7 @@ import { optionalText } from '../lib/validation.js';
 import { assertTenantOwner, tenantCtx } from '../middleware/auth.js';
 import { getEntitlements, hasFeature, upgradeMessage } from '../services/entitlements.js';
 import { getCustomization, getPaymentMethodsSettings, invalidateTenantCache } from '../services/tenants.js';
+import { checkoutSettingsSchema, getCheckoutSettings, mergeCheckoutSettings } from '../services/checkout-settings.js';
 import { MAX_CUSTOMIZATION_BYTES, TEMPLATE_IDS } from '../services/templates.js';
 
 const VERIFY_HOST_PREFIX = '_monolith-verify';
@@ -359,4 +360,35 @@ export async function savePaymentMethods(req: Request, res: Response) {
 
   await invalidateTenantCache(tenantId);
   res.json({ message: 'Payment methods updated successfully', data: next });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Checkout rules: GST / other taxes, delivery charge + free-delivery threshold, delivery-time defaults
+// ---------------------------------------------------------------------------------------------
+
+export async function getCheckoutSettingsHandler(req: Request, res: Response) {
+  const { tenantId } = tenantCtx(req);
+  res.json({ data: await getCheckoutSettings(tenantId) });
+}
+
+export async function saveCheckoutSettings(req: Request, res: Response) {
+  const { tenantId } = tenantCtx(req);
+  const patch = parse(checkoutSettingsSchema, req.body);
+  const next = mergeCheckoutSettings(await getCheckoutSettings(tenantId), patch);
+
+  if (next.delivery.enabled && next.delivery.fee > 0 && next.delivery.freeAbove > 0 && next.delivery.freeAbove <= next.delivery.fee) {
+    throw badRequest('The free-delivery minimum should be higher than the delivery charge itself.');
+  }
+
+  const { error } = await db.from('tenant_settings').upsert(
+    { tenant_id: tenantId, setting_key: 'checkout_settings', setting_value: JSON.stringify(next) },
+    { onConflict: 'tenant_id,setting_key' },
+  );
+  if (error) {
+    console.error('[checkout-settings] failed to save', error);
+    throw new ApiError(500, 'Failed to save checkout settings');
+  }
+
+  await invalidateTenantCache(tenantId);
+  res.json({ message: 'Checkout settings updated', data: next });
 }

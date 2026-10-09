@@ -4,15 +4,9 @@ import { ApiError } from '../lib/http.js';
 import { getStoreEntitlements, hasFeature } from './entitlements.js';
 import { getCustomization } from './tenants.js';
 import { dispatchWebhookEvent } from './webhooks.js';
-import {
-  consumeCoupon,
-  evaluateCoupon,
-  fromCents,
-  priceLines,
-  releaseCoupon,
-  toCents,
-  type OrderLineInput,
-} from './pricing.js';
+import { allocateStock } from './fulfillment.js';
+import { buildQuote } from './quote.js';
+import { consumeCoupon, fromCents, releaseCoupon, type OrderLineInput } from './pricing.js';
 
 export interface ShippingAddress {
   line1: string;
@@ -20,6 +14,11 @@ export interface ShippingAddress {
   state?: string | null;
   postalCode?: string | null;
   country?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  landmark?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export type PaymentMethod = 'cod' | 'upi' | 'netbanking';
@@ -49,7 +48,9 @@ function newOrderNumber() {
 
 /**
  * Creates an order whose every amount is computed on the server from database prices, the coupon's stored
- * rules and the delivery option's stored price. Nothing monetary is taken from the request.
+ * rules, the store's tax/delivery settings and the delivery option's stored price. Nothing monetary is taken
+ * from the request. The amounts come from the same `buildQuote` the checkout screen displays, so what the
+ * shopper saw is exactly what they are charged.
  */
 export async function placeOrder(input: PlaceOrderInput) {
   const { tenantId, customer } = input;
@@ -62,48 +63,47 @@ export async function placeOrder(input: PlaceOrderInput) {
     }
   }
 
-  const priced = await priceLines(tenantId, customer, input.lines);
-  const subtotalCents = priced.reduce((sum, line) => sum + line.totalCents, 0);
+  const quote = await buildQuote({
+    tenantId,
+    customer,
+    lines: input.lines,
+    couponCode: input.couponCode,
+    deliveryOptionId: input.deliveryOptionId,
+    destination: {
+      line1: input.shipping.line1,
+      city: input.shipping.city,
+      state: input.shipping.state,
+      postalCode: input.shipping.postalCode,
+      country: input.shipping.country,
+      point:
+        typeof input.shipping.latitude === 'number' && typeof input.shipping.longitude === 'number'
+          ? { lat: input.shipping.latitude, lng: input.shipping.longitude }
+          : null,
+    },
+  });
 
-  let discountCents = 0;
+  if (quote.unavailable.length > 0) {
+    const names = quote.unavailable.map((u) => u.name).join(', ');
+    throw new ApiError(409, `${names} ${quote.unavailable.length > 1 ? 'are' : 'is'} out of stock right now.`);
+  }
+
+  const { cents, priced, plan, coupon, settings, point } = quote.internal;
+
   let couponId: string | null = null;
-  let couponCode: string | null = null;
-  if (input.couponCode) {
-    const result = await evaluateCoupon(tenantId, input.couponCode, subtotalCents);
-    if (!result.ok) throw result.error;
-    if (!(await consumeCoupon(result.coupon.coupon_id))) throw new ApiError(400, 'Coupon usage limit reached');
-    couponId = result.coupon.coupon_id;
-    couponCode = result.coupon.code;
-    discountCents = result.discountCents;
+  if (coupon) {
+    if (!(await consumeCoupon(coupon.coupon_id))) throw new ApiError(400, 'Coupon usage limit reached');
+    couponId = coupon.coupon_id;
   }
 
   try {
-    let shippingCents = 0;
-    let deliveryOptionId: string | null = null;
-    if (input.deliveryOptionId) {
-      const { data: option } = await db
-        .from('delivery_options')
-        .select('delivery_option_id, price')
-        .eq('delivery_option_id', input.deliveryOptionId)
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!option) throw new ApiError(400, 'Invalid delivery option');
-      deliveryOptionId = option.delivery_option_id;
-      shippingCents = toCents(option.price);
-    }
-
-    const grandCents = subtotalCents - discountCents + shippingCents;
-
     const customization = await getCustomization(tenantId);
     const currencyRaw = String(customization.formData?.currency ?? '').toUpperCase();
     const currency = /^[A-Z]{3}$/.test(currencyRaw) ? currencyRaw : undefined;
 
-    // No dedicated payment-method/coupon columns on `orders` (see migrations) - recorded as structured lines
-    // in `notes` instead, which the merchant dashboard's order detail page parses back out for display.
+    // Payment method and coupon also live in `notes` as structured lines, which older dashboard pages parse.
     const notes = [
       `Payment method: ${PAYMENT_METHOD_LABEL[paymentMethod]}`,
-      couponCode ? `Coupon applied: ${couponCode} (-${fromCents(discountCents)})` : null,
+      quote.couponCode ? `Coupon applied: ${quote.couponCode} (-${quote.discount})` : null,
       input.notes,
     ]
       .filter(Boolean)
@@ -121,19 +121,30 @@ export async function placeOrder(input: PlaceOrderInput) {
           order_number: orderNumber,
           status: 'PENDING',
           payment_status: 'UNPAID',
+          payment_method: paymentMethod,
           ...(currency ? { currency } : {}),
-          subtotal: fromCents(subtotalCents),
-          tax_total: 0,
-          shipping_total: fromCents(shippingCents),
-          discount_total: fromCents(discountCents),
-          grand_total: fromCents(grandCents),
+          subtotal: fromCents(cents.subtotal),
+          tax_total: fromCents(cents.tax),
+          tax_rate: quote.tax.ratePercent,
+          tax_inclusive: settings.tax.inclusive,
+          tax_breakdown: quote.tax.lines,
+          shipping_total: fromCents(cents.shipping),
+          discount_total: fromCents(cents.discount),
+          grand_total: fromCents(cents.total),
+          shipping_name: input.shipping.name ?? null,
+          shipping_phone: input.shipping.phone ?? customer.phone_number ?? null,
           shipping_address_line_1: input.shipping.line1,
+          shipping_landmark: input.shipping.landmark ?? null,
           shipping_city: input.shipping.city ?? null,
           shipping_state: input.shipping.state ?? null,
           shipping_postal_code: input.shipping.postalCode ?? null,
           shipping_country: input.shipping.country ?? null,
+          shipping_latitude: point?.lat ?? null,
+          shipping_longitude: point?.lng ?? null,
+          estimated_delivery_date: quote.delivery.maxDate,
+          fulfillment_warehouse_id: plan.shipFrom?.warehouseId ?? null,
           notes,
-          delivery_option_id: deliveryOptionId,
+          delivery_option_id: quote.shipping.deliveryOptionId,
         })
         .select('order_id, order_number')
         .single();
@@ -157,20 +168,30 @@ export async function placeOrder(input: PlaceOrderInput) {
       throw itemsError;
     }
 
+    try {
+      await allocateStock(tenantId, order.order_id, plan);
+    } catch (error) {
+      await db.from('orders').delete().eq('order_id', order.order_id).eq('tenant_id', tenantId);
+      throw error;
+    }
+
     dispatchWebhookEvent(tenantId, 'order.created', {
       orderId: order.order_id,
       orderNumber: order.order_number,
-      grandTotal: fromCents(grandCents),
+      grandTotal: fromCents(cents.total),
       items: priced.map((line) => ({ name: line.name, quantity: line.quantity })),
     });
 
     return {
       orderId: order.order_id as string,
       orderNumber: order.order_number as string,
-      subtotal: fromCents(subtotalCents),
-      discount: fromCents(discountCents),
-      shipping: fromCents(shippingCents),
-      total: fromCents(grandCents),
+      subtotal: fromCents(cents.subtotal),
+      discount: fromCents(cents.discount),
+      tax: fromCents(cents.tax),
+      shipping: fromCents(cents.shipping),
+      total: fromCents(cents.total),
+      estimatedDeliveryDate: quote.delivery.maxDate,
+      deliveryMinDate: quote.delivery.minDate,
     };
   } catch (error) {
     if (couponId) await releaseCoupon(couponId).catch(() => undefined);

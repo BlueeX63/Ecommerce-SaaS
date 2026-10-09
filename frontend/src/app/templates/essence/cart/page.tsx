@@ -99,7 +99,7 @@ export default function EssenceCartPage() {
                     </div>
 
                     <div className="col-span-1 md:col-span-3 text-left md:text-right font-serif text-lg text-[#4A3F35]">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      {currencySymbol}{(item.product.price * item.quantity).toFixed(2)}
                     </div>
                   </motion.div>
                 ))}

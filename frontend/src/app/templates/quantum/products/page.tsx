@@ -6,9 +6,12 @@ import Link from "next/link";
 import { Heart, ChevronDown, Filter } from "lucide-react";
 import { QUANTUM_PRODUCTS, useQuantum } from "../QuantumContext";
 import { useCustomization } from "@/hooks/useCustomization";
+import { mapLiveProducts } from "@/lib/utils/product-mapper";
+import { applyCatalogView, NO_FILTERS, priceBounds, activeFilterCount, type ProductFilters, type SortKey } from "@/lib/storefront/catalog";
+import { FilterFields, FilterMenu, SearchInput, LIGHT_TOOLBAR, DARK_TOOLBAR, type ToolbarTheme } from "@/components/storefront/ProductToolbar";
 
 export default function ({ initialProducts, initialCustomData }: any) {
-  const { basePath, addToCart, wishlist, toggleWishlist  } = useQuantum();
+  const { basePath, addToCart, wishlist, toggleWishlist, currencySymbol } = useQuantum();
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<string>("featured");
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -17,33 +20,23 @@ export default function ({ initialProducts, initialCustomData }: any) {
   const shopTitle = customData?.formData?.shopTitle || "The Collection";
   const rawCategories = customData?.formData?.shopCategories;
   
+  // A live store shows its own catalog; the template preview shows the demo products.
+  const source = useMemo(() => (Array.isArray(initialProducts) ? mapLiveProducts(initialProducts) : QUANTUM_PRODUCTS), [initialProducts]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<ProductFilters>(NO_FILTERS);
+
   const categories = rawCategories
     ? rawCategories.split(",").map((c: string) => c.trim()).filter(Boolean)
-    : ["All", ...Array.from(new Set(QUANTUM_PRODUCTS.map((p: any) => p.category)))];
+    : ["All", ...Array.from(new Set(source.map((p: any) => p.category)))];
 
-  const filteredProducts = useMemo(() => {
-    let result = [...QUANTUM_PRODUCTS];
-    
-    if (activeCategory !== "All") {
-      result = result.filter((p: any) => p.category === activeCategory);
-    }
-    
-    switch (sortBy) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "newest":
-        result.sort((a, b) => (a.isNew === b.isNew ? 0 : a.isNew ? -1 : 1));
-        break;
-      default:
-        break;
-    }
-    
-    return result;
-  }, [activeCategory, sortBy]);
+  const SORT_MAP: Record<string, SortKey> = { featured: "featured", newest: "newest", "price-low": "price-asc", "price-high": "price-desc" };
+  const view = useMemo(
+    () => applyCatalogView(source as any[], { query: searchQuery, category: activeCategory, filters, sort: SORT_MAP[sortBy] ?? "featured" }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [source, searchQuery, activeCategory, filters, sortBy],
+  );
+  const filteredProducts = view.items as any[];
+  const filterState = { filters, setFilters, bounds: priceBounds(source as any[]), activeCount: activeFilterCount(filters) };
 
   return (
     <div className="min-h-screen bg-[#F9F9FB] pt-32 pb-24 px-6 md:px-12">
@@ -118,6 +111,16 @@ export default function ({ initialProducts, initialCustomData }: any) {
               </AnimatePresence>
             </div>
           </div>
+        </div>
+
+        <div className="mb-10 flex flex-wrap items-center gap-3">
+          <SearchInput value={searchQuery} onChange={setSearchQuery} theme={{ ...LIGHT_TOOLBAR, radius: "rounded-full" }} placeholder="Search the collection…" className="min-w-[220px] flex-1" />
+          <FilterMenu browser={filterState} theme={{ ...LIGHT_TOOLBAR, radius: "rounded-full" }} symbol={currencySymbol} />
+          {(searchQuery.trim() || filterState.activeCount > 0) && (
+            <p className="w-full font-inter text-xs text-gray-500" role="status">
+              {filteredProducts.length} of {source.length} products{searchQuery.trim() && view.approximate && filteredProducts.length > 0 ? " · no exact match, showing the closest" : ""}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col lg:flex-row gap-12">
@@ -207,7 +210,7 @@ export default function ({ initialProducts, initialCustomData }: any) {
                             onClick={() => addToCart(product)}
                             className="w-full py-4 bg-white/90 backdrop-blur-lg text-[#121212] font-bold font-inter uppercase tracking-wider text-xs rounded-xl hover:bg-[#111111] hover:text-white transition-colors"
                           >
-                            Quick Add - ${product.price.toFixed(2)}
+                            Quick Add - {currencySymbol}{product.price.toFixed(2)}
                           </button>
                         </div>
                       </div>
@@ -222,7 +225,7 @@ export default function ({ initialProducts, initialCustomData }: any) {
                           </h3>
                         </Link>
                         <div className="font-inter text-gray-500 font-medium">
-                          ${product.price.toFixed(2)}
+                          {currencySymbol}{product.price.toFixed(2)}
                         </div>
                       </div>
                     </motion.div>

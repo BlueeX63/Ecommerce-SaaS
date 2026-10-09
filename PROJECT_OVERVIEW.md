@@ -50,6 +50,23 @@ split; see §13 below for the current state.
 
 ---
 
+### Delivery, pricing, support & refunds update
+
+Run `backend/supabase/migrations/020_logistics_support_refunds.sql` before deploying this version.
+
+| Area | What it does | Where |
+|---|---|---|
+| **Price breakdown** | One server-side `buildQuote()` computes subtotal, coupon discount, delivery charge, GST/other taxes (CGST+SGST or IGST) and the total. The checkout screen and `placeOrder()` both use it, so the price shown is the price charged. | `backend/src/services/quote.ts`, `POST /api/v1/store/quote` |
+| **Tax & delivery-fee settings** | Per store, set by the merchant: GST rate, prices inclusive/exclusive, GSTIN, extra taxes, delivery fee, "free delivery above" minimum, ETA tuning. Stored as `tenant_settings.checkout_settings`. | Dashboard → Settings → *Taxes & Delivery Fees* |
+| **Delivery estimate** | Finds the nearest active warehouse that has every item in stock (haversine distance from geocoded PIN/city or browser location), adds warehouse dispatch time + travel time. Shown on product pages, checkout, the order confirmation and the orders list. Falls back to the store's default range when no warehouse data exists. | `backend/src/services/fulfillment.ts`, `geo.ts` |
+| **Stock** | Orders allocate stock from the chosen warehouse (optimistic concurrency + `inventory_transactions`) and cancelling restocks. Warehouses now carry address, PIN, coordinates and dispatch hours. Stock is adjusted per *product* (a default variant is created on demand), which is also what the future employee panel will call. | Dashboard → Inventory |
+| **Order help** | AI-assisted (Claude when the store has the AI add-on, rule-based otherwise) change of delivery address / phone within 24 hours of ordering and before shipping. The model only extracts the new value - the code checks eligibility and the shopper confirms. Unresolved requests are escalated to the store team. | `backend/src/services/order-support.ts`, Dashboard → *Support & Refunds* |
+| **Refunds** | UPI/netbanking orders refund to the original source; Cash-on-Delivery orders collect bank details. There is no payment-gateway integration (shoppers pay the merchant directly), so the store team performs the transfer and records the reference; the shopper sees REQUESTED → APPROVED → PROCESSED. | `backend/src/services/refunds.ts` |
+| **Store editor** | The live preview follows the tab being edited (page + scroll) and highlights the element of the focused field. New *Header & Menu* (announcement bar, menu labels) and *Policies* tabs; footer links now point to real Privacy / Terms / Shipping & Returns pages. | `frontend/src/components/storefront/PreviewBridge.tsx`, `onboarding/customize/schemas.ts` |
+| **Storefront search** | Typo-tolerant, ranked search with synonyms, plus price / availability filters and sort, shared by all 8 templates. | `frontend/src/lib/storefront/catalog.ts`, `ProductToolbar.tsx` |
+
+---
+
 ## 2. Tech Stack
 
 | Layer | Technology |

@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useCurrency } from "@/components/dashboard/CurrencyProvider";
 
+import { DashboardPageSkeleton } from "@/components/dashboard/Skeletons";
 interface AdvancedMetrics {
   averageOrderValue: number;
   newCustomersLast30Days: number;
@@ -69,11 +70,7 @@ export default function DashboardOverview() {
   })();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <Loader2 className="w-6 h-6 animate-spin text-primary/40" />
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   return (

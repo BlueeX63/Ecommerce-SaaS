@@ -7,11 +7,12 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart } from "lucide-react";
 
+import { DeliveryEstimate } from "@/components/storefront/DeliveryEstimate";
 export default function CanvasProductDetailPage({ initialProduct }: { initialProduct?: any } = {}) {
   const params = useParams();
   const id = params?.id as string;
   const product = initialProduct || ALL_PRODUCTS.find((p) => p.id === id);
-  const { addToCart, toggleWishlist, isInWishlist, reviews, addReview, basePath } = useCart();
+  const { addToCart, toggleWishlist, isInWishlist, reviews, addReview, basePath, currencySymbol } = useCart();
   const [isAdding, setIsAdding] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
@@ -92,7 +93,7 @@ export default function CanvasProductDetailPage({ initialProduct }: { initialPro
           </h1>
           
           <div className="font-mono text-sm tracking-[0.1em] text-white/80 mb-16">
-            ${product.price.toFixed(2)}
+            {currencySymbol}{product.price.toFixed(2)}
           </div>
 
           <div className="flex gap-8 mb-12 border-b border-white/10 pb-4">
@@ -165,6 +166,8 @@ export default function CanvasProductDetailPage({ initialProduct }: { initialPro
               <Heart className={`w-5 h-5 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
             </button>
           </div>
+
+          <DeliveryEstimate productId={product.id} currencySymbol={currencySymbol} tone="dark" className="mt-10 max-w-md" />
 
           {/* Brutalist Reviews Section */}
           <div className="mt-32 border-t border-white/20 pt-16">

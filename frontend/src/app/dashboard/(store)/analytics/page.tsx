@@ -7,6 +7,7 @@ import { DollarSign, ShoppingBag, TrendingUp, UserPlus, Lock, BarChart3, Loader2
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { useCurrency } from "@/components/dashboard/CurrencyProvider";
 
+import { DashboardPageSkeleton } from "@/components/dashboard/Skeletons";
 type Range = "7d" | "30d" | "90d";
 
 interface Analytics {
@@ -123,9 +124,7 @@ export default function AnalyticsPage() {
       {error && <div className="p-4 bg-red-50 text-red-600 text-sm rounded-xl border border-red-100">{error}</div>}
 
       {isLoading || !data ? (
-        <div className="flex items-center justify-center py-32">
-          <Loader2 className="w-6 h-6 animate-spin text-primary/40" />
-        </div>
+        <DashboardPageSkeleton />
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

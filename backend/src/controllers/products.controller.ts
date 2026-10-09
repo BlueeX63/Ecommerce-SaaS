@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/supabase.js';
-import { ApiError, badRequest, notFound, pageMeta, pagination, parse, uuid } from '../lib/http.js';
+import { ApiError, badRequest, escapeLike, notFound, pageMeta, pagination, parse, str, uuid } from '../lib/http.js';
 import {
   httpUrl,
   optionalHttpUrl,
@@ -13,6 +13,7 @@ import { slugify } from '../lib/sanitize.js';
 import { tenantCtx } from '../middleware/auth.js';
 import { assertOwned, assertOwnedOrNull } from '../services/ownership.js';
 import { invalidateTenantCache } from '../services/tenants.js';
+import { getTenantStockSummary } from '../services/fulfillment.js';
 
 const PRODUCT_STATUS = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']);
 
@@ -39,21 +40,56 @@ const createSchema = z.object({
     .optional(),
 });
 
-const updateSchema = z.object(productFields).partial();
+/** On edit an empty value means "clear this field", unlike on create where blank means "not provided". */
+const clearable = (max: number) => z.preprocess((v) => (v === null ? '' : v), z.string().trim().max(max)).optional();
+
+const updateSchema = z.object({
+  productName: productFields.productName.optional(),
+  slug: productFields.slug.optional(),
+  sku: clearable(100),
+  description: clearable(20_000),
+  basePrice: productFields.basePrice,
+  compareAtPrice: z.preprocess((v) => (v === '' ? null : v), z.coerce.number().min(0).max(1_000_000_000).nullable()).optional(),
+  costPrice: productFields.costPrice,
+  categoryId: z.preprocess((v) => (v === '' ? null : v), z.string().uuid().nullable()).optional(),
+  status: PRODUCT_STATUS.optional(),
+  threeDModelUrl: z.preprocess((v) => (v === null ? '' : v), z.union([z.literal(''), httpUrl(255)])).optional(),
+  /** When present, replaces the product's images (first = primary). */
+  imageUrls: z.array(httpUrl(255)).max(10).optional(),
+});
 
 export async function list(req: Request, res: Response) {
   const { tenantId } = tenantCtx(req);
   const page = pagination(req.query);
+  // Commas and parentheses are PostgREST filter syntax; they can't be part of a name search.
+  const search = str(req.query.q)?.replace(/[,()*]/g, ' ').trim().slice(0, 100);
+  const status = str(req.query.status);
 
-  const { data, error, count } = await db
+  let query = db
     .from('products')
-    .select('*, categories(category_name), product_images(image_url, is_primary)', { count: 'exact' })
-    .eq('tenant_id', tenantId)
-    .order('created_date', { ascending: false })
-    .range(page.offset, page.offset + page.limit - 1);
+    .select('*, categories(category_name), product_images(image_url, is_primary, sort_order)', { count: 'exact' })
+    .eq('tenant_id', tenantId);
+  if (status && PRODUCT_STATUS.safeParse(status).success) query = query.eq('status', status);
+  if (search) {
+    const like = `%${escapeLike(search)}%`;
+    query = query.or(`product_name.ilike.${like},sku.ilike.${like}`);
+  }
+
+  const { data, error, count } = await query.order('created_date', { ascending: false }).range(page.offset, page.offset + page.limit - 1);
   if (error) throw error;
 
-  res.json({ data, meta: pageMeta(count, page) });
+  let stock = new Map<string, number>();
+  try {
+    stock = await getTenantStockSummary(tenantId);
+  } catch (e) {
+    console.error('[products] stock summary failed', e);
+  }
+
+  const rows = (data ?? []).map((p: any) => {
+    const images = [...(p.product_images ?? [])].sort((a, b) => Number(!!b.is_primary) - Number(!!a.is_primary) || (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return { ...p, product_images: images, stock_total: stock.has(p.product_id) ? stock.get(p.product_id) : null };
+  });
+  res.json({ data: rows, meta: pageMeta(count, page) });
 }
 
 export async function getById(req: Request, res: Response) {
@@ -147,14 +183,14 @@ export async function update(req: Request, res: Response) {
   const update: Record<string, unknown> = { updated_by: userId, updated_date: new Date().toISOString() };
   if (body.productName !== undefined) update.product_name = body.productName;
   if (body.slug !== undefined) update.slug = slugify(body.slug, 200);
-  if (body.sku !== undefined) update.sku = body.sku;
-  if (body.description !== undefined) update.description = body.description;
+  if (body.sku !== undefined) update.sku = body.sku || null;
+  if (body.description !== undefined) update.description = body.description || null;
   if (body.basePrice !== undefined) update.base_price = body.basePrice;
   if (body.compareAtPrice !== undefined) update.compare_at_price = body.compareAtPrice;
   if (body.costPrice !== undefined) update.cost_price = body.costPrice;
   if (body.categoryId !== undefined) update.category_id = body.categoryId;
   if (body.status !== undefined) update.status = body.status;
-  if (body.threeDModelUrl !== undefined) update.three_d_model_url = body.threeDModelUrl;
+  if (body.threeDModelUrl !== undefined) update.three_d_model_url = body.threeDModelUrl || null;
 
   const { data, error } = await db
     .from('products')
@@ -169,25 +205,51 @@ export async function update(req: Request, res: Response) {
   }
   if (!data) throw notFound('Product not found');
 
+  if (body.imageUrls) {
+    await db.from('product_images').delete().eq('product_id', id);
+    if (body.imageUrls.length) {
+      const { error: imageError } = await db
+        .from('product_images')
+        .insert(body.imageUrls.map((url, i) => ({ product_id: id, image_url: url, is_primary: i === 0, sort_order: i + 1 })));
+      if (imageError) {
+        console.error('[products] failed to replace images', imageError);
+        throw new ApiError(500, 'Product saved, but its images could not be updated. Please try again.');
+      }
+    }
+  }
+
   await invalidateTenantCache(tenantId);
   res.json({ message: 'Product updated successfully' });
 }
 
+/**
+ * Removes a product. Orders keep their line items (they store the product name and price, not a reference), so
+ * order history is unaffected. `?archive=true` only hides the product from the storefront instead of deleting it.
+ */
 export async function remove(req: Request, res: Response) {
   const { tenantId, userId } = tenantCtx(req);
   const id = uuid(req.params.id);
+  const archiveOnly = str(req.query.archive) === 'true';
 
-  // Soft delete: archived products disappear from the storefront but keep their order history.
-  const { data, error } = await db
-    .from('products')
-    .update({ status: 'ARCHIVED', updated_by: userId, updated_date: new Date().toISOString() })
-    .eq('product_id', id)
-    .eq('tenant_id', tenantId)
-    .select('product_id')
-    .maybeSingle();
+  if (archiveOnly) {
+    const { data, error } = await db
+      .from('products')
+      .update({ status: 'ARCHIVED', updated_by: userId, updated_date: new Date().toISOString() })
+      .eq('product_id', id)
+      .eq('tenant_id', tenantId)
+      .select('product_id')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw notFound('Product not found');
+    await invalidateTenantCache(tenantId);
+    res.json({ message: 'Product archived successfully' });
+    return;
+  }
+
+  const { data, error } = await db.from('products').delete().eq('product_id', id).eq('tenant_id', tenantId).select('product_id').maybeSingle();
   if (error) throw error;
   if (!data) throw notFound('Product not found');
 
   await invalidateTenantCache(tenantId);
-  res.json({ message: 'Product archived successfully' });
+  res.json({ message: 'Product deleted successfully' });
 }

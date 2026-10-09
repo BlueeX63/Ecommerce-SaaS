@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 
 import { Suspense } from "react";
+import { PreviewBridge } from "@/components/storefront/PreviewBridge";
 
 function PreviewModeButton() {
   const pathname = usePathname();
@@ -36,6 +37,7 @@ export default function TemplatesLayout({ children }: { children: React.ReactNod
   return (
     <div className="relative w-full h-full">
       {children}
+      <PreviewBridge />
       <Suspense fallback={null}>
         <PreviewModeButton />
       </Suspense>

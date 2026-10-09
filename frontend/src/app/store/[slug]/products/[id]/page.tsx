@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getStore, getStoreProduct } from "@/lib/store";
+import { getStore, getStoreProduct, getStoreProducts } from "@/lib/store";
 import MinimalistProductDetailsPage from "@/app/templates/minimalist/products/[id]/page";
 import EssenceProductDetailsPage from "@/app/templates/essence/products/[id]/page";
 import OriginProductDetailsPage from "@/app/templates/origin/products/[id]/page";
@@ -23,8 +23,10 @@ export default async function StoreProductDetailsPage({
   const product = await getStoreProduct(slug, id);
   if (!product) return notFound();
 
-  const { mapDatabaseProductToTemplate } = await import("@/lib/utils/product-mapper");
+  const { mapDatabaseProductToTemplate, mapLiveProducts } = await import("@/lib/utils/product-mapper");
   const mappedProduct = mapDatabaseProductToTemplate(product);
+  // "You may also like" must come from this store, never from a template's demo catalog.
+  const relatedPool = mapLiveProducts(await getStoreProducts(slug));
 
   let PageComponent: any = MinimalistProductDetailsPage;
   if (templateId === "starter-essence") PageComponent = EssenceProductDetailsPage;
@@ -36,5 +38,5 @@ export default async function StoreProductDetailsPage({
   else if (templateId === "growth-horizon") PageComponent = HorizonProductDetailsPage;
 
   const FinalPageComponent = PageComponent as any;
-  return <FinalPageComponent params={params} initialProduct={mappedProduct} />;
+  return <FinalPageComponent params={params} initialProduct={mappedProduct} relatedPool={relatedPool} />;
 }

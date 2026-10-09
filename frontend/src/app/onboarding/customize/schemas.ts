@@ -1,3 +1,5 @@
+import { POLICY_PAGES, type PolicySlug } from "@/lib/storefront/copy";
+
 export type FieldType = 'text' | 'textarea' | 'image' | 'array';
 
 export interface FieldDef {
@@ -9,10 +11,18 @@ export interface FieldDef {
   description?: string;
 }
 
+export interface PreviewTarget {
+  /** Page of the storefront the live preview should show while this tab is being edited. */
+  path: string;
+  /** Scroll position within that page. */
+  scroll?: "top" | "bottom";
+}
+
 export interface TabDef {
   id: string;
   label: string;
   fields: FieldDef[];
+  preview?: PreviewTarget;
 }
 
 export interface TemplateSchema {
@@ -22,7 +32,7 @@ export interface TemplateSchema {
 }
 
 
-export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
+const BASE_SCHEMAS: Record<string, TemplateSchema> = {
   "starter-minimalist": {
     id: "starter-minimalist",
     name: "Minimalist",
@@ -626,3 +636,117 @@ export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = {
       }]
   }
 };
+
+
+// ---------------------------------------------------------------------------------------------
+// Shared editing surface. Every template gets the same extra tabs (Header, Policies) and the preview-page
+// mapping, so the editor can follow the merchant around the storefront.
+// ---------------------------------------------------------------------------------------------
+
+const TAB_PREVIEW: Record<string, PreviewTarget> = {
+  general: { path: "/" },
+  header: { path: "/", scroll: "top" },
+  home: { path: "/" },
+  shop: { path: "/products" },
+  about: { path: "/about" },
+  contact: { path: "/contact" },
+  policies: { path: "/privacy-policy" },
+  footer: { path: "/", scroll: "bottom" },
+};
+
+type NavKey = "home" | "shop" | "about" | "contact" | "orders";
+
+interface HeaderConfig {
+  announcement: string;
+  /** Only the labels this template's header actually shows. */
+  nav: Partial<Record<NavKey, string>>;
+  search?: string;
+}
+
+const HEADER_CONFIG: Record<string, HeaderConfig> = {
+  "starter-minimalist": { announcement: "Free shipping on orders over 100", nav: { home: "Home", shop: "Shop", about: "About", contact: "Contact", orders: "Orders" }, search: "Search products..." },
+  "starter-essence": { announcement: "", nav: { home: "Home", shop: "Shop", about: "About", contact: "Contact Us", orders: "Orders" }, search: "Search..." },
+  "starter-origin": { announcement: "", nav: { home: "Home", shop: "Shop", about: "About", contact: "Contact", orders: "Orders" }, search: "Search collection..." },
+  "starter-canvas": { announcement: "", nav: { home: "Home", shop: "Collection", about: "Maison", contact: "Concierge", orders: "Orders" } },
+  "growth-nexus-pro": { announcement: "", nav: { home: "Home", shop: "Collection", about: "About", contact: "Contact" } },
+  "growth-velocity": { announcement: "", nav: { shop: "Products", about: "About", contact: "Contact" } },
+  "growth-quantum": { announcement: "", nav: { shop: "Collection", about: "Philosophy", contact: "Contact" } },
+  "growth-horizon": { announcement: "", nav: { shop: "Collection", about: "Manifesto", contact: "Contact" } },
+};
+
+const NAV_FIELD: Record<NavKey, { name: string; label: string }> = {
+  home: { name: "navHomeLabel", label: "Menu: Home" },
+  shop: { name: "navShopLabel", label: "Menu: Shop / Collection" },
+  about: { name: "navAboutLabel", label: "Menu: About" },
+  contact: { name: "navContactLabel", label: "Menu: Contact" },
+  orders: { name: "navOrdersLabel", label: "Menu: Orders" },
+};
+
+/** Footer column headings that two templates had hard-coded. */
+const EXTRA_FOOTER_FIELDS: Record<string, FieldDef[]> = {
+  "growth-quantum": [
+    { name: "footerCol1", label: "Footer Column 1 Title", type: "text", defaultValue: "Explore" },
+    { name: "footerCol2", label: "Footer Column 2 Title", type: "text", defaultValue: "Legal" },
+  ],
+  "growth-horizon": [
+    { name: "footerCol1", label: "Footer Column 1 Title", type: "text", defaultValue: "Discovery" },
+    { name: "footerCol2", label: "Footer Column 2 Title", type: "text", defaultValue: "Connect" },
+  ],
+};
+
+const policyFields = (): FieldDef[] =>
+  (Object.values(POLICY_PAGES) as Array<(typeof POLICY_PAGES)[PolicySlug]>).map((p) => ({
+    name: p.key,
+    label: p.title,
+    type: "textarea" as const,
+    defaultValue: p.fallback,
+    description: "Shown on its own page and linked from your footer. Leave a blank line between paragraphs.",
+  }));
+
+function withSharedTabs(id: string, schema: TemplateSchema): TemplateSchema {
+  const header = HEADER_CONFIG[id];
+  const tabs: TabDef[] = schema.tabs.map((tab) => {
+    // The announcement bar now lives in the Header tab.
+    if (tab.id === "general") return { ...tab, fields: tab.fields.filter((f) => f.name !== "announcementText") };
+    if (tab.id === "footer" && EXTRA_FOOTER_FIELDS[id]) {
+      const existing = new Set(tab.fields.map((f) => f.name));
+      const extra = EXTRA_FOOTER_FIELDS[id].filter((f) => !existing.has(f.name));
+      return { ...tab, fields: [tab.fields[0], ...extra, ...tab.fields.slice(1)] };
+    }
+    return tab;
+  });
+
+  const headerTab: TabDef = {
+    id: "header",
+    label: "Header & Menu",
+    fields: [
+      {
+        name: "announcementText",
+        label: "Announcement Bar",
+        type: "text",
+        defaultValue: header?.announcement ?? "",
+        placeholder: "e.g. Free shipping on orders over 999",
+        description: "A slim banner above your header. Leave empty to hide it.",
+      },
+      ...(Object.keys(NAV_FIELD) as NavKey[])
+        .filter((k) => header?.nav[k] !== undefined)
+        .map<FieldDef>((k) => ({ name: NAV_FIELD[k].name, label: NAV_FIELD[k].label, type: "text", defaultValue: header!.nav[k]! })),
+      ...(header?.search ? [{ name: "searchPlaceholder", label: "Search Placeholder", type: "text" as const, defaultValue: header.search }] : []),
+    ],
+  };
+
+  const policiesTab: TabDef = { id: "policies", label: "Policies", fields: policyFields() };
+
+  const byId = new Map(tabs.map((t) => [t.id, t]));
+  const ordered = ["general", "header", "home", "shop", "about", "contact", "policies", "footer"]
+    .map((tabId) => (tabId === "header" ? headerTab : tabId === "policies" ? policiesTab : byId.get(tabId)))
+    .filter((t): t is TabDef => !!t);
+  // Any tab a template defines beyond the standard set keeps its place at the end.
+  for (const t of tabs) if (!ordered.includes(t)) ordered.splice(ordered.length - 1, 0, t);
+
+  return { ...schema, tabs: ordered.map((t) => ({ ...t, preview: t.preview ?? TAB_PREVIEW[t.id] ?? { path: "/" } })) };
+}
+
+export const TEMPLATE_SCHEMAS: Record<string, TemplateSchema> = Object.fromEntries(
+  Object.entries(BASE_SCHEMAS).map(([id, schema]) => [id, withSharedTabs(id, schema)]),
+);

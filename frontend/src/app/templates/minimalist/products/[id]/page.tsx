@@ -7,7 +7,8 @@ import Link from "next/link";
 import { notFound, usePathname } from "next/navigation";
 import { useState, use } from "react";
 
-export default function ProductDetailsPage({ params, initialProduct }: { params: Promise<{ id: string }>, initialProduct?: any }) {
+import { DeliveryEstimate } from "@/components/storefront/DeliveryEstimate";
+export default function ProductDetailsPage({ params, initialProduct, relatedPool }: { params: Promise<{ id: string }>, initialProduct?: any, relatedPool?: any[] }) {
   const unwrappedParams = use(params);
   const { addToCart, currencySymbol, toggleWishlist, isInWishlist, reviews, addReview, basePath } = useCart();
   const [isAdding, setIsAdding] = useState(false);
@@ -29,7 +30,7 @@ export default function ProductDetailsPage({ params, initialProduct }: { params:
     : 5;
 
   // Get similar products (same category, excluding current)
-  const similarProducts = ALL_PRODUCTS.filter(
+  const similarProducts = (relatedPool ?? ALL_PRODUCTS).filter(
     (p) => p.category === product.category && p.id !== product.id
   ).slice(0, 4);
 
@@ -122,6 +123,7 @@ export default function ProductDetailsPage({ params, initialProduct }: { params:
               </button>
             </div>
             
+            <DeliveryEstimate productId={product.id} currencySymbol={currencySymbol} tone="light" className="my-8 max-w-md" />
             <div className="mt-8 flex flex-col gap-4 text-xs font-medium text-black/50 tracking-wide uppercase">
               <p>Free global shipping on orders over {currencySymbol}100.</p>
               <p>30-day effortless returns.</p>

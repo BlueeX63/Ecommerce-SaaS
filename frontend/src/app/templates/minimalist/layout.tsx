@@ -1,5 +1,8 @@
 "use client";
 
+import { navLabels, pickText } from "@/lib/storefront/copy";
+import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
+
 import Link from "next/link";
 import { ShoppingBag, Search, Menu, ArrowLeft, Plus, X, Heart, User, Hexagon } from "lucide-react";
 import { CartProvider, useCart, ALL_PRODUCTS } from "./CartContext";
@@ -36,6 +39,8 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
 
   const tBrandName = customData?.formData?.brandName || "ESSENTIALS.";
   const tLogoUrl = customData?.formData?.logoUrl || "";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Shop", about: "About", contact: "Contact", orders: "Orders", search: "Search products..." });
+
   const tAnnouncementText = customData?.formData?.announcementText !== undefined 
     ? customData.formData.announcementText 
     : "Free shipping on orders over 100";
@@ -60,11 +65,11 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
               <Menu className="w-5 h-5" />
             </button>
             <nav className="hidden lg:flex items-center gap-8 text-xs font-medium tracking-wide uppercase text-[#111111]">
-              <Link href={basePath || '/'} className={`hover:text-black/50 transition-colors ${pathname === (basePath || '/') ? 'border-b border-black pb-1' : ''}`}>Home</Link>
-              <Link href={`${basePath}/products`} className={`hover:text-black/50 transition-colors ${pathname === `${basePath}/products` ? 'border-b border-black pb-1' : ''}`}>Shop</Link>
-              <Link href={`${basePath}/about`} className={`hover:text-black/50 transition-colors ${pathname === `${basePath}/about` ? 'border-b border-black pb-1' : ''}`}>About</Link>
-              <Link href={`${basePath}/contact`} className={`hover:text-black/50 transition-colors ${pathname === `${basePath}/contact` ? 'border-b border-black pb-1' : ''}`}>Contact</Link>
-              <Link href={`${basePath}/orders`} className={`hover:text-black/50 transition-colors ${pathname === `${basePath}/orders` ? 'border-b border-black pb-1' : ''}`}>Orders</Link>
+              <Link href={basePath || '/'} className={`hover:text-black/50 transition-colors ${pathname === (basePath || '/') ? 'border-b border-black pb-1' : ''}`}>{nav.home}</Link>
+              <Link href={`${basePath}/products`} className={`hover:text-black/50 transition-colors ${pathname === `${basePath}/products` ? 'border-b border-black pb-1' : ''}`}>{nav.shop}</Link>
+              <Link href={`${basePath}/about`} className={`hover:text-black/50 transition-colors ${pathname === `${basePath}/about` ? 'border-b border-black pb-1' : ''}`}>{nav.about}</Link>
+              <Link href={`${basePath}/contact`} className={`hover:text-black/50 transition-colors ${pathname === `${basePath}/contact` ? 'border-b border-black pb-1' : ''}`}>{nav.contact}</Link>
+              <Link href={`${basePath}/orders`} className={`hover:text-black/50 transition-colors ${pathname === `${basePath}/orders` ? 'border-b border-black pb-1' : ''}`}>{nav.orders}</Link>
             </nav>
           </div>
           
@@ -85,7 +90,7 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
                   transition={{ duration: 0.2 }}
                   autoFocus
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={nav.search}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -172,11 +177,11 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
               </button>
             </div>
             <nav className="flex flex-col gap-6 p-8 text-xl font-medium tracking-wide uppercase text-[#111111]">
-              <Link href={basePath || '/'} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">Home</Link>
-              <Link href={`${basePath}/products`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">Shop</Link>
-              <Link href={`${basePath}/about`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">About</Link>
-              <Link href={`${basePath}/contact`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">Contact</Link>
-              <Link href={`${basePath}/orders`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">Orders</Link>
+              <Link href={basePath || '/'} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">{nav.home}</Link>
+              <Link href={`${basePath}/products`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">{nav.shop}</Link>
+              <Link href={`${basePath}/about`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">{nav.about}</Link>
+              <Link href={`${basePath}/contact`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">{nav.contact}</Link>
+              <Link href={`${basePath}/orders`} onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#FF4D00] transition-colors">{nav.orders}</Link>
             </nav>
           </motion.div>
         )}
@@ -253,6 +258,9 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
             <span className="font-bold tracking-widest uppercase text-xs mb-1">{footerCol2}</span>
             <Link href={`${basePath}/about`} className="hover:text-black/50 transition-colors">About Us</Link>
             <Link href={`${basePath}/contact`} className="hover:text-black/50 transition-colors">Contact</Link>
+            <Link href={`${basePath}/shipping-returns`} className="hover:text-black/50 transition-colors">Shipping &amp; Returns</Link>
+            <Link href={`${basePath}/privacy-policy`} className="hover:text-black/50 transition-colors">Privacy Policy</Link>
+            <Link href={`${basePath}/terms-conditions`} className="hover:text-black/50 transition-colors">Terms &amp; Conditions</Link>
           </div>
           <div className="flex flex-col gap-3">
             <span className="font-bold tracking-widest uppercase text-xs mb-1">{footerCol3}</span>

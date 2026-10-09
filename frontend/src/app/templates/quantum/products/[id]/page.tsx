@@ -7,9 +7,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { QUANTUM_PRODUCTS, useQuantum } from "../../QuantumContext";
 
+import { DeliveryEstimate } from "@/components/storefront/DeliveryEstimate";
 export default function QuantumProductDetails({ params, initialProduct }: { params: Promise<{ id: string }>, initialProduct?: any }) {
   const resolvedParams = use(params);
-  const { basePath, addToCart, wishlist, toggleWishlist  } = useQuantum();
+  const { basePath, addToCart, wishlist, toggleWishlist, currencySymbol } = useQuantum();
   const [activeTab, setActiveTab] = useState("description");
 
   const product = initialProduct || QUANTUM_PRODUCTS.find((p: any) => p.id === resolvedParams.id);
@@ -63,7 +64,7 @@ export default function QuantumProductDetails({ params, initialProduct }: { para
             </h1>
             
             <p className="font-inter text-3xl text-gray-500 font-light mb-12">
-              ${product.price.toFixed(2)}
+              {currencySymbol}{product.price.toFixed(2)}
             </p>
 
             {/* Actions */}
@@ -90,6 +91,7 @@ export default function QuantumProductDetails({ params, initialProduct }: { para
               </button>
             </div>
 
+            <DeliveryEstimate productId={product.id} currencySymbol={currencySymbol} tone="light" className="my-8 max-w-md" />
             {/* Features */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16 py-8 border-y border-gray-200/60">
               <div className="flex flex-col items-center text-center gap-2 text-gray-500">
@@ -98,7 +100,7 @@ export default function QuantumProductDetails({ params, initialProduct }: { para
               </div>
               <div className="flex flex-col items-center text-center gap-2 text-gray-500">
                 <Truck className="w-6 h-6 text-[#111111]" />
-                <span className="font-inter text-sm font-medium">Free Global Shipping</span>
+                <span className="font-inter text-sm font-medium">Tracked Delivery</span>
               </div>
               <div className="flex flex-col items-center text-center gap-2 text-gray-500">
                 <RotateCcw className="w-6 h-6 text-[#111111]" />

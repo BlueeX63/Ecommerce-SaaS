@@ -5,6 +5,7 @@ import { UserPlus, Shield, ShieldCheck, UserX, UserCheck, Trash2, Pencil, X, Shi
 import { useAuth } from "@/context/AuthContext";
 import { CustomSelect } from "@/components/CustomSelect";
 
+import { TableSkeletonRows } from "@/components/dashboard/Skeletons";
 type User = {
   user_id: string;
   first_name: string;
@@ -354,11 +355,7 @@ export default function TeamSettingsPage() {
                 </thead>
                 <tbody className="divide-y divide-black/[0.04]">
                   {isLoadingUsers ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-secondary">
-                        <span className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" />
-                      </td>
-                    </tr>
+                    <TableSkeletonRows rows={4} cols={5} first="text" />
                   ) : users.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-6 py-8 text-center text-secondary">
@@ -467,11 +464,7 @@ export default function TeamSettingsPage() {
               </thead>
               <tbody className="divide-y divide-black/[0.04]">
                 {isLoadingRoles ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-secondary">
-                      <span className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" />
-                    </td>
-                  </tr>
+                  <TableSkeletonRows rows={4} cols={4} first="text" />
                 ) : roles.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-secondary">

@@ -7,6 +7,7 @@ import { Search, Filter, ShoppingCart, Download, ExternalLink } from "lucide-rea
 import { useCurrency } from "@/components/dashboard/CurrencyProvider";
 import { Pagination } from "@/components/dashboard/Pagination";
 
+import { TableSkeletonRows } from "@/components/dashboard/Skeletons";
 const PAGE_LIMIT = 50;
 
 type Order = {
@@ -102,11 +103,7 @@ export default function OrdersPage() {
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <span className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" />
-                  </td>
-                </tr>
+                <TableSkeletonRows rows={6} cols={7} first="text" />
               ) : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-secondary">

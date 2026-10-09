@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ALL_PRODUCTS, useCart } from "../CartContext";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ProductToolbar, ResultsNote, useProductBrowser, LIGHT_TOOLBAR, DARK_TOOLBAR, type ToolbarTheme } from "@/components/storefront/ProductToolbar";
 import { Heart } from "lucide-react";
 import { useCustomization } from "@/hooks/useCustomization";
 
@@ -12,12 +13,18 @@ export default function ({ initialProducts, initialCustomData }: any) {
   const { addToCart, searchQuery, toggleWishlist, isInWishlist } = useCart();
   const [activeCategory, setActiveCategory] = useState<string>("All");
   
-  const filteredProducts = (initialProducts || ALL_PRODUCTS).filter((product: any) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory === "All" || product.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const source = useMemo(() => initialProducts || ALL_PRODUCTS, [initialProducts]);
+  const browser = useProductBrowser(source, { query: searchQuery, category: activeCategory });
+  const filteredProducts = browser.results;
+  const toolbarTheme: ToolbarTheme = {
+    text: "text-[#4A3F35]",
+    muted: "text-[#4A3F35]/60",
+    border: "border-[#4A3F35]/25",
+    panel: "bg-[#F3EDE2] border-[#4A3F35]/15 shadow-xl text-[#4A3F35]",
+    primary: "bg-[#4A3F35] text-[#F3EDE2]",
+    input: "bg-white/70 border-[#4A3F35]/25 text-[#4A3F35] placeholder:text-[#4A3F35]/35",
+    radius: "rounded-none",
+  };
   const customData = useCustomization(initialCustomData);
   
   const shopTitle = customData?.formData?.shopTitle || "The Collection";
@@ -57,7 +64,7 @@ export default function ({ initialProducts, initialCustomData }: any) {
           )}
         </div>
 
-        {/* Filters & Sorting (Dummy) */}
+        {/* Filters & Sorting */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-[#4A3F35]/10 pb-6 gap-6">
           <div className="flex flex-wrap gap-8 text-[10px] uppercase tracking-[0.2em] font-medium">
             {tCategories.map((cat: string) => (
@@ -70,9 +77,11 @@ export default function ({ initialProducts, initialCustomData }: any) {
               </button>
             ))}
           </div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#4A3F35]/60 font-medium flex items-center gap-2">
-            Sort by: <span className="text-[#4A3F35] cursor-pointer">Featured</span>
-          </div>
+          <ProductToolbar browser={browser} theme={toolbarTheme} symbol={currencySymbol} />
+        </div>
+
+        <div className="-mt-6 mb-10">
+          <ResultsNote browser={browser} total={source.length} theme={toolbarTheme} />
         </div>
 
         {/* Product Grid */}
@@ -94,6 +103,7 @@ export default function ({ initialProducts, initialCustomData }: any) {
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
+                    {product.stockStatus === "out_of_stock" && <span className="absolute left-3 top-3 z-10 bg-black/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white">Sold out</span>}
                     
                     {/* Hover Add to Cart Button */}
                     <div className="absolute bottom-0 left-0 w-full p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1] flex gap-2">
@@ -102,7 +112,8 @@ export default function ({ initialProducts, initialCustomData }: any) {
                           e.preventDefault();
                           addToCart(product);
                         }}
-                        className="flex-1 py-4 bg-[#F3EDE2]/90 backdrop-blur-md text-[#4A3F35] text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#4A3F35] hover:text-[#F3EDE2] transition-colors"
+                        disabled={product.stockStatus === "out_of_stock"}
+                        className="flex-1 py-4 disabled:cursor-not-allowed disabled:opacity-50 bg-[#F3EDE2]/90 backdrop-blur-md text-[#4A3F35] text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#4A3F35] hover:text-[#F3EDE2] transition-colors"
                       >
                         Add to Cart
                       </button>
@@ -129,7 +140,8 @@ export default function ({ initialProducts, initialCustomData }: any) {
         ) : (
           <div className="py-32 text-center">
             <h2 className="font-serif text-2xl text-[#4A3F35] mb-4">No products found.</h2>
-            <p className="text-[#4A3F35]/60">Try adjusting your search query.</p>
+            <p className="text-[#4A3F35]/60">Check the spelling, or try a broader search or fewer filters.</p>
+            <button onClick={() => { setActiveCategory("All"); browser.reset(); }} className="mt-6 border-b border-[#4A3F35] pb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#4A3F35]">Clear filters</button>
           </div>
         )}
       </div>

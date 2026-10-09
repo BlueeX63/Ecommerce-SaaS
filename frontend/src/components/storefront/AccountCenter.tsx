@@ -3,8 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Package, LogOut, Loader2, MapPin, Phone, Mail, ShoppingBag, Clock, CheckCircle, Truck, XCircle, RotateCcw } from "lucide-react";
+import { User, Package, LogOut, Loader2, MapPin, Phone, Mail, ShoppingBag, Clock, CheckCircle, Truck, XCircle, RotateCcw, LifeBuoy, Banknote } from "lucide-react";
 import { PremiumLoader } from "@/components/auth/PremiumLoader";
+import { OrderHelp } from "@/components/storefront/OrderHelp";
+import { RefundForm, RefundStatus, type RefundEligibility, type RefundInfo } from "@/components/storefront/OrderRefund";
+import { currencyPrefix, formatShortDate } from "@/lib/storefront/quote";
 
 export type AccountTheme = {
   pageBg: string;
@@ -38,12 +41,31 @@ type Order = {
   currency: string;
   grand_total: number;
   created_date: string;
+  payment_method: string | null;
+  payment_status: string;
+  subtotal: number;
+  tax_total: number;
+  tax_inclusive: boolean;
+  tax_breakdown: { label: string; ratePercent: number; amount: number }[] | null;
+  shipping_total: number;
+  discount_total: number;
+  estimated_delivery_date: string | null;
+  shipping_name: string | null;
+  shipping_phone: string | null;
   shipping_address_line_1: string | null;
+  shipping_landmark: string | null;
   shipping_city: string | null;
+  shipping_state: string | null;
+  shipping_postal_code: string | null;
   shipping_country: string | null;
   notes: string | null;
+  edit_window?: { open: boolean; reason: string | null; hoursLeft: number; closesAt: string };
+  refund?: RefundInfo | null;
+  refund_eligibility?: RefundEligibility;
   order_items: { order_item_id: string; product_name: string; quantity: number; total_price: number }[];
 };
+
+const ACTIVE_STATUSES = ["PENDING", "PROCESSING", "SHIPPED"];
 
 const CANCELLABLE_STATUSES = ["PENDING", "PROCESSING"];
 
@@ -61,10 +83,6 @@ const STATUS_ICON: Record<string, typeof CheckCircle> = {
   REFUNDED: XCircle,
   RETURN_REQUESTED: RotateCcw,
 };
-
-function currencyPrefix(code: string) {
-  return code === "USD" ? "$" : code === "EUR" ? "€" : code === "GBP" ? "£" : "₹";
-}
 
 /** Polls for fresh order data while the tab is active so a status change the merchant makes shows up without a manual reload. */
 const POLL_INTERVAL_MS = 20000;
@@ -88,6 +106,8 @@ export default function AccountCenter({
   const [returnFormOrderId, setReturnFormOrderId] = useState<string | null>(null);
   const [returnReason, setReturnReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [helpOrderId, setHelpOrderId] = useState<string | null>(null);
+  const [refundOrderId, setRefundOrderId] = useState<string | null>(null);
   const slug = basePath.replace(/^\/store\//, "").split("/")[0] || "";
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -153,6 +173,7 @@ export default function AccountCenter({
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setOrders((prev) => prev.map((o) => (o.order_id === orderId ? { ...o, status: "CANCELLED" } : o)));
+        fetchOrders(); // picks up the refund that was queued for a paid order
       } else {
         setActionError(data.error || "Failed to cancel order");
       }
@@ -288,36 +309,92 @@ export default function AccountCenter({
                             </div>
                           </div>
 
+                          {ACTIVE_STATUSES.includes(order.status) && order.estimated_delivery_date && (
+                            <div className={`mb-5 flex items-center gap-2 border px-4 py-3 text-sm ${t.rounded} ${t.cardBorder}`}>
+                              <Truck className="h-4 w-4 shrink-0" />
+                              <span>
+                                Estimated delivery <strong>{formatShortDate(order.estimated_delivery_date)}</strong>
+                              </span>
+                            </div>
+                          )}
+
                           <div className={`pt-5 border-t ${t.cardBorder} grid grid-cols-1 md:grid-cols-2 gap-6`}>
                             <div className="space-y-2">
                               <h4 className={`text-xs font-medium ${t.textMuted} ${labelClass}`}>Items</h4>
                               {order.order_items?.map((item) => (
-                                <div key={item.order_item_id} className="flex justify-between text-sm">
+                                <div key={item.order_item_id} className="flex justify-between gap-3 text-sm">
                                   <span>
                                     {item.quantity}x {item.product_name}
                                   </span>
-                                  <span>
+                                  <span className="tabular-nums">
                                     {symbol}
                                     {Number(item.total_price).toFixed(2)}
                                   </span>
                                 </div>
                               ))}
+                              <div className={`mt-3 space-y-1 border-t pt-3 text-xs ${t.cardBorder} ${t.textMuted}`}>
+                                <div className="flex justify-between">
+                                  <span>Subtotal</span>
+                                  <span className="tabular-nums">{symbol}{Number(order.subtotal).toFixed(2)}</span>
+                                </div>
+                                {Number(order.discount_total) > 0 && (
+                                  <div className="flex justify-between">
+                                    <span>Discount</span>
+                                    <span className="tabular-nums">− {symbol}{Number(order.discount_total).toFixed(2)}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span>Delivery</span>
+                                  <span className="tabular-nums">{Number(order.shipping_total) === 0 ? "Free" : `${symbol}${Number(order.shipping_total).toFixed(2)}`}</span>
+                                </div>
+                                {Number(order.tax_total) > 0 && (
+                                  <div className="flex justify-between">
+                                    <span>{order.tax_inclusive ? "Includes GST / taxes" : "GST / taxes"}</span>
+                                    <span className="tabular-nums">{symbol}{Number(order.tax_total).toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {order.tax_breakdown?.length ? (
+                                  <div className="pl-3">
+                                    {order.tax_breakdown.map((line) => (
+                                      <div key={line.label} className="flex justify-between">
+                                        <span>{line.label} ({line.ratePercent}%)</span>
+                                        <span className="tabular-nums">{symbol}{Number(line.amount).toFixed(2)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                <div className={`flex justify-between pt-1 text-sm font-semibold ${t.textPrimary}`}>
+                                  <span>Total</span>
+                                  <span className="tabular-nums">{symbol}{Number(order.grand_total).toFixed(2)}</span>
+                                </div>
+                                {order.payment_method && (
+                                  <p className="pt-1">Payment: {order.payment_method === "cod" ? "Cash on Delivery" : order.payment_method.toUpperCase()}</p>
+                                )}
+                              </div>
                             </div>
                             <div className="space-y-2">
-                              <h4 className={`text-xs font-medium ${t.textMuted} ${labelClass}`}>Shipping Address</h4>
+                              <h4 className={`text-xs font-medium ${t.textMuted} ${labelClass}`}>Delivering to</h4>
                               <div className="flex items-start gap-2 text-sm">
                                 <MapPin className={`w-3.5 h-3.5 mt-0.5 ${t.textMuted} shrink-0`} />
                                 <div>
+                                  {order.shipping_name && <p className="font-medium">{order.shipping_name}</p>}
                                   <p>{order.shipping_address_line_1}</p>
+                                  {order.shipping_landmark && <p className={t.textMuted}>Landmark: {order.shipping_landmark}</p>}
                                   <p className={t.textMuted}>
-                                    {order.shipping_city}
-                                    {order.shipping_city && order.shipping_country ? ", " : ""}
-                                    {order.shipping_country}
+                                    {[order.shipping_city, order.shipping_state, order.shipping_postal_code, order.shipping_country].filter(Boolean).join(", ")}
                                   </p>
                                 </div>
                               </div>
+                              {order.shipping_phone && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Phone className={`w-3.5 h-3.5 ${t.textMuted} shrink-0`} />
+                                  <span>{order.shipping_phone}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
+
+                          {order.refund && <RefundStatus refund={order.refund} symbol={symbol} theme={t} />}
 
                           {returnRequested && (
                             <div className={`mt-5 pt-5 border-t ${t.cardBorder} flex items-center gap-2 text-sm`}>
@@ -326,64 +403,112 @@ export default function AccountCenter({
                             </div>
                           )}
 
-                          {(canCancel || canReturn) && (
-                            <div className={`mt-5 pt-5 border-t ${t.cardBorder}`}>
-                              {returnFormOrderId === order.order_id ? (
-                                <div className="space-y-3">
-                                  <label className={`block text-xs font-medium ${t.textMuted} ${labelClass}`}>Why are you returning this order?</label>
-                                  <textarea
-                                    value={returnReason}
-                                    onChange={(e) => setReturnReason(e.target.value)}
-                                    rows={2}
-                                    className={`w-full p-3 text-sm bg-transparent border ${t.cardBorder} ${t.rounded} focus:outline-none`}
-                                    placeholder="Tell us what went wrong..."
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => submitReturn(order.order_id)}
-                                      disabled={isBusy || !returnReason.trim()}
-                                      className={`px-4 py-2 ${t.rounded} text-xs font-medium ${labelClass} ${t.accentBg} ${t.accentText} disabled:opacity-50`}
-                                    >
-                                      {isBusy ? "Submitting..." : "Submit Request"}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setReturnFormOrderId(null);
-                                        setReturnReason("");
-                                      }}
-                                      className={`px-4 py-2 text-xs font-medium ${labelClass} ${t.textMuted}`}
-                                    >
-                                      Cancel
-                                    </button>
+                          {(() => {
+                            const canHelp = ACTIVE_STATUSES.includes(order.status) || order.status === "DELIVERED" || order.status === "RETURN_REQUESTED";
+                            const canRefund = !!order.refund_eligibility?.eligible;
+                            if (!(canCancel || canReturn || canHelp || canRefund)) return null;
+                            return (
+                              <div className={`mt-5 pt-5 border-t ${t.cardBorder}`}>
+                                {returnFormOrderId === order.order_id ? (
+                                  <div className="space-y-3">
+                                    <label className={`block text-xs font-medium ${t.textMuted} ${labelClass}`}>Why are you returning this order?</label>
+                                    <textarea
+                                      value={returnReason}
+                                      onChange={(e) => setReturnReason(e.target.value)}
+                                      rows={2}
+                                      className={`w-full p-3 text-sm bg-transparent border ${t.cardBorder} ${t.rounded} focus:outline-none`}
+                                      placeholder="Tell us what went wrong..."
+                                    />
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => submitReturn(order.order_id)}
+                                        disabled={isBusy || !returnReason.trim()}
+                                        className={`px-4 py-2 ${t.rounded} text-xs font-medium ${labelClass} ${t.accentBg} ${t.accentText} disabled:opacity-50`}
+                                      >
+                                        {isBusy ? "Submitting..." : "Submit Request"}
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setReturnFormOrderId(null);
+                                          setReturnReason("");
+                                        }}
+                                        className={`px-4 py-2 text-xs font-medium ${labelClass} ${t.textMuted}`}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
                                   </div>
-                                </div>
-                              ) : (
-                                <div className="flex flex-wrap gap-3">
-                                  {canCancel && (
-                                    <button
-                                      onClick={() => handleCancel(order.order_id)}
-                                      disabled={isBusy}
-                                      className={`px-4 py-2 border ${t.cardBorder} ${t.rounded} text-xs font-medium ${labelClass} hover:border-red-400 hover:text-red-500 transition-colors disabled:opacity-50`}
-                                    >
-                                      {isBusy ? "Cancelling..." : "Cancel Order"}
-                                    </button>
-                                  )}
-                                  {canReturn && (
-                                    <button
-                                      onClick={() => {
-                                        setReturnFormOrderId(order.order_id);
-                                        setReturnReason("");
-                                        setActionError(null);
-                                      }}
-                                      className={`px-4 py-2 border ${t.cardBorder} ${t.rounded} text-xs font-medium ${labelClass} hover:opacity-70 transition-opacity flex items-center gap-2`}
-                                    >
-                                      <RotateCcw className="w-3.5 h-3.5" />
-                                      Request Return
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                                ) : (
+                                  <div className="flex flex-wrap gap-3">
+                                    {canHelp && (
+                                      <button
+                                        onClick={() => {
+                                          setHelpOrderId(helpOrderId === order.order_id ? null : order.order_id);
+                                          setRefundOrderId(null);
+                                        }}
+                                        aria-expanded={helpOrderId === order.order_id}
+                                        className={`px-4 py-2 border ${t.cardBorder} ${t.rounded} text-xs font-medium ${labelClass} hover:opacity-70 transition-opacity flex items-center gap-2`}
+                                      >
+                                        <LifeBuoy className="w-3.5 h-3.5" />
+                                        Need help?
+                                      </button>
+                                    )}
+                                    {canCancel && (
+                                      <button
+                                        onClick={() => handleCancel(order.order_id)}
+                                        disabled={isBusy}
+                                        className={`px-4 py-2 border ${t.cardBorder} ${t.rounded} text-xs font-medium ${labelClass} hover:border-red-400 hover:text-red-500 transition-colors disabled:opacity-50`}
+                                      >
+                                        {isBusy ? "Cancelling..." : "Cancel Order"}
+                                      </button>
+                                    )}
+                                    {canReturn && (
+                                      <button
+                                        onClick={() => {
+                                          setReturnFormOrderId(order.order_id);
+                                          setReturnReason("");
+                                          setActionError(null);
+                                        }}
+                                        className={`px-4 py-2 border ${t.cardBorder} ${t.rounded} text-xs font-medium ${labelClass} hover:opacity-70 transition-opacity flex items-center gap-2`}
+                                      >
+                                        <RotateCcw className="w-3.5 h-3.5" />
+                                        Request Return
+                                      </button>
+                                    )}
+                                    {canRefund && (
+                                      <button
+                                        onClick={() => {
+                                          setRefundOrderId(refundOrderId === order.order_id ? null : order.order_id);
+                                          setHelpOrderId(null);
+                                        }}
+                                        aria-expanded={refundOrderId === order.order_id}
+                                        className={`px-4 py-2 border ${t.cardBorder} ${t.rounded} text-xs font-medium ${labelClass} hover:opacity-70 transition-opacity flex items-center gap-2`}
+                                      >
+                                        <Banknote className="w-3.5 h-3.5" />
+                                        Request Refund
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          {helpOrderId === order.order_id && (
+                            <OrderHelp orderId={order.order_id} orderNumber={order.order_number} theme={t} onOrderChanged={fetchOrders} />
+                          )}
+                          {refundOrderId === order.order_id && order.refund_eligibility?.eligible && (
+                            <RefundForm
+                              orderId={order.order_id}
+                              eligibility={order.refund_eligibility}
+                              symbol={symbol}
+                              theme={t}
+                              onCancel={() => setRefundOrderId(null)}
+                              onDone={() => {
+                                setRefundOrderId(null);
+                                fetchOrders();
+                              }}
+                            />
                           )}
                         </div>
                       );

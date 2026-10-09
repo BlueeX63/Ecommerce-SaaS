@@ -7,6 +7,9 @@ import { useSearchParams } from "next/navigation";
 import { Search, Filter, X, Zap, ChevronDown, Heart } from "lucide-react";
 import { VELOCITY_PRODUCTS, useVelocity } from "../VelocityContext";
 import { useCustomization } from "@/hooks/useCustomization";
+import { mapLiveProducts } from "@/lib/utils/product-mapper";
+import { applyCatalogView, NO_FILTERS, priceBounds, activeFilterCount, type ProductFilters, type SortKey } from "@/lib/storefront/catalog";
+import { FilterFields, FilterMenu, SearchInput, LIGHT_TOOLBAR, DARK_TOOLBAR, type ToolbarTheme } from "@/components/storefront/ProductToolbar";
 
 // Reusing the 3D card from home page
 function ProductCard3D({ product }: { product: any }) {
@@ -112,6 +115,7 @@ function ProductCard3D({ product }: { product: any }) {
 
 function ProductsContent({ initialProducts, initialCustomData }: any) {
   const searchParams = useSearchParams();
+  const { currencySymbol } = useVelocity();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedWearType, setSelectedWearType] = useState<string>("All");
@@ -133,34 +137,23 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
   const shopTitle = customData?.formData?.shopTitle || "Catalog";
   const rawCategories = customData?.formData?.shopCategories;
   
+  const source = useMemo(() => (Array.isArray(initialProducts) ? mapLiveProducts(initialProducts) : VELOCITY_PRODUCTS), [initialProducts]);
+  const [filters, setFilters] = useState<ProductFilters>(NO_FILTERS);
+
   const categories = rawCategories
     ? rawCategories.split(",").map((c: string) => c.trim()).filter(Boolean)
-    : ["All", ...Array.from(new Set(VELOCITY_PRODUCTS.map((p: any) => p.category)))];
-    
+    : ["All", ...Array.from(new Set(source.map((p: any) => p.category)))];
+
   const wearTypes = ["All", "top", "bottom", "accessory", "footwear", "tech"];
 
-  const filteredProducts = useMemo(() => {
-    let result = [...VELOCITY_PRODUCTS];
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter((p: any) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
-    }
-
-    if (selectedCategory !== "All") {
-      result = result.filter((p: any) => p.category === selectedCategory);
-    }
-
-    if (selectedWearType !== "All") {
-      result = result.filter((p: any) => p.wearType === selectedWearType);
-    }
-
-    if (sortBy === "price_low") result.sort((a, b) => a.price - b.price);
-    else if (sortBy === "price_high") result.sort((a, b) => b.price - a.price);
-    else if (sortBy === "name") result.sort((a, b) => a.name.localeCompare(b.name));
-
-    return result;
-  }, [searchQuery, selectedCategory, selectedWearType, sortBy]);
+  const SORT_MAP: Record<string, SortKey> = { recommended: "featured", price_low: "price-asc", price_high: "price-desc", name: "name-asc" };
+  const view = useMemo(() => {
+    const typed = selectedWearType === "All" ? (source as any[]) : (source as any[]).filter((p: any) => p.wearType === selectedWearType);
+    return applyCatalogView(typed, { query: searchQuery, category: selectedCategory, filters, sort: SORT_MAP[sortBy] ?? "featured" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, searchQuery, selectedCategory, selectedWearType, filters, sortBy]);
+  const filteredProducts = view.items as any[];
+  const filterState = { filters, setFilters, bounds: priceBounds(source as any[]), activeCount: activeFilterCount(filters) };
 
   return (
     <div className="flex flex-col w-full bg-[#050505] text-[#ededed] pt-32 min-h-screen relative overflow-hidden">
@@ -307,6 +300,14 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
                     ))}
                   </ul>
                 </div>
+                <div className="relative">
+                  <div className="absolute -left-3 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#00f0ff] to-transparent" />
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#00f0ff] mb-6 font-orbitron flex items-center gap-2">
+                    <Zap className="w-3 h-3" /> Price &amp; Stock
+                  </h3>
+                  <FilterFields browser={filterState} theme={{ ...DARK_TOOLBAR, radius: "rounded-none" }} symbol={currencySymbol} />
+                </div>
+
 
               </div>
             </motion.div>
@@ -346,6 +347,14 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
                     ))}
                   </div>
                 </div>
+                <div className="relative">
+                  <div className="absolute -left-3 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#00f0ff] to-transparent" />
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#00f0ff] mb-6 font-orbitron flex items-center gap-2">
+                    <Zap className="w-3 h-3" /> Price &amp; Stock
+                  </h3>
+                  <FilterFields browser={filterState} theme={{ ...DARK_TOOLBAR, radius: "rounded-none" }} symbol={currencySymbol} />
+                </div>
+
               </div>
             </motion.div>
           )}
@@ -357,12 +366,13 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
             <div className="py-32 text-center border border-[#ff003c]/30 bg-[#ff003c]/5">
               <Zap className="w-12 h-12 text-[#ff003c] mx-auto mb-6 opacity-50" />
               <h3 className="text-xl font-black uppercase tracking-widest mb-4 font-orbitron text-[#ff003c]">No Products Found</h3>
-              <p className="text-white/50 text-xs font-space tracking-widest uppercase mb-8">Please try different filters.</p>
+              <p className="text-white/50 text-xs font-space tracking-widest uppercase mb-8">Check the spelling or try different filters.</p>
               <button 
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedCategory("All");
                   setSelectedWearType("All");
+                  setFilters(NO_FILTERS);
                 }}
                 className="text-[10px] font-black uppercase tracking-[0.2em] text-white bg-[#ff003c] px-6 py-3 hover:bg-white hover:text-black transition-colors"
               >

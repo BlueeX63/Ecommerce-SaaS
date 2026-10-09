@@ -1,5 +1,8 @@
 "use client";
 
+import { navLabels, pickText } from "@/lib/storefront/copy";
+import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
+
 import { Playfair_Display, Inter } from "next/font/google";
 import { QuantumProvider, useQuantum } from "./QuantumContext";
 import Link from "next/link";
@@ -21,6 +24,8 @@ function QuantumNavigation({ initialCustomData, basePath }: { initialCustomData?
   const pathname = usePathname();
   const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Quantum";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Collection", about: "Philosophy", contact: "Contact", orders: "Orders", search: "Search" });
+
   const logoUrl = customData?.formData?.logoUrl || "";
 
   useEffect(() => {
@@ -45,15 +50,16 @@ function QuantumNavigation({ initialCustomData, basePath }: { initialCustomData?
   };
 
   const navLinks = [
-    { name: "Collection", href: "/templates/quantum/products" },
-    { name: "Philosophy", href: "/templates/quantum/about" },
-    { name: "Contact", href: "/templates/quantum/contact" }
+    { name: nav.shop, href: `${basePath}/products` },
+    { name: nav.about, href: `${basePath}/about` },
+    { name: nav.contact, href: `${basePath}/contact` }
   ];
 
   return (
     <>
+      <AnnouncementBar text={pickText(customData?.formData, "announcementText", "")} className="bg-[#111111] text-white" />
       <header 
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-700 ${
+        className={`fixed top-[var(--announce-h,0px)] inset-x-0 z-50 transition-all duration-700 ${
           isScrolled 
             ? "py-4 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)]" 
             : "py-8 bg-transparent"
@@ -266,6 +272,10 @@ function QuantumNavigation({ initialCustomData, basePath }: { initialCustomData?
 function QuantumFooter({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
   const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Quantum";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Collection", about: "Philosophy", contact: "Contact", orders: "Orders", search: "Search" });
+  const footerCol1 = pickText(customData?.formData, "footerCol1", "Explore");
+  const footerCol2 = pickText(customData?.formData, "footerCol2", "Legal");
+
   const logoUrl = customData?.formData?.logoUrl || "";
   const footerText = customData?.formData?.footerText || "Designing the future of living spaces. We merge conceptual art with functional everyday objects to create a truly transcendent environment.";
   const copyrightText = customData?.formData?.copyrightText || `© ${new Date().getFullYear()} ${brandName} Design Studio. All rights reserved.`;
@@ -290,19 +300,19 @@ function QuantumFooter({ initialCustomData, basePath }: { initialCustomData?: an
             </p>
           </div>
           <div>
-            <h4 className={`text-sm font-bold text-[#121212] mb-6 tracking-wide uppercase ${inter.className}`}>Explore</h4>
+            <h4 className={`text-sm font-bold text-[#121212] mb-6 tracking-wide uppercase ${inter.className}`}>{footerCol1}</h4>
             <ul className={`space-y-4 text-gray-500 ${inter.className}`}>
-              <li><Link href={`${basePath}/products`} className="hover:text-[#111111] transition-colors">Collection</Link></li>
-              <li><Link href={`${basePath}/about`} className="hover:text-[#111111] transition-colors">Philosophy</Link></li>
-              <li><Link href={`${basePath}/contact`} className="hover:text-[#111111] transition-colors">Contact</Link></li>
+              <li><Link href={`${basePath}/products`} className="hover:text-[#111111] transition-colors">{nav.shop}</Link></li>
+              <li><Link href={`${basePath}/about`} className="hover:text-[#111111] transition-colors">{nav.about}</Link></li>
+              <li><Link href={`${basePath}/contact`} className="hover:text-[#111111] transition-colors">{nav.contact}</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className={`text-sm font-bold text-[#121212] mb-6 tracking-wide uppercase ${inter.className}`}>Legal</h4>
+            <h4 className={`text-sm font-bold text-[#121212] mb-6 tracking-wide uppercase ${inter.className}`}>{footerCol2}</h4>
             <ul className={`space-y-4 text-gray-500 ${inter.className}`}>
-              <li><Link href="#" className="hover:text-[#111111] transition-colors">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-[#111111] transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-[#111111] transition-colors">Shipping & Returns</Link></li>
+              <li><Link href={`${basePath}/privacy-policy`} className="hover:text-[#111111] transition-colors">Privacy Policy</Link></li>
+              <li><Link href={`${basePath}/terms-conditions`} className="hover:text-[#111111] transition-colors">Terms of Service</Link></li>
+              <li><Link href={`${basePath}/shipping-returns`} className="hover:text-[#111111] transition-colors">Shipping &amp; Returns</Link></li>
             </ul>
           </div>
         </div>

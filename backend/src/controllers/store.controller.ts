@@ -7,6 +7,17 @@ import { evaluateCoupon } from '../services/pricing.js';
 import { addToCart, assertActiveProduct, MAX_QTY_PER_LINE } from '../services/cart.js';
 import { placeOrder } from '../services/orders.js';
 import { requireStoreTenant } from '../services/tenants.js';
+import { buildQuote, publicQuote } from '../services/quote.js';
+import { restockOrder } from '../services/fulfillment.js';
+import {
+  confirmCustomerChange,
+  editWindow,
+  escalateRequest,
+  handleCustomerMessage,
+  listOrderRequests,
+  phoneValue,
+} from '../services/order-support.js';
+import { publicRefund, queueRefundForCancelledOrder, refundEligibility, requestRefund, type RefundRow } from '../services/refunds.js';
 
 const MAX_ADDRESSES = 20;
 
@@ -202,13 +213,26 @@ export async function listOrders(req: Request, res: Response) {
 
   const { data, error } = await db
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*, order_items(*), order_refunds(*)')
     .eq('tenant_id', tenantId)
     .eq('customer_id', customerId)
     .order('created_date', { ascending: false })
     .limit(100);
   if (error) throw error;
-  res.json(data);
+
+  res.json(
+    (data ?? []).map((order: any) => {
+      const { order_refunds, fulfillment_warehouse_id: _warehouse, shipping_latitude: _lat, shipping_longitude: _lng, created_by: _by, ...rest } = order;
+      const refunds: RefundRow[] = [...(order_refunds ?? [])].sort((x, y) => +new Date(y.created_date) - +new Date(x.created_date));
+      const hasActive = refunds.some((r) => r.status === 'REQUESTED' || r.status === 'APPROVED');
+      return {
+        ...rest,
+        edit_window: editWindow(order),
+        refund: refunds[0] ? publicRefund(refunds[0]) : null,
+        refund_eligibility: refundEligibility(order, hasActive),
+      };
+    }),
+  );
 }
 
 const CANCELLABLE_STATUSES = ['PENDING', 'PROCESSING'];
@@ -220,7 +244,7 @@ export async function cancelOrder(req: Request, res: Response) {
 
   const { data: order } = await db
     .from('orders')
-    .select('order_id, status')
+    .select('order_id, status, customer_id, payment_status, payment_method, grand_total, currency')
     .eq('order_id', orderId)
     .eq('tenant_id', tenantId)
     .eq('customer_id', customerId)
@@ -230,10 +254,27 @@ export async function cancelOrder(req: Request, res: Response) {
     throw badRequest('This order has already shipped and can no longer be cancelled. Please contact support.');
   }
 
-  const { error } = await db.from('orders').update({ status: 'CANCELLED' }).eq('order_id', orderId).eq('tenant_id', tenantId);
+  // Compare-and-set on the status so a double click (or the merchant shipping it at the same moment) can't cancel twice.
+  const { data: cancelled, error } = await db
+    .from('orders')
+    .update({ status: 'CANCELLED' })
+    .eq('order_id', orderId)
+    .eq('tenant_id', tenantId)
+    .eq('status', order.status)
+    .select('order_id');
   if (error) throw error;
+  if (!cancelled?.length) throw badRequest('This order was just updated. Please refresh and try again.');
 
-  res.json({ message: 'Order cancelled successfully' });
+  await restockOrder(tenantId, orderId).catch((e) => console.error('[orders] restock failed', e));
+  const refund = await queueRefundForCancelledOrder(tenantId, order).catch((e) => {
+    console.error('[orders] refund queue failed', e);
+    return null;
+  });
+
+  res.json({
+    message: refund ? 'Order cancelled. A refund to your original payment method has been requested.' : 'Order cancelled successfully',
+    refund: refund ? publicRefund(refund) : null,
+  });
 }
 
 /**
@@ -266,12 +307,24 @@ export async function requestReturn(req: Request, res: Response) {
 
 const shippingSchema = z.object({
   address: z.string().trim().min(1, 'Shipping address is required').max(255),
+  name: optionalText(200),
+  mobile: optionalText(30),
+  landmark: optionalText(255),
   city: optionalText(100),
   state: optionalText(100),
   zip: optionalText(20),
   postal_code: optionalText(20),
   country: optionalText(100),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
 });
+
+/** A phone number typed at checkout, normalised; unusable input is ignored rather than failing the order. */
+function checkoutPhone(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const parsed = phoneValue.safeParse(raw);
+  return parsed.success ? parsed.data : undefined;
+}
 
 /** Cart lines arrive as `{ product: { id }, quantity }` from the storefront (or flat `{ id | productId }`). */
 const lineSchema = z.preprocess(
@@ -309,16 +362,58 @@ export async function createOrder(req: Request, res: Response) {
     deliveryOptionId: body.deliveryOptionId,
     shipping: {
       line1: shipping.address,
+      name: shipping.name,
+      phone: checkoutPhone(shipping.mobile),
+      landmark: shipping.landmark,
       city: shipping.city,
       state: shipping.state,
       postalCode: shipping.zip ?? shipping.postal_code,
       country: shipping.country,
+      latitude: shipping.latitude,
+      longitude: shipping.longitude,
     },
     notes: body.notes,
     paymentMethod: body.paymentMethod,
   });
 
   res.status(201).json({ success: true, order_id: order.orderId, order_number: order.orderNumber, totals: order });
+}
+
+/**
+ * Price + delivery estimate for the checkout screen. Runs exactly the logic that placing the order runs, so the
+ * breakdown (subtotal, discount, GST, delivery charge, total) and the arrival date shown match what is charged.
+ */
+export async function quote(req: Request, res: Response) {
+  const { tenantId, customer } = me(req);
+  const body = parse(
+    z.object({
+      slug: z.string().max(253).optional(),
+      items: z.array(lineSchema).min(1, 'Your cart is empty').max(100),
+      couponCode: optionalText(50),
+      deliveryOptionId: optionalUuid,
+      shippingDetails: shippingSchema.partial().optional(),
+    }),
+    req.body,
+  );
+  await storeIdFor(req, body.slug);
+
+  const shipping = body.shippingDetails ?? {};
+  const result = await buildQuote({
+    tenantId,
+    customer,
+    lines: body.items,
+    couponCode: body.couponCode,
+    deliveryOptionId: body.deliveryOptionId,
+    destination: {
+      line1: shipping.address,
+      city: shipping.city,
+      state: shipping.state,
+      postalCode: shipping.zip ?? shipping.postal_code,
+      country: shipping.country,
+      point: typeof shipping.latitude === 'number' && typeof shipping.longitude === 'number' ? { lat: shipping.latitude, lng: shipping.longitude } : null,
+    },
+  });
+  res.json(publicQuote(result));
 }
 
 /** Cart-based checkout using a saved address. */
@@ -361,6 +456,8 @@ export async function checkout(req: Request, res: Response) {
     deliveryOptionId: body.delivery_option_id,
     shipping: {
       line1: address.address_line_1,
+      name: `${customer.first_name ?? ''} ${customer.last_name ?? ''}`.trim() || null,
+      phone: customer.phone_number,
       city: address.city,
       state: address.state,
       postalCode: address.postal_code,
@@ -372,6 +469,45 @@ export async function checkout(req: Request, res: Response) {
 
   await db.from('cart_items').delete().eq('cart_id', cart.cart_id);
   res.status(201).json({ success: true, order_id: order.orderId, order_number: order.orderNumber, totals: order });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Order help (AI-assisted address / phone changes, handed to the store team when needed) and refunds
+// ---------------------------------------------------------------------------------------------
+
+export async function getOrderSupport(req: Request, res: Response) {
+  const { tenantId, customerId } = me(req);
+  res.json(await listOrderRequests(tenantId, customerId, uuid(req.params.id)));
+}
+
+export async function sendOrderSupportMessage(req: Request, res: Response) {
+  const { tenantId, customerId } = me(req);
+  const body = parse(z.object({ requestId: optionalUuid, message: z.string().trim().min(1, 'Please type a message').max(1000) }), req.body);
+  res.json(await handleCustomerMessage({ tenantId, customerId, orderId: uuid(req.params.id), requestId: body.requestId, message: body.message }));
+}
+
+export async function confirmOrderSupportChange(req: Request, res: Response) {
+  const { tenantId, customerId } = me(req);
+  res.json(await confirmCustomerChange({ tenantId, customerId, orderId: uuid(req.params.id), requestId: uuid(req.params.requestId, 'request id') }));
+}
+
+export async function escalateOrderSupport(req: Request, res: Response) {
+  const { tenantId, customerId } = me(req);
+  const body = parse(z.object({ requestId: optionalUuid, note: optionalText(1000) }), req.body ?? {});
+  res.json(await escalateRequest({ tenantId, customerId, orderId: uuid(req.params.id), requestId: body.requestId, note: body.note }));
+}
+
+export async function applyForRefund(req: Request, res: Response) {
+  const { tenantId, customerId } = me(req);
+  const body = parse(
+    z.object({
+      reason: z.string().trim().min(3, 'Please tell us why you are requesting a refund').max(500),
+      bank: z.unknown().optional(),
+    }),
+    req.body,
+  );
+  const refund = await requestRefund({ tenantId, customerId, orderId: uuid(req.params.id), reason: body.reason, bank: body.bank });
+  res.status(201).json({ refund: publicRefund(refund) });
 }
 
 // ---------------------------------------------------------------------------------------------

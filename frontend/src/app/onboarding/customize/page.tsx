@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Save, Layout, Type, Image as ImageIcon, Settings2, AlignLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, Layout, Type, Image as ImageIcon, AlignLeft, Monitor, Smartphone, Loader2 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { TEMPLATE_SCHEMAS, FieldType, FieldDef, TabDef } from "./schemas";
@@ -42,6 +42,15 @@ export function CustomizationWizardContent() {
   const previewUrl = `/templates/${name}`;
 
   const [activeStep, setActiveStep] = useState(0);
+  const [pathname, setPathname] = useState("/");
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [frameLoading, setFrameLoading] = useState(true);
+  const [deployError, setDeployError] = useState<string | null>(null);
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const post = useCallback((message: Record<string, unknown>) => {
+    iframeRef.current?.contentWindow?.postMessage(message, window.location.origin);
+  }, []);
 
   // Initialize FormData from Schema Default Values
   const [formData, setFormData] = useState<Record<string, any>>(() => {
@@ -94,17 +103,43 @@ export function CustomizationWizardContent() {
       if (event.data?.type === "MONOLITH_REQUEST_STATE") {
         pushState();
       }
+      if (event.data?.type === "MONOLITH_LOCATION" && typeof event.data.pathname === "string") {
+        const m = event.data.pathname.match(/^\/templates\/[^/]+(\/.*)?$/);
+        setPathname(m?.[1] || "/");
+      }
     };
     
     window.addEventListener("message", handleRequest);
     return () => window.removeEventListener("message", handleRequest);
   }, [formData, activeStep, STEPS]);
 
+  // Follow the merchant: show the page/section of the tab they are editing.
+  useEffect(() => {
+    const target = schema.tabs[activeStep]?.preview;
+    if (target) post({ type: "MONOLITH_NAVIGATE", path: target.path, scroll: target.scroll });
+  }, [activeStep, schema, post]);
+
+  // ...and scroll to + highlight the exact element for the field being edited.
+  const focusField = useCallback(
+    (field: FieldDef, value: any) => {
+      const current = value ?? field.defaultValue;
+      if (field.type === "image") post({ type: "MONOLITH_FOCUS", image: typeof current === "string" ? current : undefined });
+      else post({ type: "MONOLITH_FOCUS", text: typeof current === "string" ? current : undefined });
+    },
+    [post],
+  );
+
   const handleFieldChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    const def = schema.tabs[activeStep]?.fields.find((f: FieldDef) => f.name === field);
+    if (def) {
+      clearTimeout(focusTimer.current);
+      focusTimer.current = setTimeout(() => focusField(def, value), 450);
+    }
   };
 
   const handleDeploy = async () => {
+    setDeployError(null);
     setIsDeploying(true);
     try {
       const res = await fetch("/api/v1/tenant/provision", {
@@ -118,11 +153,11 @@ export function CustomizationWizardContent() {
           router.push("/dashboard");
         }, 3000);
       } else {
-        alert("Deployment failed: " + data.error);
+        setDeployError(data.error || "Deployment failed. Please try again.");
         setIsDeploying(false);
       }
     } catch (e) {
-      alert("Deployment failed");
+      setDeployError("Deployment failed. Check your connection and try again.");
       setIsDeploying(false);
     }
   };
@@ -176,22 +211,28 @@ export function CustomizationWizardContent() {
           </div>
 
           {/* Step Progress */}
-          <div className="flex gap-2 mb-12">
+          <div className="flex gap-2 mb-12 overflow-x-auto pb-1">
             {STEPS.map((step, idx) => (
-              <div key={step} className="flex-1 flex flex-col gap-2">
-                <div 
+              <button
+                type="button"
+                key={step}
+                onClick={() => setActiveStep(idx)}
+                aria-current={activeStep === idx ? "step" : undefined}
+                className="flex-1 min-w-0 flex flex-col gap-2 text-left group/step"
+              >
+                <div
                   className={cn(
                     "h-1 rounded-full w-full transition-all duration-500",
-                    activeStep >= idx ? "bg-accent" : "bg-white/10"
+                    activeStep >= idx ? "bg-accent" : "bg-white/10 group-hover/step:bg-white/25"
                   )}
                 />
                 <span className={cn(
-                  "font-accent text-[10px] uppercase tracking-widest transition-colors duration-500",
-                  activeStep >= idx ? "text-white" : "text-white/30"
+                  "font-accent text-[10px] uppercase tracking-widest transition-colors duration-500 truncate",
+                  activeStep === idx ? "text-white" : activeStep > idx ? "text-white/60" : "text-white/30 group-hover/step:text-white/60"
                 )}>
                   {step}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
 
@@ -213,10 +254,12 @@ export function CustomizationWizardContent() {
                       label={field.label} 
                       icon={field.type === 'textarea' ? <AlignLeft className="w-4 h-4" /> : <Type className="w-4 h-4" />} 
                       fieldKey={field.name}
-                      value={formData[field.name] || ""}
+                      value={formData[field.name] ?? ""}
                       onChange={handleFieldChange}
+                      onFocus={() => focusField(field, formData[field.name])}
                       placeholder={field.placeholder || field.defaultValue}
                       isTextArea={field.type === 'textarea'}
+                      description={field.description}
                     />
                   );
                 }
@@ -229,6 +272,7 @@ export function CustomizationWizardContent() {
                       fieldKey={field.name}
                       value={formData[field.name]}
                       onChange={handleFieldChange}
+                      onFocus={() => focusField(field, formData[field.name])}
                     />
                   );
                 }
@@ -238,6 +282,12 @@ export function CustomizationWizardContent() {
           </AnimatePresence>
 
         </div>
+
+        {deployError && (
+          <div role="alert" className="absolute bottom-24 left-6 right-6 z-30 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 backdrop-blur-xl">
+            {deployError}
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className="absolute bottom-0 left-0 right-0 z-20 bg-[#050505]/80 backdrop-blur-xl border-t border-white/5 p-6 flex justify-between items-center gap-4">
@@ -281,41 +331,42 @@ export function CustomizationWizardContent() {
             <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
             <div className="w-3 h-3 rounded-full bg-green-500/80" />
           </div>
-          <div className="flex-1 flex justify-center">
-            <div className="bg-black/30 rounded-md px-6 py-1.5 flex items-center gap-2 text-white/30 text-xs font-mono">
-              <Layout className="w-3 h-3" />
-              preview.monolith.dev{previewUrl}
+          <div className="flex-1 flex justify-center min-w-0">
+            <div className="bg-black/30 rounded-md px-6 py-1.5 flex items-center gap-2 text-white/40 text-xs font-mono max-w-full truncate">
+              <Layout className="w-3 h-3 shrink-0" />
+              <span className="truncate">yourstore.com{pathname === "/" ? "" : pathname}</span>
             </div>
           </div>
-          <div className="w-16" /> {/* Spacer */}
+          <div className="flex items-center gap-1 rounded-lg bg-black/30 p-1" role="group" aria-label="Preview size">
+            <button type="button" onClick={() => setDevice("desktop")} aria-pressed={device === "desktop"} className={cn("rounded-md p-1.5 transition-colors", device === "desktop" ? "bg-white/15 text-white" : "text-white/40 hover:text-white")}>
+              <Monitor className="w-3.5 h-3.5" />
+              <span className="sr-only">Desktop</span>
+            </button>
+            <button type="button" onClick={() => setDevice("mobile")} aria-pressed={device === "mobile"} className={cn("rounded-md p-1.5 transition-colors", device === "mobile" ? "bg-white/15 text-white" : "text-white/40 hover:text-white")}>
+              <Smartphone className="w-3.5 h-3.5" />
+              <span className="sr-only">Mobile</span>
+            </button>
+          </div>
         </div>
-        
+
         {/* Iframe */}
-        <div className="flex-1 w-full relative rounded-b-2xl overflow-hidden border border-white/5 bg-white">
-          <iframe 
+        <div className="flex-1 w-full relative rounded-b-2xl overflow-hidden border border-white/5 bg-[#1A1A1A] flex justify-center">
+          {frameLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#111111]">
+              <Loader2 className="w-6 h-6 animate-spin text-white/40" />
+            </div>
+          )}
+          <iframe
             ref={iframeRef}
             src={previewUrl}
-            className="w-full h-full border-none"
+            className={cn("h-full border-none bg-white transition-all duration-300", device === "mobile" ? "w-[390px] max-w-full" : "w-full")}
             title="Live Preview"
-            loading="lazy"
-            onLoad={(e) => {
-              try {
-                const iframe = e.target as HTMLIFrameElement;
-                if (iframe.contentWindow) {
-                  iframe.contentWindow.postMessage(
-                    {
-                      type: "MONOLITH_CUSTOMIZATION",
-                      data: { formData, step: STEPS[activeStep] }
-                    },
-                    window.location.origin
-                  );
-                }
-                if (iframe.contentDocument) {
-                  const style = document.createElement('style');
-                  style.innerHTML = '::-webkit-scrollbar { display: none !important; } * { -ms-overflow-style: none !important; scrollbar-width: none !important; }';
-                  iframe.contentDocument.head.appendChild(style);
-                }
-              } catch(err) {}
+            style={{ pointerEvents: "auto" }}
+            onLoad={() => {
+              setFrameLoading(false);
+              post({ type: "MONOLITH_CUSTOMIZATION", data: { formData, step: STEPS[activeStep] } });
+              const target = schema.tabs[activeStep]?.preview;
+              if (target && (target.path !== "/" || target.scroll)) post({ type: "MONOLITH_NAVIGATE", path: target.path, scroll: target.scroll });
             }}
           />
         </div>
@@ -333,7 +384,7 @@ export default function CustomizationWizard() {
 }
 
 // Field Component
-function Field({ label, icon, fieldKey, value, onChange, placeholder, isTextArea }: any) {
+function Field({ label, icon, fieldKey, value, onChange, onFocus, placeholder, isTextArea, description }: any) {
   return (
     <div className="group flex flex-col gap-3 p-5 rounded-2xl bg-white/[0.02] border border-white/5 transition-colors hover:bg-white/[0.04]">
       <div className="flex items-center justify-between">
@@ -343,11 +394,13 @@ function Field({ label, icon, fieldKey, value, onChange, placeholder, isTextArea
         </label>
       </div>
       
+      {description && <p className="-mt-1 text-xs text-white/35">{description}</p>}
       <div className={`transition-all duration-500 overflow-hidden ${isTextArea ? 'h-24' : 'h-12'} opacity-100`}>
         {isTextArea ? (
           <textarea 
             value={value}
             onChange={(e) => onChange(fieldKey, e.target.value)}
+            onFocus={onFocus}
             placeholder={placeholder}
             className="w-full h-full bg-black/40 border border-white/10 rounded-xl p-4 font-body text-white placeholder:text-white/20 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all resize-none custom-scroll text-sm"
           />
@@ -356,6 +409,7 @@ function Field({ label, icon, fieldKey, value, onChange, placeholder, isTextArea
             type="text"
             value={value}
             onChange={(e) => onChange(fieldKey, e.target.value)}
+            onFocus={onFocus}
             placeholder={placeholder}
             className="w-full h-full bg-black/40 border border-white/10 rounded-xl px-4 font-body text-white placeholder:text-white/20 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-sm"
           />
@@ -365,7 +419,7 @@ function Field({ label, icon, fieldKey, value, onChange, placeholder, isTextArea
   );
 }
 
-function ImageUploadField({ label, icon, fieldKey, value, onChange }: any) {
+function ImageUploadField({ label, icon, fieldKey, value, onChange, onFocus }: any) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -392,7 +446,7 @@ function ImageUploadField({ label, icon, fieldKey, value, onChange }: any) {
           onChange={handleFileChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
         />
-        <div className="w-full h-32 bg-black/40 border border-white/10 border-dashed rounded-xl flex flex-col items-center justify-center font-body text-white/30 text-xs overflow-hidden relative transition-all group-hover/upload:border-accent/50 group-hover/upload:text-white/50 group-hover/upload:bg-accent/5">
+        <div onMouseEnter={onFocus} className="w-full h-32 bg-black/40 border border-white/10 border-dashed rounded-xl flex flex-col items-center justify-center font-body text-white/30 text-xs overflow-hidden relative transition-all group-hover/upload:border-accent/50 group-hover/upload:text-white/50 group-hover/upload:bg-accent/5">
           {value ? (
             <>
               <img src={value} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity group-hover/upload:opacity-100 group-hover/upload:mix-blend-normal transition-all" />

@@ -7,6 +7,9 @@ import { useSearchParams } from "next/navigation";
 import { Search, Filter, X, ArrowRight, Star, ChevronDown } from "lucide-react";
 import { NEXUS_PRODUCTS, useShop } from "../ShopContext";
 import { useCustomization } from "@/hooks/useCustomization";
+import { mapLiveProducts } from "@/lib/utils/product-mapper";
+import { applyCatalogView, NO_FILTERS, priceBounds, activeFilterCount, type ProductFilters, type SortKey } from "@/lib/storefront/catalog";
+import { FilterFields, FilterMenu, SearchInput, LIGHT_TOOLBAR, DARK_TOOLBAR, type ToolbarTheme } from "@/components/storefront/ProductToolbar";
 
 const sortOptions = [
   { value: "relevancy", label: "Relevancy" },
@@ -60,7 +63,7 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
   const [selectedBrand, setSelectedBrand] = useState<string>("All");
   const [selectedWearType, setSelectedWearType] = useState<string>("All");
   const [showNewOnly, setShowNewOnly] = useState(false);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [filters, setFilters] = useState<ProductFilters>(NO_FILTERS);
   const [sortBy, setSortBy] = useState<"relevancy" | "price-asc" | "price-desc">("relevancy");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -82,54 +85,25 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
   const shopTitle = customData?.formData?.shopTitle || "Archive.";
   const rawCategories = customData?.formData?.shopCategories;
   
+  const source = useMemo(() => (Array.isArray(initialProducts) ? mapLiveProducts(initialProducts) : NEXUS_PRODUCTS), [initialProducts]);
+
   const categories = rawCategories
     ? rawCategories.split(",").map((c: string) => c.trim()).filter(Boolean)
-    : ["All", ...Array.from(new Set(NEXUS_PRODUCTS.map((p: any) => p.category)))];
-  
-  const brands = ["All", ...Array.from(new Set(NEXUS_PRODUCTS.map((p: any) => p.brand)))];
+    : ["All", ...Array.from(new Set(source.map((p: any) => p.category)))];
+
+  const brands = ["All", ...Array.from(new Set(source.map((p: any) => p.brand).filter(Boolean)))];
   const wearTypes = ["All", "top", "bottom", "accessory", "footwear", "other"];
 
-  const filteredProducts = useMemo(() => {
-    let result = NEXUS_PRODUCTS;
-
-    // Search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter((p: any) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
-    }
-
-    // Category
-    if (selectedCategory !== "All") {
-      result = result.filter((p: any) => p.category === selectedCategory);
-    }
-
-    // Brand
-    if (selectedBrand !== "All") {
-      result = result.filter((p: any) => p.brand === selectedBrand);
-    }
-
-    // Wear Type
-    if (selectedWearType !== "All") {
-      result = result.filter((p: any) => p.wearType === selectedWearType);
-    }
-
-    // New Only
-    if (showNewOnly) {
-      result = result.filter((p: any) => p.isNew);
-    }
-
-    // Price
-    result = result.filter((p: any) => p.price >= priceRange[0] && p.price <= priceRange[1]);
-
-    // Sort
-    if (sortBy === "price-asc") {
-      result = [...result].sort((a, b) => a.price - b.price);
-    } else if (sortBy === "price-desc") {
-      result = [...result].sort((a, b) => b.price - a.price);
-    }
-
-    return result;
-  }, [searchQuery, selectedCategory, selectedBrand, selectedWearType, priceRange, sortBy]);
+  const SORT_MAP: Record<string, SortKey> = { relevancy: "featured", "price-asc": "price-asc", "price-desc": "price-desc" };
+  const view = useMemo(() => {
+    const typed = (source as any[]).filter(
+      (p: any) => (selectedBrand === "All" || p.brand === selectedBrand) && (selectedWearType === "All" || p.wearType === selectedWearType) && (!showNewOnly || p.isNew),
+    );
+    return applyCatalogView(typed, { query: searchQuery, category: selectedCategory, filters, sort: SORT_MAP[sortBy] ?? "featured" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, searchQuery, selectedCategory, selectedBrand, selectedWearType, showNewOnly, filters, sortBy]);
+  const filteredProducts = view.items as any[];
+  const filterState = { filters, setFilters, bounds: priceBounds(source as any[]), activeCount: activeFilterCount(filters) };
 
   return (
     <div className="flex flex-col w-full bg-[#0a0a0a] text-[#ededed] pt-32 min-h-screen">
@@ -242,6 +216,11 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
                     ))}
                   </ul>
                 </div>
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#d4af37] mb-4">Price &amp; Stock</h3>
+                  <FilterFields browser={filterState} theme={{ ...DARK_TOOLBAR, radius: "rounded-lg" }} symbol={currencySymbol} />
+                </div>
+
 
               </div>
             </motion.div>
@@ -319,6 +298,11 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
                     ))}
                   </ul>
                 </div>
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#d4af37] mb-4">Price &amp; Stock</h3>
+                  <FilterFields browser={filterState} theme={{ ...DARK_TOOLBAR, radius: "rounded-lg" }} symbol={currencySymbol} />
+                </div>
+
               </div>
             </motion.div>
           )}
@@ -329,7 +313,7 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
           {filteredProducts.length === 0 ? (
             <div className="py-32 text-center border-t border-white/10">
               <h3 className="text-2xl font-black uppercase tracking-tighter mb-4">No results found</h3>
-              <p className="text-white/50 text-sm">Try adjusting your filters or search query.</p>
+              <p className="text-white/50 text-sm">Check the spelling, or try a broader search or fewer filters.</p>
               <button 
                 onClick={() => {
                   setSearchQuery("");
@@ -337,6 +321,7 @@ function ProductsContent({ initialProducts, initialCustomData }: any) {
                   setSelectedBrand("All");
                   setSelectedWearType("All");
                   setShowNewOnly(false);
+                  setFilters(NO_FILTERS);
                 }}
                 className="mt-8 text-xs font-bold uppercase tracking-widest text-[#d4af37] hover:text-white transition-colors"
               >

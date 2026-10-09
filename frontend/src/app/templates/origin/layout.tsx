@@ -1,5 +1,8 @@
 "use client";
 
+import { navLabels, pickText } from "@/lib/storefront/copy";
+import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
+
 import Link from "next/link";
 import { ShoppingBag, Search, Menu, ArrowLeft, X, Heart, User , Leaf} from "lucide-react";
 import { CartProvider, useCart } from "./CartContext";
@@ -22,6 +25,8 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
   const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "ORIGIN.";
   const logoUrl = customData?.formData?.logoUrl || "";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Shop", about: "About", contact: "Contact", orders: "Orders", search: "Search collection..." });
+
 
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
@@ -39,6 +44,7 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
 
   return (
     <>
+      <AnnouncementBar text={pickText(customData?.formData, "announcementText", "")} className="bg-[#402c21] text-[#fdfbf7]" />
       <motion.header
         variants={{
           visible: { y: 0, opacity: 1 },
@@ -46,7 +52,7 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
         }}
         animate={hidden ? "hidden" : "visible"}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed top-0 left-0 right-0 z-50 py-4 px-4 md:px-8"
+        className="fixed top-[var(--announce-h,0px)] left-0 right-0 z-50 py-4 px-4 md:px-8"
       >
         <div className="max-w-[1400px] mx-auto">
           <div className="flex items-center justify-between bg-[#fdfbf7]/90 backdrop-blur-xl border border-[#402c21]/10 rounded-full px-4 sm:px-6 md:px-8 py-3 shadow-lg">
@@ -58,12 +64,11 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
               </div>
               </Link>
               <nav className="hidden md:flex items-center gap-3 lg:gap-6 xl:gap-8 text-xs lg:text-sm font-medium text-[#402c21]/70">
-                {['Home', 'Shop', 'About', 'Contact', 'Orders'].map((item) => {
-                  const href = item === 'Home' ? '/templates/origin' : item === 'Shop' ? '/templates/origin/products' : `/templates/origin/${item.toLowerCase()}`;
+                {([['home', nav.home, basePath || '/'], ['shop', nav.shop, `${basePath}/products`], ['about', nav.about, `${basePath}/about`], ['contact', nav.contact, `${basePath}/contact`], ['orders', nav.orders, `${basePath}/orders`]] as const).map(([key, label, href]) => {
                   const isActive = pathname === href;
                   return (
-                    <Link key={item} href={href} className={`relative group py-2 overflow-hidden whitespace-nowrap`}>
-                      <span className={`transition-colors duration-300 ${isActive ? 'text-[#402c21] font-bold' : 'group-hover:text-[#402c21]'}`}>{item}</span>
+                    <Link key={key} href={href} className={`relative group py-2 overflow-hidden whitespace-nowrap`}>
+                      <span className={`transition-colors duration-300 ${isActive ? 'text-[#402c21] font-bold' : 'group-hover:text-[#402c21]'}`}>{label}</span>
                       <span className={`absolute bottom-0 left-0 w-full h-[1px] bg-[#402c21] transform origin-left transition-transform duration-300 ease-out ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} />
                     </Link>
                   );
@@ -85,11 +90,11 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
                       <input
                         autoFocus
                         type="text"
-                        placeholder="Search collection..."
+                        placeholder={nav.search}
                         value={searchQuery}
                         onChange={(e) => {
                           setSearchQuery(e.target.value);
-                          if (pathname !== "/templates/origin/products") router.push("/templates/origin/products");
+                          if (pathname !== `${basePath}/products`) router.push(`${basePath}/products`);
                         }}
                         className="bg-transparent pb-1 text-xs lg:text-sm focus:outline-none text-[#402c21] placeholder:text-[#402c21]/40 w-20 sm:w-32 lg:w-48"
                       />
@@ -158,16 +163,15 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
               <X className="w-8 h-8" />
             </button>
             <nav className="flex flex-col gap-8 text-4xl font-serif font-bold text-[#402c21]">
-              {['Home', 'Shop', 'About', 'Contact', 'Orders'].map((item) => {
-                const href = item === 'Home' ? '/templates/origin' : item === 'Shop' ? '/templates/origin/products' : `/templates/origin/${item.toLowerCase()}`;
+              {([['home', nav.home, basePath || '/'], ['shop', nav.shop, `${basePath}/products`], ['about', nav.about, `${basePath}/about`], ['contact', nav.contact, `${basePath}/contact`], ['orders', nav.orders, `${basePath}/orders`]] as const).map(([key, label, href]) => {
                 return (
                   <Link
-                    key={item}
+                    key={key}
                     href={href}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="hover:italic transition-all duration-300"
                   >
-                    {item}.
+                    {label}.
                   </Link>
                 );
               })}
@@ -214,9 +218,9 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
         <div className="md:col-span-1">
           <h4 className="text-sm font-bold mb-6 text-[#a38c7f]">{footerCol2}</h4>
           <ul className="space-y-3 text-sm text-[#fdfbf7]/80">
-            <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
-            <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-            <li><Link href="#" className="hover:text-white transition-colors">Returns</Link></li>
+            <li><Link href={`${basePath}/terms-conditions`} className="hover:text-white transition-colors">Terms of Service</Link></li>
+            <li><Link href={`${basePath}/privacy-policy`} className="hover:text-white transition-colors">Privacy Policy</Link></li>
+            <li><Link href={`${basePath}/shipping-returns`} className="hover:text-white transition-colors">Shipping &amp; Returns</Link></li>
           </ul>
         </div>
 

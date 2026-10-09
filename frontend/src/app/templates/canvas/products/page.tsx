@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ProductToolbar, ResultsNote, useProductBrowser, LIGHT_TOOLBAR, DARK_TOOLBAR, type ToolbarTheme } from "@/components/storefront/ProductToolbar";
 import { useCart, ALL_PRODUCTS } from "../CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart } from "lucide-react";
@@ -15,21 +16,28 @@ import { useCustomization } from "@/hooks/useCustomization";
   const shopTitle = customData?.formData?.shopTitle || "Collection.";
   const rawCategories = customData?.formData?.shopCategories;
   
-  const productSource = (initialProducts && initialProducts.length > 0 ? initialProducts : ALL_PRODUCTS).map((p: any) => ({
-    id: p.product_id || p.id,
-    name: p.product_name || p.name,
-    price: Number(p.base_price ?? p.price ?? 0),
-    image: p.product_images?.[0]?.image_url || p.image || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=2000&auto=format&fit=crop",
-    category: p.categories?.category_name || p.category || "Uncategorized",
-  }));
+  const productSource = useMemo(
+    () =>
+      (initialProducts && initialProducts.length > 0 ? initialProducts : ALL_PRODUCTS).map((p: any) => ({
+        id: p.product_id || p.id,
+        name: p.product_name || p.name,
+        price: Number(p.base_price ?? p.price ?? 0),
+        image: p.product_images?.[0]?.image_url || p.image || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=2000&auto=format&fit=crop",
+        category: p.categories?.category_name || p.category || "Uncategorized",
+        description: p.description || "",
+        sku: p.sku || "",
+        stockStatus: p.stock_status || p.stockStatus || "untracked",
+        createdAt: p.created_date || p.createdAt || null,
+      })),
+    [initialProducts],
+  );
 
   const categories = rawCategories
     ? rawCategories.split(",").map((c: string) => c.trim()).filter(Boolean)
     : ["All", ...Array.from(new Set(productSource.map((p: any) => p.category)))];
 
-  const filteredProducts = activeCategory === "All"
-    ? productSource
-    : productSource.filter((p: any) => p.category === activeCategory);
+  const browser = useProductBrowser(productSource, { category: activeCategory });
+  const filteredProducts = browser.results;
 
   return (
     <div className="flex flex-col w-full bg-black text-white min-h-screen pt-32">
@@ -66,6 +74,10 @@ import { useCustomization } from "@/hooks/useCustomization";
               {category}
             </button>
           ))}
+        </div>
+        <div className="flex flex-col gap-3 px-6 pb-6 md:px-12">
+          <ProductToolbar browser={browser} theme={DARK_TOOLBAR} symbol={currencySymbol} showSearch searchPlaceholder="SEARCH THE ARCHIVE" />
+          <ResultsNote browser={browser} total={productSource.length} theme={DARK_TOOLBAR} />
         </div>
       </section>
 

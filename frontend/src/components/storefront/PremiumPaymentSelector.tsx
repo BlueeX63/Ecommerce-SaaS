@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Wallet, Banknote } from "lucide-react";
-import { motion } from "framer-motion";
+import { Banknote, Check, Copy, Landmark, Smartphone } from "lucide-react";
 
 export type PaymentMethod = "cod" | "upi" | "netbanking";
 
@@ -36,120 +35,136 @@ type PaymentSelectorProps = {
   allowedMethods?: PaymentMethod[];
   /** Merchant-provided UPI ID / bank details to show the shopper once a method is selected. */
   details?: PaymentMethodDetails;
+  /** Optional accent colour class for the selected state's ring/dot, e.g. "ring-[#00ffaa]". Defaults to the theme's ink colour. */
+  accentRing?: string;
+  accentDot?: string;
 };
 
-export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, allowedMethods, details }: PaymentSelectorProps) {
-  const isLight = theme === "light";
-  const bgClass = isLight ? "bg-black/5" : "bg-white/5";
-  const activeBg = isLight ? "bg-[#111111] text-white shadow-xl" : "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.15)]";
-  const inactiveText = isLight ? "text-black/60 hover:text-black hover:bg-black/10" : "text-white/60 hover:text-white hover:bg-white/10";
-  const borderClass = isLight ? "border-black/10" : "border-white/10";
+const METHODS = [
+  { id: "upi" as const, name: "UPI", desc: "Pay with GPay, PhonePe, Paytm or any UPI app", icon: Smartphone },
+  { id: "netbanking" as const, name: "Netbanking", desc: "Bank transfer from any major bank", icon: Landmark },
+  { id: "cod" as const, name: "Cash on Delivery", desc: "Pay in cash when your order arrives", icon: Banknote },
+];
 
-  const allMethods = [
-    { id: "upi" as PaymentMethod, name: "UPI", icon: Wallet, desc: "GPay, PhonePe, Paytm" },
-    { id: "netbanking" as PaymentMethod, name: "Netbanking", icon: CreditCard, desc: "All major banks" },
-    { id: "cod" as PaymentMethod, name: "Cash on Delivery", icon: Banknote, desc: "Pay at doorstep" },
-  ];
-  const methods = allowedMethods ? allMethods.filter((m) => allowedMethods.includes(m.id)) : allMethods;
-
-  // Payment instructions (UPI ID, bank details) are revealed only after the shopper confirms the method with
-  // "Continue to payment". Changing the method hides them again.
-  const [confirmed, setConfirmed] = useState(false);
-  const choose = (method: PaymentMethod) => {
-    setConfirmed(false);
-    onSelect(method);
+function CopyValue({ label, value, dark }: { label: string; value: string; dark: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard unavailable (insecure context) - the value is still selectable on screen
+    }
   };
-  const needsDetails = selected === "upi" || (selected === "netbanking" && !!details?.netbanking);
+  return (
+    <div className="flex items-center justify-between gap-3 py-2">
+      <div className="min-w-0">
+        <p className={`text-[10px] uppercase tracking-widest ${dark ? "text-white/40" : "text-black/40"}`}>{label}</p>
+        <p className="font-mono text-sm break-all select-all">{value}</p>
+      </div>
+      <button
+        type="button"
+        onClick={copy}
+        aria-label={`Copy ${label}`}
+        className={`shrink-0 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+          dark ? "bg-white/10 hover:bg-white/20 text-white" : "bg-black/5 hover:bg-black/10 text-black"
+        }`}
+      >
+        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </div>
+  );
+}
+
+export function PremiumPaymentSelector({ theme = "dark", selected, onSelect, allowedMethods, details, accentRing, accentDot }: PaymentSelectorProps) {
+  const dark = theme === "dark";
+  const methods = allowedMethods ? METHODS.filter((m) => allowedMethods.includes(m.id)) : METHODS;
+
+  const idle = dark ? "border-white/10 bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/20" : "border-black/10 bg-white hover:bg-black/[0.02] hover:border-black/20";
+  const active = dark ? `border-transparent bg-white/[0.08] ring-2 ${accentRing ?? "ring-white"}` : `border-transparent bg-black/[0.03] ring-2 ${accentRing ?? "ring-[#111111]"}`;
+  const tile = dark ? "bg-white/10 text-white" : "bg-black/5 text-black";
+  const sub = dark ? "text-white/50" : "text-black/50";
+  const panel = dark ? "border-white/10 bg-white/[0.04] text-white" : "border-black/10 bg-black/[0.03] text-black";
 
   return (
-    <div className="w-full space-y-4">
-      <h3 className={`text-xs font-bold uppercase tracking-widest ${isLight ? 'text-[#111111]' : 'text-white'} border-b ${borderClass} pb-3`}>
-        Select Payment Method
-      </h3>
-      
-      <div className="flex flex-col gap-3">
+    <fieldset className="w-full min-w-0">
+      <legend className="sr-only">Payment method</legend>
+
+      <div role="radiogroup" className="flex flex-col gap-3">
         {methods.map((method) => {
           const isActive = selected === method.id;
           const Icon = method.icon;
-
           return (
             <button
               key={method.id}
               type="button"
-              onClick={() => choose(method.id)}
-              className={`relative flex items-center gap-4 p-4 sm:p-5 rounded-xl border border-transparent transition-all duration-300 text-left ${isActive ? activeBg : `${bgClass} ${inactiveText}`}`}
+              role="radio"
+              aria-checked={isActive}
+              onClick={() => onSelect(method.id)}
+              className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                isActive ? active : idle
+              }`}
             >
-              <span className={`flex items-center justify-center w-11 h-11 rounded-lg shrink-0 ${isActive ? (isLight ? 'bg-white/15' : 'bg-black/10') : (isLight ? 'bg-black/5' : 'bg-white/10')}`}>
-                <Icon className={`w-5 h-5 ${isActive ? (isLight ? 'text-white' : 'text-black') : ''}`} />
+              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tile}`}>
+                <Icon className="h-5 w-5" aria-hidden />
               </span>
-
-              <span className="flex-1 min-w-0">
-                <span className="block text-sm font-bold tracking-tight">{method.name}</span>
-                <span className={`block text-xs mt-0.5 ${isActive ? 'opacity-70' : 'opacity-50'}`}>
-                  {method.desc}
-                </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold leading-tight">{method.name}</span>
+                <span className={`mt-0.5 block text-xs leading-snug ${sub}`}>{method.desc}</span>
               </span>
-
               <span
-                className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  isActive
-                    ? isLight ? 'border-white' : 'border-black'
-                    : isLight ? 'border-black/20' : 'border-white/20'
+                aria-hidden
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                  isActive ? (dark ? "border-white" : "border-[#111111]") : dark ? "border-white/25" : "border-black/25"
                 }`}
               >
-                {isActive && <span className={`w-2.5 h-2.5 rounded-full ${isLight ? 'bg-white' : 'bg-black'}`} />}
+                {isActive && <span className={`h-2.5 w-2.5 rounded-full ${accentDot ?? (dark ? "bg-white" : "bg-[#111111]")}`} />}
               </span>
-
-              {isActive && (
-                <motion.div
-                  layoutId="activePaymentBorder"
-                  className={`absolute inset-0 border-2 rounded-xl pointer-events-none ${isLight ? 'border-[#111111]' : 'border-white'}`}
-                  initial={false}
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
             </button>
           );
         })}
       </div>
 
-      {needsDetails && !confirmed && (
-        <button
-          type="button"
-          onClick={() => setConfirmed(true)}
-          className={`w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-colors ${isLight ? "bg-[#111111] text-white hover:bg-black/85" : "bg-white text-black hover:bg-white/85"}`}
-        >
-          Continue to payment
-        </button>
-      )}
-
-      {confirmed && selected === "upi" && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`p-4 rounded-lg ${isLight ? 'bg-orange-50 text-orange-800 border border-orange-100' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'} text-sm space-y-2`}>
-          {details?.upi?.upiId && (
-            <p className="font-medium">
-              Pay to UPI ID: <span className="font-mono">{details.upi.upiId}</span>
-            </p>
+      {selected === "upi" && (
+        <div className={`mt-4 rounded-xl border p-4 text-sm ${panel}`}>
+          {details?.upi?.upiId ? (
+            <>
+              <CopyValue label="Pay to UPI ID" value={details.upi.upiId} dark={dark} />
+              <p className={`mt-2 text-xs leading-relaxed ${sub}`}>
+                Send the total amount to this UPI ID from any UPI app, then place your order. The store confirms your payment before shipping.
+              </p>
+            </>
+          ) : (
+            <p className={`text-xs leading-relaxed ${sub}`}>The store will share UPI payment details after you place your order.</p>
           )}
-          <p className="font-medium flex items-center gap-2">
-            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span></span>
-            Awaiting UPI confirmation. Please approve the request on your UPI app after placing the order.
-          </p>
-        </motion.div>
+        </div>
       )}
 
-      {confirmed && selected === "netbanking" && details?.netbanking && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className={`p-4 rounded-lg text-sm space-y-1.5 ${isLight ? 'bg-blue-50 text-blue-800 border border-blue-100' : 'bg-blue-500/10 text-blue-300 border border-blue-500/20'}`}
-        >
-          <p className="font-medium mb-1">Transfer to this account, then place your order:</p>
-          {details.netbanking.accountName && <p>Account Name: <span className="font-mono">{details.netbanking.accountName}</span></p>}
-          {details.netbanking.accountNumber && <p>Account Number: <span className="font-mono">{details.netbanking.accountNumber}</span></p>}
-          {details.netbanking.ifscCode && <p>IFSC Code: <span className="font-mono">{details.netbanking.ifscCode}</span></p>}
-          {details.netbanking.bankName && <p>Bank: <span className="font-mono">{details.netbanking.bankName}</span></p>}
-        </motion.div>
+      {selected === "netbanking" && (
+        <div className={`mt-4 rounded-xl border p-4 text-sm ${panel}`}>
+          {details?.netbanking && (details.netbanking.accountNumber || details.netbanking.accountName) ? (
+            <>
+              <p className={`mb-1 text-xs ${sub}`}>Transfer the total to this account, then place your order:</p>
+              <div className={`divide-y ${dark ? "divide-white/10" : "divide-black/10"}`}>
+                {details.netbanking.accountName && <CopyValue label="Account name" value={details.netbanking.accountName} dark={dark} />}
+                {details.netbanking.accountNumber && <CopyValue label="Account number" value={details.netbanking.accountNumber} dark={dark} />}
+                {details.netbanking.ifscCode && <CopyValue label="IFSC code" value={details.netbanking.ifscCode} dark={dark} />}
+                {details.netbanking.bankName && <CopyValue label="Bank" value={details.netbanking.bankName} dark={dark} />}
+              </div>
+            </>
+          ) : (
+            <p className={`text-xs leading-relaxed ${sub}`}>The store will share bank transfer details after you place your order.</p>
+          )}
+        </div>
       )}
-    </div>
+
+      {selected === "cod" && (
+        <div className={`mt-4 rounded-xl border p-4 text-xs leading-relaxed ${panel} ${sub}`}>
+          Keep the exact amount ready when your order arrives. If you ever need a refund on a Cash on Delivery order, we&apos;ll ask for your bank details so we can send it to you.
+        </div>
+      )}
+    </fieldset>
   );
 }

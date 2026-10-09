@@ -12,12 +12,13 @@ import {
   Home,
   Briefcase,
   Boxes,
-  FileText
+  FileText,
+  LifeBuoy
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 
 function cn(...inputs: ClassValue[]) {
@@ -34,6 +35,7 @@ const navItems = [
   { name: "Dealers", href: "/dashboard/dealers", icon: Briefcase },
   { name: "Inventory", href: "/dashboard/inventory", icon: Boxes },
   { name: "Invoices", href: "/dashboard/invoices", icon: FileText },
+  { name: "Support & Refunds", href: "/dashboard/support", icon: LifeBuoy },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Back to Home", href: "/", icon: Home },
@@ -42,6 +44,23 @@ const navItems = [
 export function Sidebar({ user }: { user?: any }) {
   const pathname = usePathname();
   const [isStoreMenuOpen, setIsStoreMenuOpen] = useState(false);
+  const [supportCount, setSupportCount] = useState(0);
+
+  // Badge for shopper requests and refunds waiting on the store team.
+  useEffect(() => {
+    let cancelled = false;
+    const load = () =>
+      fetch("/api/v1/dashboard/support/counts", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((c) => !cancelled && c && setSupportCount((c.openRequests ?? 0) + (c.openRefunds ?? 0)))
+        .catch(() => undefined);
+    load();
+    const timer = setInterval(() => document.visibilityState === "visible" && load(), 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [pathname]);
   
   const handleSwitchStore = async (tenantId: string) => {
     if (tenantId === user?.activeStore?.tenant_id) return;
@@ -145,6 +164,11 @@ export function Sidebar({ user }: { user?: any }) {
               )} />
               
               <span className="relative z-10">{item.name}</span>
+              {item.href === "/dashboard/support" && supportCount > 0 && (
+                <span className="relative z-10 ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-white text-[11px] font-bold flex items-center justify-center">
+                  {supportCount > 99 ? "99+" : supportCount}
+                </span>
+              )}
             </Link>
           );
         })}

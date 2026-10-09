@@ -4,13 +4,22 @@ import { useState, useEffect, useMemo } from "react";
 import { Plus, Search, MapPin, Box, X, Pencil, Power } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 
+import { TableSkeletonRows } from "@/components/dashboard/Skeletons";
 type Warehouse = {
   warehouse_id: string;
   warehouse_name: string;
+  address_line_1: string | null;
   city: string | null;
+  state_province: string | null;
+  postal_code: string | null;
   country: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  dispatch_hours: number | null;
   is_active: boolean;
 };
+
+const EMPTY_LOCATION = { warehouseName: "", addressLine1: "", city: "", state: "", postalCode: "", country: "India", dispatchHours: "24" };
 
 type InventoryRow = {
   inventory_id: string;
@@ -23,7 +32,6 @@ type InventoryRow = {
 };
 
 type ProductOption = { product_id: string; product_name: string; sku: string | null };
-type VariantOption = { variant_id: string; sku: string | null };
 
 export default function InventoryPage() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -33,16 +41,14 @@ export default function InventoryPage() {
 
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
-  const [locationForm, setLocationForm] = useState({ warehouseName: "", city: "", country: "" });
+  const [locationForm, setLocationForm] = useState(EMPTY_LOCATION);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
   const [busyWarehouseId, setBusyWarehouseId] = useState<string | null>(null);
 
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [products, setProducts] = useState<ProductOption[]>([]);
-  const [variants, setVariants] = useState<VariantOption[]>([]);
-  const [isLoadingVariants, setIsLoadingVariants] = useState(false);
-  const [adjustForm, setAdjustForm] = useState({ productId: "", variantId: "", warehouseId: "", quantityChange: "", reason: "" });
+  const [adjustForm, setAdjustForm] = useState({ productId: "", warehouseId: "", quantityChange: "", reason: "" });
   const [adjustError, setAdjustError] = useState<string | null>(null);
   const [isSavingAdjustment, setIsSavingAdjustment] = useState(false);
 
@@ -73,14 +79,22 @@ export default function InventoryPage() {
   // Locations
   const openAddLocation = () => {
     setEditingWarehouse(null);
-    setLocationForm({ warehouseName: "", city: "", country: "" });
+    setLocationForm(EMPTY_LOCATION);
     setLocationError(null);
     setIsLocationModalOpen(true);
   };
 
   const openEditLocation = (w: Warehouse) => {
     setEditingWarehouse(w);
-    setLocationForm({ warehouseName: w.warehouse_name, city: w.city ?? "", country: w.country ?? "" });
+    setLocationForm({
+      warehouseName: w.warehouse_name,
+      addressLine1: w.address_line_1 ?? "",
+      city: w.city ?? "",
+      state: w.state_province ?? "",
+      postalCode: w.postal_code ?? "",
+      country: w.country ?? "",
+      dispatchHours: String(w.dispatch_hours ?? 24),
+    });
     setLocationError(null);
     setIsLocationModalOpen(true);
   };
@@ -96,16 +110,20 @@ export default function InventoryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           warehouseName: locationForm.warehouseName,
+          addressLine1: locationForm.addressLine1 || undefined,
           city: locationForm.city || undefined,
+          state: locationForm.state || undefined,
+          postalCode: locationForm.postalCode || undefined,
           country: locationForm.country || undefined,
+          dispatchHours: locationForm.dispatchHours === "" ? undefined : Number(locationForm.dispatchHours),
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setIsLocationModalOpen(false);
         fetchWarehouses();
       } else {
-        const data = await res.json();
-        setLocationError(data.error || "Failed to save location");
+        setLocationError(Array.isArray(data.details) ? data.details.join(" · ") : data.error || "Failed to save location");
       }
     } catch {
       setLocationError("Something went wrong. Please try again.");
@@ -130,8 +148,7 @@ export default function InventoryPage() {
 
   // Stock adjustment
   const openAdjustModal = async () => {
-    setAdjustForm({ productId: "", variantId: "", warehouseId: "", quantityChange: "", reason: "" });
-    setVariants([]);
+    setAdjustForm({ productId: "", warehouseId: "", quantityChange: "", reason: "" });
     setAdjustError(null);
     setIsAdjustModalOpen(true);
     if (products.length === 0) {
@@ -140,22 +157,6 @@ export default function InventoryPage() {
         const data: { data: ProductOption[] } = await res.json();
         setProducts((data.data || []).map((p) => ({ product_id: p.product_id, product_name: p.product_name, sku: p.sku })));
       }
-    }
-  };
-
-  const handleProductChange = async (productId: string) => {
-    setAdjustForm((prev) => ({ ...prev, productId, variantId: "" }));
-    setVariants([]);
-    if (!productId) return;
-    setIsLoadingVariants(true);
-    try {
-      const res = await fetch(`/api/v1/products/${productId}`);
-      if (res.ok) {
-        const data: { data: { product_variants: VariantOption[] } } = await res.json();
-        setVariants((data.data?.product_variants || []).map((v) => ({ variant_id: v.variant_id, sku: v.sku })));
-      }
-    } finally {
-      setIsLoadingVariants(false);
     }
   };
 
@@ -168,17 +169,17 @@ export default function InventoryPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          variantId: adjustForm.variantId,
+          productId: adjustForm.productId,
           warehouseId: adjustForm.warehouseId,
           quantityChange: Number(adjustForm.quantityChange),
           reason: adjustForm.reason || undefined,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setIsAdjustModalOpen(false);
         fetchInventory();
       } else {
-        const data = await res.json();
         setAdjustError(data.error || "Failed to adjust stock");
       }
     } catch {
@@ -189,7 +190,6 @@ export default function InventoryPage() {
   };
 
   const productOptions = products.map((p) => ({ value: p.product_id, label: p.sku ? `${p.product_name} (${p.sku})` : p.product_name }));
-  const variantOptions = variants.map((v) => ({ value: v.variant_id, label: v.sku || "Default variant" }));
   const warehouseOptions = warehouses.filter((w) => w.is_active).map((w) => ({ value: w.warehouse_id, label: w.warehouse_name }));
 
   return (
@@ -219,14 +219,14 @@ export default function InventoryPage() {
 
       {isLocationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
               <h2 className="text-xl font-heading font-semibold">{editingWarehouse ? "Edit Location" : "Add Location"}</h2>
               <button onClick={() => setIsLocationModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSaveLocation} className="p-6 space-y-4">
+            <form onSubmit={handleSaveLocation} className="p-6 space-y-4 overflow-y-auto">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-primary">Location Name</label>
                 <input
@@ -237,8 +237,27 @@ export default function InventoryPage() {
                   className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
                 />
               </div>
-              <div className="flex gap-4">
-                <div className="space-y-2 flex-1">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-primary">Street address</label>
+                <input
+                  type="text"
+                  value={locationForm.addressLine1}
+                  onChange={(e) => setLocationForm({ ...locationForm, addressLine1: e.target.value })}
+                  className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-primary">PIN / postal code</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={locationForm.postalCode}
+                    onChange={(e) => setLocationForm({ ...locationForm, postalCode: e.target.value })}
+                    className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                  />
+                </div>
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-primary">City</label>
                   <input
                     type="text"
@@ -247,7 +266,16 @@ export default function InventoryPage() {
                     className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
                   />
                 </div>
-                <div className="space-y-2 flex-1">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-primary">State</label>
+                  <input
+                    type="text"
+                    value={locationForm.state}
+                    onChange={(e) => setLocationForm({ ...locationForm, state: e.target.value })}
+                    className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                  />
+                </div>
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-primary">Country</label>
                   <input
                     type="text"
@@ -256,6 +284,20 @@ export default function InventoryPage() {
                     className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-primary">Dispatch time (hours)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={336}
+                  value={locationForm.dispatchHours}
+                  onChange={(e) => setLocationForm({ ...locationForm, dispatchHours: e.target.value })}
+                  className="w-full px-4 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                />
+                <p className="text-xs text-secondary">
+                  How long this warehouse needs to pack and hand over an order. We find its map position from the address / PIN code, then use it to estimate delivery time for shoppers near it.
+                </p>
               </div>
               {locationError && <p className="text-sm text-red-600">{locationError}</p>}
               <div className="flex justify-end gap-3 pt-2">
@@ -289,18 +331,9 @@ export default function InventoryPage() {
                 <label className="text-sm font-medium text-primary">Product</label>
                 <CustomSelect
                   value={adjustForm.productId}
-                  onChange={handleProductChange}
+                  onChange={(v) => setAdjustForm({ ...adjustForm, productId: v })}
                   options={productOptions}
                   placeholder={products.length === 0 ? "Loading products..." : "Select a product"}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-primary">Variant</label>
-                <CustomSelect
-                  value={adjustForm.variantId}
-                  onChange={(v) => setAdjustForm({ ...adjustForm, variantId: v })}
-                  options={variantOptions}
-                  placeholder={!adjustForm.productId ? "Select a product first" : isLoadingVariants ? "Loading..." : "Select a variant"}
                 />
               </div>
               <div className="space-y-2">
@@ -341,7 +374,7 @@ export default function InventoryPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSavingAdjustment || !adjustForm.variantId || !adjustForm.warehouseId || !adjustForm.quantityChange}
+                  disabled={isSavingAdjustment || !adjustForm.productId || !adjustForm.warehouseId || !adjustForm.quantityChange}
                   className="px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-black/90 transition-colors disabled:opacity-50"
                 >
                   {isSavingAdjustment ? "Saving..." : "Apply Adjustment"}
@@ -362,21 +395,18 @@ export default function InventoryPage() {
             <thead className="border-b border-black/[0.04]">
               <tr>
                 <th className="px-6 py-4 font-medium text-primary">Location Name</th>
-                <th className="px-6 py-4 font-medium text-primary">City, Country</th>
+                <th className="px-6 py-4 font-medium text-primary">Address</th>
+                <th className="px-6 py-4 font-medium text-primary">Map position</th>
                 <th className="px-6 py-4 font-medium text-primary text-center">Status</th>
                 <th className="px-6 py-4 font-medium text-primary text-right"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center">
-                    <span className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" />
-                  </td>
-                </tr>
+                <TableSkeletonRows rows={6} cols={5} first="text" />
               ) : warehouses.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-secondary">
+                  <td colSpan={5} className="px-6 py-8 text-center text-secondary">
                     <MapPin className="w-8 h-8 text-black/10 mx-auto mb-2" />
                     <p>No warehouses found.</p>
                   </td>
@@ -388,7 +418,18 @@ export default function InventoryPage() {
                       <MapPin className="w-4 h-4 text-secondary" />
                       {w.warehouse_name}
                     </td>
-                    <td className="px-6 py-4 text-secondary">{w.city ? `${w.city}, ${w.country ?? ""}` : w.country || "-"}</td>
+                    <td className="px-6 py-4 text-secondary">
+                      {[w.city, w.state_province, w.postal_code].filter(Boolean).join(", ") || w.country || "-"}
+                    </td>
+                    <td className="px-6 py-4">
+                      {w.latitude !== null && w.longitude !== null ? (
+                        <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Located</span>
+                      ) : (
+                        <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800" title="Add a PIN code or city so delivery times can be estimated">
+                          Add PIN code
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${w.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
                         {w.is_active ? "Active" : "Inactive"}
@@ -444,11 +485,7 @@ export default function InventoryPage() {
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
-                    <span className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" />
-                  </td>
-                </tr>
+                <TableSkeletonRows rows={6} cols={5} first="text" />
               ) : filteredInventory.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-secondary">

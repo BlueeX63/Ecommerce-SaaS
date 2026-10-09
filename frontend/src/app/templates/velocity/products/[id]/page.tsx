@@ -7,7 +7,8 @@ import { ArrowLeft, Zap, Target, Activity, Check, Heart } from "lucide-react";
 import Link from "next/link";
 import { VELOCITY_PRODUCTS, useVelocity } from "../../VelocityContext";
 
-export default function VelocityProductDetails({ initialProduct }: any) {
+import { DeliveryEstimate } from "@/components/storefront/DeliveryEstimate";
+export default function VelocityProductDetails({ initialProduct, relatedPool }: any) {
   const { id } = useParams();
   const router = useRouter();
   const { addToCart, setIsCartOpen, toggleWishlist, wishlist , currencySymbol, basePath } = useVelocity();
@@ -19,7 +20,7 @@ export default function VelocityProductDetails({ initialProduct }: any) {
 
   useEffect(() => {
     if (!product) {
-      router.push('/templates/velocity/products');
+      router.push(`${basePath}/products`);
     }
   }, [product, router]);
 
@@ -181,6 +182,7 @@ export default function VelocityProductDetails({ initialProduct }: any) {
               </button>
             </div>
 
+          <DeliveryEstimate productId={product.id} currencySymbol={currencySymbol} tone="dark" className="mt-8 max-w-md" />
           </motion.div>
         </div>
 
@@ -241,7 +243,7 @@ export default function VelocityProductDetails({ initialProduct }: any) {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {VELOCITY_PRODUCTS.filter((p: any) => p.id !== product.id).slice(0, 3).map(related => (
+            {(relatedPool ?? VELOCITY_PRODUCTS).filter((p: any) => p.id !== product.id).slice(0, 3).map((related: any) => (
               <Link key={related.id} href={`${basePath}/products/${related.id}`} className="group bg-[#0a0a0a] border border-white/10 overflow-hidden relative block hover:border-[#00f0ff]/50 transition-colors">
                 <div className="aspect-[4/3] overflow-hidden relative">
                   <img src={related.image} alt={related.name} className="w-full h-full object-cover grayscale mix-blend-lighten group-hover:grayscale-0 transition-all duration-500" />

@@ -1,5 +1,8 @@
 "use client";
 
+import { navLabels, pickText } from "@/lib/storefront/copy";
+import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
+
 import { Space_Grotesk, Orbitron } from "next/font/google";
 import { VelocityProvider } from "./VelocityContext";
 import Link from "next/link";
@@ -23,6 +26,8 @@ function VelocityNavigation({ initialCustomData }: { initialCustomData?: any } =
   const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Velocity";
   const logoUrl = customData?.formData?.logoUrl || "";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Products", about: "About", contact: "Contact", orders: "Orders", search: "Search" });
+
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -47,8 +52,9 @@ function VelocityNavigation({ initialCustomData }: { initialCustomData?: any } =
 
   return (
     <>
+      <AnnouncementBar text={pickText(customData?.formData, "announcementText", "")} className="bg-[#00ffaa] text-black" />
       <header 
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 border-b ${
+        className={`fixed top-[var(--announce-h,0px)] inset-x-0 z-50 transition-all duration-500 border-b ${
           isScrolled 
             ? "bg-[#050505]/80 backdrop-blur-md border-[#00f0ff]/20 py-4 shadow-[0_4px_30px_rgba(0,240,255,0.1)]" 
             : "bg-transparent border-transparent py-6"
@@ -67,8 +73,7 @@ function VelocityNavigation({ initialCustomData }: { initialCustomData?: any } =
           </Link>
 
           <nav className="hidden md:flex items-center gap-10">
-            {["Products", "About", "Contact"].map((item) => {
-              const href = `/templates/velocity/${item.toLowerCase()}`;
+            {([[nav.shop, `${basePath}/products`], [nav.about, `${basePath}/about`], [nav.contact, `${basePath}/contact`]] as const).map(([item, href]) => {
               const isActive = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <Link 
@@ -261,7 +266,7 @@ function VelocityFooter({ initialCustomData, basePath }: { initialCustomData?: a
             <ul className="space-y-4 font-space">
               <li><Link href={`${basePath}/about`} className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Origin Log</Link></li>
               <li><Link href={`${basePath}/contact`} className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Comm Link</Link></li>
-              <li><Link href="#" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Returns</Link></li>
+              <li><Link href={`${basePath}/shipping-returns`} className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Shipping &amp; Returns</Link></li>
               <li><Link href="#" className="text-xs font-bold uppercase tracking-widest hover:text-[#00f0ff] transition-colors text-white/50">Support</Link></li>
             </ul>
           </div>
@@ -274,8 +279,8 @@ function VelocityFooter({ initialCustomData, basePath }: { initialCustomData?: a
               <li><Link href={`${basePath}/contact`} className="hover:text-[#00f0ff] transition-colors">Contact</Link></li>
             </ul>
             <ul className={`space-y-4 text-sm text-white/60 uppercase tracking-widest ${spaceGrotesk.className}`}>
-              <li><Link href="#" className="hover:text-[#00f0ff] transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-[#00f0ff] transition-colors">Privacy Policy</Link></li>
+              <li><Link href={`${basePath}/terms-conditions`} className="hover:text-[#00f0ff] transition-colors">Terms of Service</Link></li>
+              <li><Link href={`${basePath}/privacy-policy`} className="hover:text-[#00f0ff] transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
         </div>

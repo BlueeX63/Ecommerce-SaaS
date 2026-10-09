@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getStore } from "@/lib/store";
 import { resolveStoreBasePath } from "@/lib/store-base-path";
 import { StoreAssistant } from "@/components/storefront/StoreAssistant";
+import { PreviewBridge } from "@/components/storefront/PreviewBridge";
 
 import { StarterPreviewLayout as MinimalistLayout } from "@/app/templates/minimalist/layout";
 import { EssencePreviewLayout as EssenceLayout } from "@/app/templates/essence/layout";
@@ -49,6 +50,7 @@ export default async function StoreLayout({
       <LayoutComponent initialCustomData={customData} basePath={basePath}>
         {children}
       </LayoutComponent>
+      <PreviewBridge />
       {store.aiAssistantEnabled && <StoreAssistant slug={slug} storeName={store.name} />}
     </>
   );

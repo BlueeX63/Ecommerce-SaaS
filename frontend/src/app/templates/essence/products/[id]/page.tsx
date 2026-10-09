@@ -7,12 +7,13 @@ import Link from "next/link";
 import { ArrowLeft, Plus, Minus, Heart } from "lucide-react";
 import { useState } from "react";
 
+import { DeliveryEstimate } from "@/components/storefront/DeliveryEstimate";
 export default function EssenceProductDetail({ initialProduct }: any) {
   const { basePath } = useCart();
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
-  const { addToCart, toggleWishlist, isInWishlist, reviews, addReview } = useCart();
+  const { addToCart, toggleWishlist, isInWishlist, reviews, addReview, currencySymbol } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [reviewName, setReviewName] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
@@ -91,7 +92,7 @@ export default function EssenceProductDetail({ initialProduct }: any) {
               {product.name}
             </h1>
             <div className="text-2xl text-[#4A3F35]/80 font-serif italic mb-10">
-              ${product.price.toFixed(2)}
+              {currencySymbol}{product.price.toFixed(2)}
             </div>
 
             <div className="h-px w-full bg-[#4A3F35]/10 mb-10" />
@@ -137,6 +138,7 @@ export default function EssenceProductDetail({ initialProduct }: any) {
               </button>
             </div>
 
+            <DeliveryEstimate productId={product.id} currencySymbol={currencySymbol} tone="light" className="my-8 max-w-md" />
             {/* Accordions (Dummy) */}
             <div className="border-t border-[#4A3F35]/10">
               <div className="py-6 border-b border-[#4A3F35]/10 flex justify-between items-center cursor-pointer group">

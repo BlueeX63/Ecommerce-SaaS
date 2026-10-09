@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Package, User, Truck, Tag, CreditCard, MapPin, StickyNote, Loader2, Plus, Building2, RotateCcw,
+  ArrowLeft, Package, User, Truck, Tag, CreditCard, MapPin, StickyNote, Loader2, Plus, Building2, RotateCcw, Banknote, Pencil, Phone,
 } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 import { useCurrency } from "@/components/dashboard/CurrencyProvider";
 
+import { DetailSkeleton, LoadingRegion } from "@/components/dashboard/Skeletons";
 interface OrderItem {
   order_item_id: string;
   product_name: string;
@@ -39,6 +40,13 @@ interface OrderDetail {
   shipping_total: number;
   discount_total: number;
   grand_total: number;
+  payment_method: string | null;
+  tax_inclusive: boolean | null;
+  tax_breakdown: Array<{ label: string; ratePercent: number; amount: number }> | null;
+  estimated_delivery_date: string | null;
+  shipping_name: string | null;
+  shipping_phone: string | null;
+  shipping_landmark: string | null;
   shipping_address_line_1: string | null;
   shipping_city: string | null;
   shipping_state: string | null;
@@ -122,6 +130,10 @@ export default function OrderDetailPage() {
   const [showFulfillForm, setShowFulfillForm] = useState(false);
   const [tracking, setTracking] = useState({ carrier: "", trackingNumber: "" });
   const [isAddingFulfillment, setIsAddingFulfillment] = useState(false);
+  const [refunds, setRefunds] = useState<Array<{ refund_id: string; amount: number; status: string; method: string; created_date: string }>>([]);
+  const [editingShipping, setEditingShipping] = useState(false);
+  const [shipForm, setShipForm] = useState({ name: "", phone: "", line1: "", landmark: "", city: "", state: "", postalCode: "" });
+  const [isSavingShipping, setIsSavingShipping] = useState(false);
 
   const fetchOrder = async () => {
     try {
@@ -139,7 +151,52 @@ export default function OrderDetailPage() {
     }
   };
 
+  const fetchRefunds = async () => {
+    try {
+      const res = await fetch(`/api/v1/dashboard/refunds?orderId=${orderId}&limit=10`, { cache: "no-store" });
+      if (res.ok) setRefunds((await res.json()).data ?? []);
+    } catch {
+      // refunds are supplementary; the order itself still renders
+    }
+  };
+
+  const openShippingEditor = () => {
+    if (!order) return;
+    setShipForm({
+      name: order.shipping_name ?? "",
+      phone: order.shipping_phone ?? "",
+      line1: order.shipping_address_line_1 ?? "",
+      landmark: order.shipping_landmark ?? "",
+      city: order.shipping_city ?? "",
+      state: order.shipping_state ?? "",
+      postalCode: order.shipping_postal_code ?? "",
+    });
+    setEditingShipping(true);
+  };
+
+  const saveShipping = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingShipping(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/dashboard/orders/${orderId}/shipping`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shipForm),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(Array.isArray(data.details) ? data.details.join(" · ") : data.error || "Failed to update delivery details");
+      setEditingShipping(false);
+      await fetchOrder();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update delivery details");
+    } finally {
+      setIsSavingShipping(false);
+    }
+  };
+
   useEffect(() => {
+    fetchRefunds();
     fetchOrder();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
@@ -193,9 +250,9 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-6 h-6 animate-spin text-primary/40" />
-      </div>
+      <LoadingRegion label="Loading">
+        <DetailSkeleton />
+      </LoadingRegion>
     );
   }
 
@@ -273,8 +330,21 @@ export default function OrderDetailPage() {
                   <span>-{formatCurrency(order.discount_total)}</span>
                 </div>
               )}
-              {order.shipping_total > 0 && <div className="flex justify-between text-secondary"><span>Shipping</span><span>{formatCurrency(order.shipping_total)}</span></div>}
-              {order.tax_total > 0 && <div className="flex justify-between text-secondary"><span>Tax</span><span>{formatCurrency(order.tax_total)}</span></div>}
+              <div className="flex justify-between text-secondary"><span>Delivery charge</span><span>{order.shipping_total > 0 ? formatCurrency(order.shipping_total) : "Free"}</span></div>
+              {order.tax_total > 0 && (
+                <>
+                  <div className="flex justify-between text-secondary">
+                    <span>{order.tax_inclusive ? "Taxes (included in prices)" : "Taxes"}</span>
+                    <span>{formatCurrency(order.tax_total)}</span>
+                  </div>
+                  {order.tax_breakdown?.map((t) => (
+                    <div key={t.label} className="flex justify-between text-xs text-secondary pl-4">
+                      <span>{t.label} ({t.ratePercent}%)</span>
+                      <span>{formatCurrency(t.amount)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
               <div className="flex justify-between font-semibold text-primary text-base pt-2 border-t border-black/[0.06]">
                 <span>Total</span><span>{formatCurrency(order.grand_total)}</span>
               </div>
@@ -382,16 +452,71 @@ export default function OrderDetailPage() {
             {order.dealers?.contact_phone && <p className="text-sm text-secondary">{order.dealers.contact_phone}</p>}
           </InfoCard>
 
-          {shippingLines.length > 0 && (
-            <InfoCard icon={<MapPin className="w-4 h-4" />} title="Shipping Address">
-              <div className="text-sm text-secondary space-y-0.5">
-                {shippingLines.map((line, i) => <p key={i}>{line}</p>)}
-              </div>
-            </InfoCard>
-          )}
+          <InfoCard icon={<MapPin className="w-4 h-4" />} title="Delivery">
+            {editingShipping ? (
+              <form onSubmit={saveShipping} className="space-y-2.5">
+                {([
+                  ["name", "Recipient name"],
+                  ["phone", "Phone"],
+                  ["line1", "Street address"],
+                  ["landmark", "Landmark"],
+                  ["city", "City"],
+                  ["state", "State"],
+                  ["postalCode", "PIN / postal code"],
+                ] as const).map(([key, label]) => (
+                  <input
+                    key={key}
+                    aria-label={label}
+                    placeholder={label}
+                    value={shipForm[key]}
+                    onChange={(e) => setShipForm((f) => ({ ...f, [key]: e.target.value }))}
+                    className="w-full px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/5"
+                  />
+                ))}
+                <div className="flex gap-2 pt-1">
+                  <button type="submit" disabled={isSavingShipping} className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                    {isSavingShipping ? "Saving..." : "Save"}
+                  </button>
+                  <button type="button" onClick={() => setEditingShipping(false)} className="px-3 py-2 text-sm text-secondary">Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div className="text-sm text-secondary space-y-0.5">
+                  {order.shipping_name && <p className="text-primary font-medium">{order.shipping_name}</p>}
+                  {shippingLines.map((line, i) => <p key={i}>{line}</p>)}
+                  {order.shipping_landmark && <p>Landmark: {order.shipping_landmark}</p>}
+                  {order.shipping_phone && <p className="flex items-center gap-1.5 pt-1"><Phone className="w-3.5 h-3.5" /> {order.shipping_phone}</p>}
+                  {shippingLines.length === 0 && !order.shipping_phone && <p>No delivery details recorded.</p>}
+                </div>
+                {order.estimated_delivery_date && !["DELIVERED", "CANCELLED", "REFUNDED"].includes(order.status) && (
+                  <p className="mt-3 pt-3 border-t border-black/[0.06] text-sm text-secondary flex items-center gap-2">
+                    <Truck className="w-3.5 h-3.5 shrink-0" /> Estimated delivery by <span className="font-medium text-primary">{new Date(order.estimated_delivery_date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</span>
+                  </p>
+                )}
+                {!["DELIVERED", "CANCELLED", "REFUNDED"].includes(order.status) && (
+                  <button type="button" onClick={openShippingEditor} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline">
+                    <Pencil className="w-3 h-3" /> Edit delivery details
+                  </button>
+                )}
+              </>
+            )}
+          </InfoCard>
 
           <InfoCard icon={<CreditCard className="w-4 h-4" />} title="Payment">
-            <p className="text-sm text-primary font-medium">{notes.paymentMethod || "Not recorded"}</p>
+            <p className="text-sm text-primary font-medium">
+              {order.payment_method ? ({ cod: "Cash on Delivery", upi: "UPI", netbanking: "Netbanking" } as Record<string, string>)[order.payment_method] ?? order.payment_method : notes.paymentMethod || "Not recorded"}
+            </p>
+            {refunds.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-black/[0.06] space-y-2">
+                {refunds.map((r) => (
+                  <Link key={r.refund_id} href="/dashboard/support" className="flex items-center justify-between gap-2 text-sm hover:underline">
+                    <span className="flex items-center gap-2 text-primary"><Banknote className="w-3.5 h-3.5" /> Refund {formatCurrency(Number(r.amount))}</span>
+                    <StatusBadge value={r.status} />
+                  </Link>
+                ))}
+              </div>
+            )}
             {notes.coupon && (
               <div className="mt-3 pt-3 border-t border-black/[0.06] flex items-center gap-2 text-sm text-green-700">
                 <Tag className="w-3.5 h-3.5 shrink-0" />

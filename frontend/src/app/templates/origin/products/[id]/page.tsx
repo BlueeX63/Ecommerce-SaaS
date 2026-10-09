@@ -6,7 +6,8 @@ import Link from "next/link";
 import { ArrowLeft, ChevronRight, Heart } from "lucide-react";
 import { useState } from "react";
 
-export default function OriginProductDetailPage({ initialProduct }: any) {
+import { DeliveryEstimate } from "@/components/storefront/DeliveryEstimate";
+export default function OriginProductDetailPage({ initialProduct, relatedPool }: any) {
   const { id } = useParams();
   const router = useRouter();
   const { addToCart, toggleWishlist, isInWishlist, reviews, addReview , currencySymbol, basePath } = useCart();
@@ -29,7 +30,7 @@ export default function OriginProductDetailPage({ initialProduct }: any) {
   }
 
   // Find related products
-  const relatedProducts = ALL_PRODUCTS.filter((p: any) => p.category === product.category && p.id !== product.id).slice(0, 3);
+  const relatedProducts = (relatedPool ?? ALL_PRODUCTS).filter((p: any) => p.category === product.category && p.id !== product.id).slice(0, 3);
 
   const productReviews = reviews.filter(r => r.productId === product.id);
 
@@ -125,6 +126,7 @@ export default function OriginProductDetailPage({ initialProduct }: any) {
               </button>
             </div>
 
+            <DeliveryEstimate productId={product.id} currencySymbol={currencySymbol} tone="light" className="my-8 max-w-md" />
             <div className="border-t border-[#402c21]/10 pt-8 mt-4">
               <div className="flex items-center justify-between py-4 border-b border-[#402c21]/10 cursor-pointer group">
                 <h3 className="font-bold text-[#402c21] text-sm uppercase tracking-widest">Shipping & Returns</h3>

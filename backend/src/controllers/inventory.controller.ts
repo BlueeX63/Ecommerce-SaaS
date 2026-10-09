@@ -2,9 +2,10 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/supabase.js';
 import { ApiError, badRequest, str, uuid, parse } from '../lib/http.js';
-import { optionalText } from '../lib/validation.js';
+import { optionalText, optionalUuid } from '../lib/validation.js';
 import { tenantCtx } from '../middleware/auth.js';
 import { assertOwned, assertVariantOwned } from '../services/ownership.js';
+import { ensureDefaultVariant, invalidateStockCache } from '../services/fulfillment.js';
 
 export async function list(req: Request, res: Response) {
   const { tenantId } = tenantCtx(req);
@@ -37,7 +38,9 @@ export async function adjust(req: Request, res: Response) {
   const { tenantId, userId } = tenantCtx(req);
   const body = parse(
     z.object({
-      variantId: z.string().uuid('variantId is required'),
+      // Either a specific variant, or just the product (stock is then held on its default variant).
+      variantId: optionalUuid,
+      productId: optionalUuid,
       warehouseId: z.string().uuid('warehouseId is required'),
       quantityChange: z.coerce.number().int().min(-1_000_000).max(1_000_000),
       reason: optionalText(500),
@@ -46,8 +49,17 @@ export async function adjust(req: Request, res: Response) {
   );
   if (body.quantityChange === 0) throw badRequest('quantityChange must not be zero');
 
-  await assertVariantOwned(body.variantId, tenantId);
+  if (!body.variantId && !body.productId) throw badRequest('Choose a product');
   await assertOwned('warehouses', body.warehouseId, tenantId, 'warehouse');
+
+  let variantId = body.variantId;
+  if (variantId) {
+    await assertVariantOwned(variantId, tenantId);
+  } else {
+    await assertOwned('products', body.productId!, tenantId, 'product');
+    const { data: product } = await db.from('products').select('sku').eq('product_id', body.productId!).eq('tenant_id', tenantId).maybeSingle();
+    variantId = await ensureDefaultVariant(body.productId!, product?.sku ?? null);
+  }
 
   let inv: any = null;
 
@@ -56,7 +68,7 @@ export async function adjust(req: Request, res: Response) {
     const { data: current } = await db
       .from('inventory')
       .select('*')
-      .eq('variant_id', body.variantId)
+      .eq('variant_id', variantId)
       .eq('warehouse_id', body.warehouseId)
       .eq('tenant_id', tenantId)
       .maybeSingle();
@@ -67,7 +79,7 @@ export async function adjust(req: Request, res: Response) {
         .from('inventory')
         .insert({
           tenant_id: tenantId,
-          variant_id: body.variantId,
+          variant_id: variantId,
           warehouse_id: body.warehouseId,
           quantity_available: body.quantityChange,
         })
@@ -102,5 +114,6 @@ export async function adjust(req: Request, res: Response) {
     created_by: userId,
   });
 
+  await invalidateStockCache(tenantId);
   res.status(201).json({ message: 'Inventory adjusted successfully', data: inv });
 }

@@ -6,7 +6,7 @@ import { Heart, ShoppingBag, X } from "lucide-react";
 import { useQuantum } from "../QuantumContext";
 
 export default function QuantumWishlistPage() {
-  const { basePath, wishlist, toggleWishlist, addToCart  } = useQuantum();
+  const { basePath, wishlist, toggleWishlist, addToCart, currencySymbol } = useQuantum();
 
   return (
     <div className="min-h-screen bg-[#F9F9FB] pt-32 pb-24 px-6 md:px-12">
@@ -82,7 +82,7 @@ export default function QuantumWishlistPage() {
                       </h3>
                     </Link>
                     <div className="font-inter text-gray-500 font-medium mb-6">
-                      ${item.price.toFixed(2)}
+                      {currencySymbol}{item.price.toFixed(2)}
                     </div>
                     
                     <div className="mt-auto">

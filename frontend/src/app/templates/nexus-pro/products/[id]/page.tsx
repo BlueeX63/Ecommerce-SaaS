@@ -7,7 +7,8 @@ import Link from "next/link";
 import { Heart, Star, ShoppingBag, ArrowLeft, ArrowRight, Share2, Plus, Minus, Check } from "lucide-react";
 import { NEXUS_PRODUCTS, useShop } from "../../ShopContext";
 
-export default function NexusProProductDetailPage({ initialProduct }: any) {
+import { DeliveryEstimate } from "@/components/storefront/DeliveryEstimate";
+export default function NexusProProductDetailPage({ initialProduct, relatedPool }: any) {
   const { id } = useParams();
   const { basePath, addToCart, toggleWishlist, isInWishlist , currencySymbol  } = useShop();
   
@@ -66,7 +67,7 @@ export default function NexusProProductDetailPage({ initialProduct }: any) {
 
   const similarProducts = useMemo(() => {
     if (!product) return [];
-    return NEXUS_PRODUCTS.filter((p: any) => p.category === product.category && p.id !== product.id).slice(0, 3);
+    return (relatedPool ?? NEXUS_PRODUCTS).filter((p: any) => p.category === product.category && p.id !== product.id).slice(0, 3);
   }, [product]);
 
   if (!product) {
@@ -225,10 +226,8 @@ export default function NexusProProductDetailPage({ initialProduct }: any) {
                 </button>
               </div>
 
-              <div className="mt-12 space-y-4 text-xs font-bold uppercase tracking-widest text-white/50">
-                <div className="flex items-center gap-3">
-                  <Check className="w-4 h-4 text-[#d4af37]" /> Free global shipping on orders over $200
-                </div>
+              <DeliveryEstimate productId={product.id} currencySymbol={currencySymbol} tone="dark" className="my-8 max-w-md" />
+            <div className="mt-12 space-y-4 text-xs font-bold uppercase tracking-widest text-white/50">
                 <div className="flex items-center gap-3">
                   <Check className="w-4 h-4 text-[#d4af37]" /> 30-day return policy
                 </div>

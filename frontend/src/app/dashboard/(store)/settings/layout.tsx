@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings, Users, Key, Webhook, CreditCard, Palette, Truck } from "lucide-react";
+import { Settings, Users, Key, Webhook, CreditCard, Palette, Truck, Receipt } from "lucide-react";
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -10,7 +10,8 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const tabs = [
     { name: "General", path: "/dashboard/settings", icon: Settings },
     { name: "Storefront Content", path: "/dashboard/settings/customize", icon: Palette },
-    { name: "Delivery", path: "/dashboard/settings/delivery", icon: Truck },
+    { name: "Delivery & Payments", path: "/dashboard/settings/delivery", icon: Truck },
+    { name: "Taxes & Delivery Fees", path: "/dashboard/settings/checkout", icon: Receipt },
     { name: "Team & Roles", path: "/dashboard/settings/team", icon: Users },
     { name: "API Keys", path: "/dashboard/settings/api-keys", icon: Key },
     { name: "Webhooks", path: "/dashboard/settings/webhooks", icon: Webhook },

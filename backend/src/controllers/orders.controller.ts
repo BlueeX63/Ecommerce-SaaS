@@ -5,6 +5,8 @@ import { badRequest, notFound, pageMeta, pagination, parse, uuid } from '../lib/
 import { optionalText, optionalUuid, requiredMoney } from '../lib/validation.js';
 import { tenantCtx } from '../middleware/auth.js';
 import { assertOwnedOrNull, assertVariantOwned } from '../services/ownership.js';
+import { restockOrder } from '../services/fulfillment.js';
+import { queueRefundForCancelledOrder } from '../services/refunds.js';
 
 // Must match the `orders.status` CHECK constraint exactly - see migrations/011_delivery_and_coupons.sql,
 // which replaces the narrower constraint from 006_orders.sql and adds RETURN_REQUESTED. The DB rejects
@@ -152,15 +154,25 @@ export async function update(req: Request, res: Response) {
   if (body.notes !== undefined) update.notes = body.notes;
   if (Object.keys(update).length === 0) throw badRequest('Nothing to update');
 
+  const { data: before } = await db.from('orders').select('status').eq('order_id', id).eq('tenant_id', tenantId).maybeSingle();
+  if (!before) throw notFound('Order not found');
+
   const { data, error } = await db
     .from('orders')
     .update(update)
     .eq('order_id', id)
     .eq('tenant_id', tenantId)
-    .select('order_id')
+    .select('order_id, customer_id, status, payment_status, payment_method, grand_total, currency')
     .maybeSingle();
   if (error) throw error;
   if (!data) throw notFound('Order not found');
+
+  // Cancelling from the dashboard behaves like the shopper cancelling: stock goes back, and an order that was
+  // already paid online gets a refund request queued.
+  if (body.status === 'CANCELLED' && before.status !== 'CANCELLED') {
+    await restockOrder(tenantId, id).catch((e) => console.error('[orders] restock failed', e));
+    await queueRefundForCancelledOrder(tenantId, data).catch((e) => console.error('[orders] refund queue failed', e));
+  }
 
   res.json({ message: 'Order updated successfully' });
 }

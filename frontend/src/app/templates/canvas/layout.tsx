@@ -1,5 +1,8 @@
 "use client";
 
+import { navLabels, pickText } from "@/lib/storefront/copy";
+import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, X, Menu, ArrowRight, Heart, User , Square} from "lucide-react";
@@ -119,6 +122,8 @@ function Navigation({ initialCustomData, basePath }: { initialCustomData?: any; 
   const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "Canvas.";
   const logoUrl = customData?.formData?.logoUrl || "";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Collection", about: "Maison", contact: "Concierge", orders: "Orders", search: "Search" });
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -129,17 +134,18 @@ function Navigation({ initialCustomData, basePath }: { initialCustomData?: any; 
   }, []);
 
   const links = [
-    { href: basePath || "/", label: "Home" },
-    { href: `${basePath}/products`, label: "Collection" },
-    { href: `${basePath}/about`, label: "Maison" },
-    { href: `${basePath}/contact`, label: "Concierge" },
-    { href: `${basePath}/orders`, label: "Orders" },
+    { href: basePath || "/", label: nav.home },
+    { href: `${basePath}/products`, label: nav.shop },
+    { href: `${basePath}/about`, label: nav.about },
+    { href: `${basePath}/contact`, label: nav.contact },
+    { href: `${basePath}/orders`, label: nav.orders },
   ];
 
   return (
     <>
+      <AnnouncementBar text={pickText(customData?.formData, "announcementText", "")} className="bg-white text-black" />
       <nav 
-        className={`fixed top-0 w-full z-40 transition-all duration-700 bg-black/80 backdrop-blur-md border-b border-white/10 ${
+        className={`fixed top-[var(--announce-h,0px)] w-full z-40 transition-all duration-700 bg-black/80 backdrop-blur-md border-b border-white/10 ${
           scrolled ? "py-4" : "py-6"
         }`}
       >
@@ -262,6 +268,8 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
   const footerCol1 = customData?.formData?.footerCol1 || "Index";
   const footerCol2 = customData?.formData?.footerCol2 || "Information";
   const footerCol3 = customData?.formData?.footerCol3 || "Social";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Collection", about: "Maison", contact: "Concierge", orders: "Orders", search: "Search" });
+
   const tBrandName = customData?.formData?.brandName || "CANVAS.";
   const tLogoUrl = customData?.formData?.logoUrl || "";
   return (
@@ -284,18 +292,19 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
           <div className="lg:col-span-2">
             <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-8">{footerCol1}</h3>
             <ul className="space-y-4">
-              <li><Link href={basePath || "/"} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Home</Link></li>
-              <li><Link href={`${basePath}/products`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Collection</Link></li>
-              <li><Link href={`${basePath}/about`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Maison</Link></li>
+              <li><Link href={basePath || "/"} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">{nav.home}</Link></li>
+              <li><Link href={`${basePath}/products`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">{nav.shop}</Link></li>
+              <li><Link href={`${basePath}/about`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">{nav.about}</Link></li>
             </ul>
           </div>
 
           <div className="lg:col-span-2">
             <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-8">{footerCol2}</h3>
             <ul className="space-y-4">
-              <li><Link href="#" className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Shipping</Link></li>
-              <li><Link href="#" className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Returns</Link></li>
-              <li><Link href={`${basePath}/contact`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Contact</Link></li>
+              <li><Link href={`${basePath}/shipping-returns`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Shipping &amp; Returns</Link></li>
+              <li><Link href={`${basePath}/privacy-policy`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Privacy</Link></li>
+              <li><Link href={`${basePath}/terms-conditions`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">Terms</Link></li>
+              <li><Link href={`${basePath}/contact`} className="text-xs tracking-widest uppercase hover:text-white/50 transition-colors">{nav.contact}</Link></li>
             </ul>
           </div>
           <div className="lg:col-span-4">

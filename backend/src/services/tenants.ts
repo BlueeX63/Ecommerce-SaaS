@@ -161,7 +161,7 @@ export async function invalidateTenantCache(
   tenantId: string,
   extra: { keys?: Array<string | null | undefined> } = {},
 ) {
-  const keys = [`tenant_settings:${tenantId}`, `tenant_products:${tenantId}`, `delivery:${tenantId}`, `payment_methods:${tenantId}`];
+  const keys = [`tenant_settings:${tenantId}`, `tenant_products:${tenantId}`, `delivery:${tenantId}`, `payment_methods:${tenantId}`, `checkout_settings:${tenantId}`];
   for (const k of extra.keys ?? []) if (k) keys.push(`tenant:${k}`);
   await kvDel(...keys).catch((error) => console.warn('[cache] invalidate failed', error));
 }

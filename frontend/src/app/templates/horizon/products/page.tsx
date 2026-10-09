@@ -6,10 +6,13 @@ import { HORIZON_PRODUCTS, useHorizon } from "../HorizonContext";
 import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useCustomization } from "@/hooks/useCustomization";
+import { mapLiveProducts } from "@/lib/utils/product-mapper";
+import { applyCatalogView, NO_FILTERS, priceBounds, activeFilterCount, type ProductFilters, type SortKey } from "@/lib/storefront/catalog";
+import { FilterFields, FilterMenu, SearchInput, LIGHT_TOOLBAR, DARK_TOOLBAR, type ToolbarTheme } from "@/components/storefront/ProductToolbar";
  export default function ({ initialProducts, initialCustomData }: any) {
   const { addToCart , currencySymbol, basePath } = useHorizon();
   const productSource = useMemo(() => {
-    if (!initialProducts || initialProducts.length === 0) return HORIZON_PRODUCTS;
+    if (!Array.isArray(initialProducts)) return HORIZON_PRODUCTS;
     return initialProducts.map((p: any) => ({
       id: p.product_id || p.id,
       name: p.product_name || p.name,
@@ -23,11 +26,15 @@ import { useCustomization } from "@/hooks/useCustomization";
       format: "",
       fileSize: "",
       reviews: [],
+      sku: p.sku || "",
+      stockStatus: p.stock_status || "untracked",
+      createdAt: p.created_date || null,
     }));
   }, [initialProducts]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured");
+  const [filters, setFilters] = useState<ProductFilters>(NO_FILTERS);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
@@ -55,35 +62,16 @@ import { useCustomization } from "@/hooks/useCustomization";
     return ["All", ...Array.from(cats)];
   }, [rawCategories, productSource]);
 
-  // Filter and sort products
-  const filteredProducts = useMemo(() => {
-    let result = productSource;
-
-    // Search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter((p: any) => 
-        p.name.toLowerCase().includes(q) || 
-        p.category.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q)
-      );
-    }
-
-    // Category filter
-    if (selectedCategory !== "All") {
-      result = result.filter((p: any) => p.category === selectedCategory);
-    }
-
-    // Sort
-    result = [...result].sort((a, b) => {
-      if (sortBy === "price-low") return a.price - b.price;
-      if (sortBy === "price-high") return b.price - a.price;
-      if (sortBy === "name-asc") return a.name.localeCompare(b.name);
-      return 0; // "featured" (default order)
-    });
-
-    return result;
-  }, [searchQuery, selectedCategory, sortBy, productSource]);
+  // Typo-tolerant search, category, price/stock filters and sort - shared with every other template.
+  const SORT_MAP: Record<string, SortKey> = { featured: "featured", "price-low": "price-asc", "price-high": "price-desc", "name-asc": "name-asc" };
+  const view = useMemo(
+    () => applyCatalogView(productSource as any[], { query: searchQuery, category: selectedCategory, filters, sort: SORT_MAP[sortBy] ?? "featured" }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searchQuery, selectedCategory, filters, sortBy, productSource],
+  );
+  const filteredProducts = view.items as any[];
+  const source = productSource;
+  const filterState = { filters, setFilters, bounds: priceBounds(source as any[]), activeCount: activeFilterCount(filters) };
 
   return (
     <div className="bg-[#FAFAFA] min-h-screen text-[#111] pt-40 pb-32">
@@ -140,7 +128,7 @@ import { useCustomization } from "@/hooks/useCustomization";
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full left-0 mt-4 w-48 bg-white border border-black/5 shadow-[0_20px_40px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 z-50"
+                    className="absolute top-full left-0 mt-4 w-64 bg-white border border-black/5 shadow-[0_20px_40px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-3 z-50"
                   >
                     {categories.map((cat: any) => (
                       <button
@@ -152,7 +140,10 @@ import { useCustomization } from "@/hooks/useCustomization";
                         {cat}
                       </button>
                     ))}
-                  </motion.div>
+                  <div className="mt-2 border-t border-black/10 pt-4">
+                      <FilterFields browser={filterState} theme={{ ...LIGHT_TOOLBAR, radius: "rounded-none" }} symbol={currencySymbol} />
+                    </div>
+                    </motion.div>
                 )}
               </AnimatePresence>
             </div>

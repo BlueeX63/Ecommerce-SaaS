@@ -13,6 +13,7 @@ export const publicRouter = Router();
 publicRouter.get('/stores/:slug', publicController.getStore);
 publicRouter.get('/stores/:slug/products', publicController.listStoreProducts);
 publicRouter.get('/stores/:slug/products/:id', publicController.getStoreProduct);
+publicRouter.get('/stores/:slug/delivery-estimate', limit('delivery-estimate', 30, 60_000), publicController.deliveryEstimate);
 publicRouter.get('/stores/:slug/catalogs/:catalogSlug', optionalShopper, publicController.getStoreCatalog);
 
 // Storefront AI assistant (add-on owned by the store). Chat streams text; the voice agent mints a session token

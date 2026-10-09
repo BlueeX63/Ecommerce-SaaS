@@ -8,6 +8,7 @@ import { useCurrency } from "@/components/dashboard/CurrencyProvider";
 import { CustomSelect } from "@/components/CustomSelect";
 import { Pagination } from "@/components/dashboard/Pagination";
 
+import { TableSkeletonRows } from "@/components/dashboard/Skeletons";
 const PAGE_LIMIT = 50;
 
 type Invoice = {
@@ -341,11 +342,7 @@ export default function InvoicesPage() {
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <span className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin inline-block" />
-                  </td>
-                </tr>
+                <TableSkeletonRows rows={6} cols={6} first="text" />
               ) : filteredInvoices.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-secondary">

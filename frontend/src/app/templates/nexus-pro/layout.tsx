@@ -1,5 +1,8 @@
 "use client";
 
+import { navLabels, pickText } from "@/lib/storefront/copy";
+import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, X, Menu, Heart, User, Search, ArrowRight, Globe, Mail, MessageCircle , Layers} from "lucide-react";
@@ -129,6 +132,8 @@ function Navbar({ initialCustomData }: { initialCustomData?: any }) {
   const pathname = usePathname();
   const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "NEXUS";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Collection", about: "About", contact: "Contact", orders: "Orders", search: "Search" });
+
   const logoUrl = customData?.formData?.logoUrl || "";
 
   useEffect(() => {
@@ -138,19 +143,20 @@ function Navbar({ initialCustomData }: { initialCustomData?: any }) {
   }, []);
 
   const navLinks = [
-    { name: "Home", path: "/templates/nexus-pro" },
-    { name: "Collection", path: "/templates/nexus-pro/products" },
-    { name: "About", path: "/templates/nexus-pro/about" },
-    { name: "Contact", path: "/templates/nexus-pro/contact" },
+    { name: nav.home, path: basePath || "/" },
+    { name: nav.shop, path: `${basePath}/products` },
+    { name: nav.about, path: `${basePath}/about` },
+    { name: nav.contact, path: `${basePath}/contact` },
   ];
 
   return (
     <>
+      <AnnouncementBar text={pickText(customData?.formData, "announcementText", "")} className="bg-[#d4af37] text-black" />
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className={`fixed top-0 inset-x-0 z-40 transition-all duration-500 border-b ${
+        className={`fixed top-[var(--announce-h,0px)] inset-x-0 z-40 transition-all duration-500 border-b ${
           isScrolled ? "bg-[#0a0a0a]/90 backdrop-blur-md py-4 border-white/10 shadow-lg" : "bg-transparent py-6 border-transparent"
         }`}
       >
@@ -312,7 +318,7 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
               <li><Link href={`${basePath}/contact`} className="hover:text-[#d4af37] transition-colors">Contact Us</Link></li>
               <li><Link href={`${basePath}/privacy-policy`} className="hover:text-[#d4af37] transition-colors">Privacy Policy</Link></li>
               <li><Link href={`${basePath}/terms-conditions`} className="hover:text-[#d4af37] transition-colors">Terms & Conditions</Link></li>
-              <li><Link href="#" className="hover:text-[#d4af37] transition-colors">Shipping Returns</Link></li>
+              <li><Link href={`${basePath}/shipping-returns`} className="hover:text-[#d4af37] transition-colors">Shipping &amp; Returns</Link></li>
             </ul>
           </div>
           

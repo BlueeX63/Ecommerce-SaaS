@@ -7,6 +7,7 @@ import { ArrowLeft, FileText, Printer, Plus, User, Building2, Loader2 } from "lu
 import { CustomSelect } from "@/components/CustomSelect";
 import { useCurrency } from "@/components/dashboard/CurrencyProvider";
 
+import { DetailSkeleton, LoadingRegion } from "@/components/dashboard/Skeletons";
 interface Payment {
   payment_id: string;
   payment_method: string;
@@ -141,9 +142,9 @@ export default function InvoiceDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-24">
-        <Loader2 className="w-6 h-6 animate-spin text-primary/40" />
-      </div>
+      <LoadingRegion label="Loading">
+        <DetailSkeleton />
+      </LoadingRegion>
     );
   }
 

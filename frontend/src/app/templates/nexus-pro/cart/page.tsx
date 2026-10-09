@@ -102,7 +102,7 @@ export default function NexusProCartPage() {
                     </div>
                     
                     <div className="col-span-1 md:col-span-3 text-left md:text-right font-bold text-lg">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      {currencySymbol}{(item.product.price * item.quantity).toFixed(2)}
                     </div>
                   </motion.div>
                 ))}
@@ -137,7 +137,7 @@ export default function NexusProCartPage() {
             </div>
 
             <Link 
-              href={cartItems.length > 0 ? "/templates/nexus-pro/checkout" : "#"}
+              href={cartItems.length > 0 ? `${basePath}/checkout` : "#"}
               className={`w-full py-5 rounded-full font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all duration-300 ${cartItems.length === 0 ? 'bg-white/10 text-white/30 cursor-not-allowed' : 'bg-white text-black hover:bg-[#d4af37] hover:text-white'}`}
             >
               Proceed to Checkout <ArrowRight className="w-4 h-4" />

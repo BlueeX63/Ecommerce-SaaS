@@ -7,9 +7,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
+import { DeliveryEstimate } from "@/components/storefront/DeliveryEstimate";
 export default function HorizonProductDetail({ initialProduct }: { initialProduct?: any } = {}) {
   const params = useParams();
-  const { addToCart, toggleWishlist, wishlist, basePath } = useHorizon();
+  const { addToCart, toggleWishlist, wishlist, basePath, currencySymbol } = useHorizon();
   const id = params?.id as string;
   const product = initialProduct || HORIZON_PRODUCTS.find((p: any) => p.id === id);
 
@@ -136,7 +137,7 @@ export default function HorizonProductDetail({ initialProduct }: { initialProduc
 
             <div className="flex flex-col sm:flex-row items-center gap-8 max-w-md pointer-events-auto">
               <div className="font-outfit text-4xl font-light text-[#111]">
-                ${product.price.toFixed(2)}
+                {currencySymbol}{product.price.toFixed(2)}
               </div>
               <div className="flex gap-4 w-full sm:w-auto flex-1">
                 <button 
@@ -155,6 +156,7 @@ export default function HorizonProductDetail({ initialProduct }: { initialProduc
                 </button>
               </div>
             </div>
+          <DeliveryEstimate productId={product.id} currencySymbol={currencySymbol} tone="light" className="mt-10 max-w-md pointer-events-auto" />
           </motion.div>
 
           {/* Image Gallery & Reviews - Scrolls */}

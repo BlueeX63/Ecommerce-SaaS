@@ -1,5 +1,8 @@
 "use client";
 
+import { navLabels, pickText } from "@/lib/storefront/copy";
+import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
+
 import { Cormorant_Garamond, Outfit } from "next/font/google";
 import { HorizonProvider, useHorizon } from "./HorizonContext";
 import Link from "next/link";
@@ -29,6 +32,8 @@ function HorizonNavigation({ initialCustomData, basePath }: any) {
   const [couponInput, setCouponInput] = useState("");
   const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "HORIZON";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "Collection", about: "Manifesto", contact: "Contact", orders: "Orders", search: "Search" });
+
   const logoUrl = customData?.formData?.logoUrl || "";
 
   const pathname = usePathname();
@@ -46,9 +51,9 @@ function HorizonNavigation({ initialCustomData, basePath }: any) {
   const cartItemsCount = cart.reduce((acc: any, item: any) => acc + item.quantity, 0);
 
   const navLinks = [
-    { name: "Collection", href: `${basePath}/products` },
-    { name: "Manifesto", href: `${basePath}/about` },
-    { name: "Contact", href: `${basePath}/contact` },
+    { name: nav.shop, href: `${basePath}/products` },
+    { name: nav.about, href: `${basePath}/about` },
+    { name: nav.contact, href: `${basePath}/contact` },
   ];
 
   const handleApplyCoupon = (e: React.FormEvent) => {
@@ -80,6 +85,7 @@ function HorizonNavigation({ initialCustomData, basePath }: any) {
 
   return (
     <>
+      <AnnouncementBar text={pickText(customData?.formData, "announcementText", "")} className="bg-[#111] text-white" />
       <motion.header 
         variants={{
           visible: { y: 0 },
@@ -87,7 +93,7 @@ function HorizonNavigation({ initialCustomData, basePath }: any) {
         }}
         animate={isHidden ? "hidden" : "visible"}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className={`fixed top-0 inset-x-0 z-50 transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed top-[var(--announce-h,0px)] inset-x-0 z-50 transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isScrolled 
             ? "py-4 bg-[#FAFAFA]/90 backdrop-blur-xl border-b border-black/5 shadow-[0_10px_40px_rgba(0,0,0,0.03)]" 
             : "py-8 bg-transparent"
@@ -314,7 +320,7 @@ function HorizonNavigation({ initialCustomData, basePath }: any) {
                           <div className="flex justify-between items-center">
                             <span className={`text-black text-xs uppercase tracking-widest ${outfit.className}`}>Discount</span>
                             <span className={`text-black ${outfit.className} font-light`}>
-                              -${discountAmount.toFixed(2)}
+                              -{currencySymbol}{discountAmount.toFixed(2)}
                             </span>
                           </div>
                         )}
@@ -351,6 +357,10 @@ function HorizonNavigation({ initialCustomData, basePath }: any) {
 function HorizonFooter({ initialCustomData, basePath }: any) {
   const customData = useCustomization(initialCustomData);
   const brandName = customData?.formData?.brandName || "HORIZON";
+  const nav = navLabels(customData?.formData, { home: "Home", shop: "The Vault", about: "Manifesto", contact: "Inquiries", orders: "Orders", search: "Search" });
+  const footerCol1 = pickText(customData?.formData, "footerCol1", "Discovery");
+  const footerCol2 = pickText(customData?.formData, "footerCol2", "Connect");
+
   const logoUrl = customData?.formData?.logoUrl || "";
   const footerText = customData?.formData?.footerText || "A curated collection of exceptionally crafted digital assets. Designed for the most discerning creators and agencies aiming for unparalleled aesthetic excellence.";
   const copyrightText = customData?.formData?.copyrightText || `© ${new Date().getFullYear()} ${brandName} STUDIO.`;
@@ -373,15 +383,15 @@ function HorizonFooter({ initialCustomData, basePath }: any) {
             </p>
           </div>
           <div>
-            <h4 className={`text-[10px] text-black/40 tracking-[0.3em] font-medium uppercase mb-8 ${outfit.className}`}>Discovery</h4>
+            <h4 className={`text-[10px] text-black/40 tracking-[0.3em] font-medium uppercase mb-8 ${outfit.className}`}>{footerCol1}</h4>
             <ul className={`space-y-4 text-sm font-light text-black/70 ${outfit.className}`}>
-              <li><Link href={`${basePath}/products`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>The Vault</Link></li>
-              <li><Link href={`${basePath}/about`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Manifesto</Link></li>
-              <li><Link href={`${basePath}/contact`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Inquiries</Link></li>
+              <li><Link href={`${basePath}/products`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>{nav.shop}</Link></li>
+              <li><Link href={`${basePath}/about`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>{nav.about}</Link></li>
+              <li><Link href={`${basePath}/contact`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>{nav.contact}</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className={`text-[10px] text-black/40 tracking-[0.3em] font-medium uppercase mb-8 ${outfit.className}`}>Connect</h4>
+            <h4 className={`text-[10px] text-black/40 tracking-[0.3em] font-medium uppercase mb-8 ${outfit.className}`}>{footerCol2}</h4>
             <ul className={`space-y-4 text-sm font-light text-black/70 ${outfit.className}`}>
               {socialInsta !== "#" && <li><Link href={socialInsta} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Instagram</Link></li>}
               {socialTwitter !== "#" && <li><Link href={socialTwitter} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Twitter (X)</Link></li>}
@@ -393,8 +403,9 @@ function HorizonFooter({ initialCustomData, basePath }: any) {
         <div className={`pt-12 border-t border-black/5 flex flex-col md:flex-row justify-between items-center gap-6 text-xs text-black/40 tracking-widest uppercase ${outfit.className}`}>
           <p>{copyrightText}</p>
           <div className="flex gap-8">
-             <Link href="#" className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Privacy</Link>
-             <Link href="#" className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Terms</Link>
+             <Link href={`${basePath}/privacy-policy`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Privacy</Link>
+             <Link href={`${basePath}/terms-conditions`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Terms</Link>
+             <Link href={`${basePath}/shipping-returns`} className="hover:text-black transition-colors pointer-events-auto" style={{ cursor: "none" }}>Shipping</Link>
           </div>
         </div>
       </div>

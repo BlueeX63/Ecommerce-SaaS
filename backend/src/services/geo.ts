@@ -128,3 +128,46 @@ export async function geocode(parts: AddressParts): Promise<GeoPoint | null> {
   }
   return null;
 }
+
+export interface ReverseResult {
+  /** House number, road and neighbourhood when the map knows them. */
+  line1: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+/** Turns coordinates into a city / state / PIN code. Cached by ~100 m grid cell; null when nothing is found. */
+export async function reverseGeocode(lat: number, lng: number): Promise<ReverseResult | null> {
+  if (!isValidPoint(lat, lng)) return null;
+  const key = `revgeo2:${lat.toFixed(4)},${lng.toFixed(4)}`;
+  try {
+    const cached = await kvGet<ReverseResult | { miss: true }>(key);
+    if (cached) return 'miss' in cached ? null : cached;
+  } catch {
+    // cache unavailable
+  }
+
+  try {
+    const result = await throttled(async () => {
+      const url = `https://nominatim.openstreetmap.org/reverse?${new URLSearchParams({ format: 'jsonv2', addressdetails: '1', zoom: '18', lat: String(lat), lon: String(lng) })}`;
+      const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' }, signal: AbortSignal.timeout(5000) });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { address?: Record<string, string> };
+      const a = data.address ?? {};
+      const found: ReverseResult = {
+        line1: [a.house_number, a.road || a.pedestrian || a.footway, a.neighbourhood || a.suburb || a.quarter].filter(Boolean).join(', '),
+        city: a.city || a.town || a.village || a.suburb || a.city_district || a.county || a.state_district || '',
+        state: a.state || '',
+        postalCode: a.postcode || '',
+        country: a.country || '',
+      };
+      return found.line1 || found.city || found.state || found.postalCode ? found : null;
+    });
+    kvSet(key, result ?? { miss: true }, result ? HIT_TTL : 3600).catch(() => undefined);
+    return result;
+  } catch {
+    return null;
+  }
+}

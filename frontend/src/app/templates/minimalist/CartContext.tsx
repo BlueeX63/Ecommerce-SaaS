@@ -91,6 +91,9 @@ export function CartProvider({ children, initialBasePath, initialCustomData }: {
   const [couponError, setCouponError] = useState<string | null>(null);
 
   const [reviews, setReviews] = useState<Review[]>([]);
+  // Saving must wait until the saved cart has been read back, or the empty initial state overwrites it
+  // (React Strict Mode runs effects twice in development, which made refreshes empty the cart).
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -133,14 +136,16 @@ export function CartProvider({ children, initialBasePath, initialCustomData }: {
         console.error("Failed to parse reviews data", e);
       }
     }
+    setHydrated(true);
   }, []);
 
   // Save to local storage on change
   useEffect(() => {
+    if (!hydrated) return;
     localStorage.setItem("starter-preview-cart", JSON.stringify(items));
     localStorage.setItem("starter-preview-wishlist", JSON.stringify(wishlist));
     localStorage.setItem("minimalist-reviews", JSON.stringify(reviews));
-  }, [items, wishlist, reviews]);
+  }, [items, wishlist, reviews, hydrated]);
 
   const addToCart = (product: Product) => {
     setItems((prev) => {

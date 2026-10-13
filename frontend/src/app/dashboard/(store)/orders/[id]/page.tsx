@@ -17,6 +17,7 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  image_url?: string | null;
 }
 
 interface Fulfillment {
@@ -311,7 +312,15 @@ export default function OrderDetailPage() {
             <div className="divide-y divide-black/[0.04]">
               {order.order_items.map((item) => (
                 <div key={item.order_item_id} className="py-4 flex items-center justify-between gap-4 first:pt-0 last:pb-0">
-                  <div>
+                  <div className="w-14 h-14 rounded-lg bg-black/[0.04] border border-black/[0.04] overflow-hidden flex items-center justify-center shrink-0">
+                    {item.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.image_url} alt="" loading="lazy" className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-5 h-5 text-black/25" aria-hidden />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-medium text-primary">{item.product_name}</p>
                     <p className="text-xs text-secondary mt-0.5">
                       {item.sku && <span className="mr-3">SKU: {item.sku}</span>}

@@ -8,7 +8,8 @@ import { textClient } from './ai/clients.js';
 import { consumeAiQuota } from './ai/quota.js';
 import { getStoreEntitlements, hasFeature } from './entitlements.js';
 import { getCheckoutSettings } from './checkout-settings.js';
-import { etaForDistance } from './eta.js';
+import { buildEta, refineEta } from './eta.js';
+import { getActiveWarehouses, type Warehouse } from './fulfillment.js';
 import { geocode, haversineKm, isValidPoint, roughDistanceKm } from './geo.js';
 
 /** Customers may change where/who an order is delivered to for this long after placing it. */
@@ -95,40 +96,43 @@ export function editWindow(order: Pick<OrderRow, 'status' | 'created_date'>, now
 // Applying changes
 // ---------------------------------------------------------------------------------------------
 
-/** Re-estimates the delivery date after the address changed, from the warehouse already assigned to the order. */
-async function refreshEta(tenantId: string, order: OrderRow, destination: Parameters<typeof roughDistanceKm>[1]) {
-  if (!order.fulfillment_warehouse_id) return;
-  const { data: warehouse } = await db
-    .from('warehouses')
-    .select('city, state_province, postal_code, latitude, longitude, dispatch_hours')
-    .eq('warehouse_id', order.fulfillment_warehouse_id)
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
-  if (!warehouse) return;
-
+/**
+ * Re-estimates the delivery date for a new address: same logic as checkout (distance from the warehouse handling
+ * the order, its configured routes, recent delivery history and current workload), counted from when the order
+ * was placed but never earlier than the fastest the new address could be reached from now.
+ */
+export async function refreshEta(tenantId: string, order: OrderRow, destination: { city?: string | null; state?: string | null; postalCode?: string | null }): Promise<string | null> {
   const settings = await getCheckoutSettings(tenantId);
-  const lat = warehouse.latitude === null ? null : Number(warehouse.latitude);
-  const lng = warehouse.longitude === null ? null : Number(warehouse.longitude);
+  const warehouses = await getActiveWarehouses(tenantId);
+  const located = warehouses.some((w) => isValidPoint(w.latitude, w.longitude));
+  const point = located ? await geocode({ postalCode: destination.postalCode, city: destination.city, state: destination.state, country: order.shipping_country }) : null;
 
-  let km: number | null = null;
-  let point = null;
-  if (isValidPoint(lat, lng)) point = await geocode({ postalCode: destination.postalCode, city: destination.city, state: destination.state, country: order.shipping_country });
-  if (point && isValidPoint(lat, lng)) {
-    km = haversineKm({ lat: lat!, lng: lng! }, point);
-  } else {
-    km = roughDistanceKm({ city: warehouse.city, state: warehouse.state_province, postalCode: warehouse.postal_code }, destination);
-  }
+  const distance = (w: Warehouse) =>
+    isValidPoint(w.latitude, w.longitude) && point
+      ? haversineKm({ lat: w.latitude!, lng: w.longitude! }, point)
+      : roughDistanceKm({ city: w.city, state: w.state_province, postalCode: w.postal_code }, destination);
 
-  const eta = etaForDistance(km, warehouse.dispatch_hours, settings);
+  // Prefer the warehouse already packing this order; otherwise the nearest one.
+  const origin =
+    warehouses.find((w) => w.warehouse_id === order.fulfillment_warehouse_id) ??
+    [...warehouses].sort((a, b) => (distance(a) ?? Infinity) - (distance(b) ?? Infinity))[0];
+
+  const eta = origin
+    ? (await refineEta({ tenantId, warehouse: origin, km: distance(origin), destination, settings })).eta
+    : buildEta(settings.eta.defaultMinDays, settings.eta.defaultMaxDays);
+
+  const placed = new Date(order.created_date);
+  placed.setDate(placed.getDate() + eta.maxDays);
+  placed.setHours(20, 0, 0, 0);
+  const earliest = new Date(eta.minDate);
+  const estimated = (placed > earliest ? placed : earliest).toISOString();
+
   await db
     .from('orders')
-    .update({
-      estimated_delivery_date: eta.maxDate,
-      shipping_latitude: point?.lat ?? null,
-      shipping_longitude: point?.lng ?? null,
-    })
+    .update({ estimated_delivery_date: estimated, shipping_latitude: point?.lat ?? null, shipping_longitude: point?.lng ?? null })
     .eq('order_id', order.order_id)
     .eq('tenant_id', tenantId);
+  return estimated;
 }
 
 export async function applyChange(tenantId: string, order: OrderRow, change: ProposedChange): Promise<string> {
@@ -152,8 +156,12 @@ export async function applyChange(tenantId: string, order: OrderRow, change: Pro
   const { error } = await db.from('orders').update({ ...next, ...stamp }).eq('order_id', order.order_id).eq('tenant_id', tenantId);
   if (error) throw error;
 
-  await refreshEta(tenantId, order, { city: next.shipping_city, state: next.shipping_state, postalCode: next.shipping_postal_code });
-  return `The delivery address is now: ${[next.shipping_address_line_1, next.shipping_landmark, next.shipping_city, next.shipping_state, next.shipping_postal_code].filter(Boolean).join(', ')}.`;
+  const eta = await refreshEta(tenantId, order, { city: next.shipping_city, state: next.shipping_state, postalCode: next.shipping_postal_code }).catch((e) => {
+    console.error('[order-support] eta refresh failed', e);
+    return null;
+  });
+  const etaText = eta ? ` Estimated delivery is now ${new Date(eta).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}.` : '';
+  return `The delivery address is now: ${[next.shipping_address_line_1, next.shipping_landmark, next.shipping_city, next.shipping_state, next.shipping_postal_code].filter(Boolean).join(', ')}.${etaText}`;
 }
 
 // ---------------------------------------------------------------------------------------------

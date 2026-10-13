@@ -13,6 +13,7 @@ export const publicRouter = Router();
 publicRouter.get('/stores/:slug', publicController.getStore);
 publicRouter.get('/stores/:slug/products', publicController.listStoreProducts);
 publicRouter.get('/stores/:slug/products/:id', publicController.getStoreProduct);
+publicRouter.get('/reverse-geocode', limit('reverse-geocode', 20, 60_000), publicController.reverseLookup);
 publicRouter.get('/stores/:slug/delivery-estimate', limit('delivery-estimate', 30, 60_000), publicController.deliveryEstimate);
 publicRouter.get('/stores/:slug/catalogs/:catalogSlug', optionalShopper, publicController.getStoreCatalog);
 

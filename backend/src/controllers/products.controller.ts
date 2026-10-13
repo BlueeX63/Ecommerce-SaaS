@@ -79,6 +79,8 @@ const updateSchema = z.object({
   /** When present, replaces the product's images (first = primary). */
   imageUrls: z.array(httpUrl(255)).max(10).optional(),
   stock: stockSchema.optional(),
+  /** When present, replaces the product's special-catalog assignments (the default General catalog is untouched). */
+  catalogs: z.array(z.object({ catalogId: z.string().uuid(), catalogPriceOverride: optionalNumber(0, 1_000_000_000) })).max(50).optional(),
 });
 
 export async function list(req: Request, res: Response) {
@@ -121,7 +123,7 @@ export async function getById(req: Request, res: Response) {
 
   const { data: product, error } = await db
     .from('products')
-    .select('*, categories(*), product_images(*), product_options(*, product_option_values(*)), product_variants(*)')
+    .select('*, categories(*), product_images(*), product_options(*, product_option_values(*)), product_variants(*), catalog_products(catalog_id, price_override)')
     .eq('product_id', id)
     .eq('tenant_id', tenantId)
     .maybeSingle();
@@ -268,6 +270,19 @@ export async function update(req: Request, res: Response) {
     } else {
       const warehouseId = await resolveStockWarehouse(tenantId, body.stock.warehouseId);
       await setStock({ tenantId, warehouseId, productId: id, quantity: body.stock.quantity, reason: 'Edited on the product page', actor: { userId } });
+    }
+  }
+
+  if (body.catalogs) {
+    for (const entry of body.catalogs) await assertOwned('catalogs', entry.catalogId, tenantId, 'catalog');
+    const { data: special } = await db.from('catalogs').select('catalog_id').eq('tenant_id', tenantId).neq('catalog_type', 'GENERAL');
+    const specialIds = (special ?? []).map((c) => c.catalog_id);
+    if (specialIds.length) await db.from('catalog_products').delete().eq('product_id', id).in('catalog_id', specialIds);
+    if (body.catalogs.length) {
+      const { error: catalogError } = await db
+        .from('catalog_products')
+        .upsert(body.catalogs.map((c) => ({ catalog_id: c.catalogId, product_id: id, price_override: c.catalogPriceOverride ?? null })), { onConflict: 'catalog_id,product_id' });
+      if (catalogError) throw catalogError;
     }
   }
 

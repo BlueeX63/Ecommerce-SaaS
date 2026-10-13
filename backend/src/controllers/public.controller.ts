@@ -6,7 +6,7 @@ import { getStoreEntitlements, hasFeature } from '../services/entitlements.js';
 import { getAccessibleSpecialCatalogs } from '../services/pricing.js';
 import { getCheckoutSettings, publicCheckoutConfig } from '../services/checkout-settings.js';
 import { getActiveWarehouses, getTenantStockSummaryCached, planFulfillment } from '../services/fulfillment.js';
-import { geocode, isValidPoint } from '../services/geo.js';
+import { geocode, isValidPoint, reverseGeocode } from '../services/geo.js';
 import { getCustomization, getPaymentMethodsSettings, publicPaymentMethods, requireStoreTenant } from '../services/tenants.js';
 import { DEFAULT_TEMPLATE } from '../services/templates.js';
 
@@ -190,4 +190,12 @@ export async function deliveryEstimate(req: Request, res: Response) {
     shipFrom: plan.shipFrom ? { city: plan.shipFrom.city, distanceKm: plan.shipFrom.distanceKm, approximate: plan.shipFrom.approximate } : null,
     delivery: publicCheckoutConfig(settings),
   });
+}
+
+/** Coordinates -> city/state/PIN, for the checkout's "Use my current location". Done server-side so it works behind any CSP/referrer policy. */
+export async function reverseLookup(req: Request, res: Response) {
+  const lat = Number(str(req.query.lat));
+  const lng = Number(str(req.query.lng));
+  if (!isValidPoint(lat, lng)) throw new ApiError(400, 'Invalid location');
+  res.json({ address: await reverseGeocode(lat, lng) });
 }

@@ -41,6 +41,31 @@ const createSchema = z.object({
     .optional(),
 });
 
+/**
+ * Order lines only store the product's name and price (so history survives edits and deletions), so the picture is
+ * looked up by name among this store's products. A renamed or deleted product simply has no picture.
+ */
+async function imagesByProductName(tenantId: string, names: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(names.filter(Boolean))];
+  const result = new Map<string, string>();
+  if (unique.length === 0) return result;
+  const { data } = await db
+    .from('products')
+    .select('product_name, created_date, product_images(image_url, is_primary, sort_order)')
+    .eq('tenant_id', tenantId)
+    .in('product_name', unique)
+    .order('created_date', { ascending: false });
+  for (const p of data ?? []) {
+    const key = String(p.product_name).trim().toLowerCase();
+    if (result.has(key)) continue; // newest product with that name wins
+    const images = [...((p as any).product_images ?? [])].sort((a, b) => Number(!!b.is_primary) - Number(!!a.is_primary) || (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    if (images[0]?.image_url) result.set(key, images[0].image_url);
+  }
+  return result;
+}
+
+const withImage = (images: Map<string, string>, name: string) => images.get(String(name).trim().toLowerCase()) ?? null;
+
 async function assertOrderInTenant(orderId: string, tenantId: string) {
   const { data } = await db.from('orders').select('order_id').eq('order_id', orderId).eq('tenant_id', tenantId).maybeSingle();
   if (!data) throw notFound('Order not found');
@@ -52,13 +77,19 @@ export async function list(req: Request, res: Response) {
 
   const { data, error, count } = await db
     .from('orders')
-    .select('*, customers(first_name, last_name, email), dealers(company_name), warehouses(warehouse_name, city)', { count: 'exact' })
+    .select('*, customers(first_name, last_name, email), dealers(company_name), warehouses(warehouse_name, city), order_items(product_name, quantity)', { count: 'exact' })
     .eq('tenant_id', tenantId)
     .order('created_date', { ascending: false })
     .range(page.offset, page.offset + page.limit - 1);
   if (error) throw error;
 
-  res.json({ data, meta: pageMeta(count, page) });
+  const images = await imagesByProductName(tenantId, (data ?? []).flatMap((o: any) => (o.order_items ?? []).map((i: any) => i.product_name)));
+  const rows = (data ?? []).map((o: any) => ({
+    ...o,
+    order_items: (o.order_items ?? []).map((i: any) => ({ ...i, image_url: withImage(images, i.product_name) })),
+  }));
+
+  res.json({ data: rows, meta: pageMeta(count, page) });
 }
 
 export async function getById(req: Request, res: Response) {
@@ -76,7 +107,8 @@ export async function getById(req: Request, res: Response) {
   if (error) throw error;
   if (!order) throw notFound('Order not found');
 
-  res.json({ data: order });
+  const images = await imagesByProductName(tenantId, (order.order_items ?? []).map((i: any) => i.product_name));
+  res.json({ data: { ...order, order_items: (order.order_items ?? []).map((i: any) => ({ ...i, image_url: withImage(images, i.product_name) })) } });
 }
 
 export async function create(req: Request, res: Response) {

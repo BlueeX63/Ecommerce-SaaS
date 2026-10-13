@@ -176,21 +176,25 @@ export function StoreCheckout({
         const { latitude, longitude } = pos.coords;
         setPoint({ latitude, longitude });
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${latitude}&lon=${longitude}`, { headers: { Accept: "application/json" } });
-          if (res.ok) {
-            const data = await res.json();
-            const a = data?.address ?? {};
+          const res = await fetch(`/api/v1/public/reverse-geocode?lat=${latitude}&lng=${longitude}`);
+          const data = res.ok ? await res.json() : null;
+          const a = data?.address;
+          if (a) {
             setForm((f) => ({
               ...f,
-              city: f.city || a.city || a.town || a.village || a.suburb || a.county || "",
-              state: f.state || a.state || "",
-              zip: f.zip || a.postcode || "",
+              // Location is the shopper's explicit request, so it replaces what was there.
+              address: a.line1 || f.address,
+              city: a.city || f.city,
+              state: a.state || f.state,
+              zip: a.postalCode || f.zip,
               country: a.country || f.country,
             }));
+            setLocationNote(a.line1 ? "Updated your address from your current location. Please check it and add your flat / house number." : "Updated your city, state and PIN code from your location. Please add your street address.");
+          } else {
+            setLocationNote("We got your location but couldn't work out the address. Please type your PIN code, city and state.");
           }
-          setLocationNote("Location added - we'll use it for a precise delivery date.");
         } catch {
-          setLocationNote("Location added. Please fill in your city and PIN code.");
+          setLocationNote("We got your location but couldn't work out the address. Please type your PIN code, city and state.");
         } finally {
           setLocating(false);
         }

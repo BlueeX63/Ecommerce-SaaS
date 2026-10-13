@@ -4,7 +4,7 @@ import { ApiError } from '../lib/http.js';
 import type { CheckoutSettings } from './checkout-settings.js';
 import { buildEta, refineEta, type Eta, type EtaFactors } from './eta.js';
 import { syncOutOfStockAlerts } from './notifications.js';
-import { haversineKm, isValidPoint, roughDistanceKm, type AddressParts, type GeoPoint } from './geo.js';
+import { geocode, haversineKm, isValidPoint, roughDistanceKm, type AddressParts, type GeoPoint } from './geo.js';
 
 export interface Warehouse {
   warehouse_id: string;
@@ -52,14 +52,31 @@ export interface FulfillmentPlan {
 
 const WAREHOUSE_COLUMNS = 'warehouse_id, warehouse_name, city, state_province, postal_code, country, latitude, longitude, dispatch_hours, daily_capacity';
 
+/**
+ * Warehouses created before coordinates existed (or whose lookup failed at save time) get located the first time
+ * they are needed: the address/city/PIN is geocoded and the result saved, so this happens once per warehouse.
+ */
+async function locateMissing(tenantId: string, warehouses: Warehouse[]): Promise<void> {
+  for (const w of warehouses) {
+    if (isValidPoint(w.latitude, w.longitude) || !(w.city || w.postal_code)) continue;
+    const point = await geocode({ city: w.city, state: w.state_province, postalCode: w.postal_code, country: w.country });
+    if (!point) continue;
+    w.latitude = point.lat;
+    w.longitude = point.lng;
+    await db.from('warehouses').update({ latitude: point.lat, longitude: point.lng }).eq('warehouse_id', w.warehouse_id).eq('tenant_id', tenantId);
+  }
+}
+
 export async function getActiveWarehouses(tenantId: string): Promise<Warehouse[]> {
   const { data, error } = await db.from('warehouses').select(WAREHOUSE_COLUMNS).eq('tenant_id', tenantId).eq('is_active', true);
   if (error) throw error;
-  return (data ?? []).map((w: any) => ({
+  const warehouses: Warehouse[] = (data ?? []).map((w: any) => ({
     ...w,
     latitude: w.latitude === null ? null : Number(w.latitude),
     longitude: w.longitude === null ? null : Number(w.longitude),
   }));
+  await locateMissing(tenantId, warehouses);
+  return warehouses;
 }
 
 /** Stock rows per product across every warehouse. A product with no rows is "not tracked". */

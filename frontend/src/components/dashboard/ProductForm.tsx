@@ -100,6 +100,16 @@ export function ProductForm({ productId }: { productId?: string }) {
       .catch(console.error);
   }, []);
 
+  // The default General catalog isn't selectable here, so drop its (automatic) assignment from the editable list.
+  useEffect(() => {
+    if (catalogs.length === 0) return;
+    const allowed = new Set(catalogs.map((c) => c.value));
+    setFormData((prev) => {
+      const kept = prev.catalogs.filter((c) => c.catalogId === "" || allowed.has(c.catalogId));
+      return kept.length === prev.catalogs.length ? prev : { ...prev, catalogs: kept };
+    });
+  }, [catalogs]);
+
   const [slugDirty, setSlugDirty] = useState(isEdit);
 
   useEffect(() => {
@@ -116,6 +126,10 @@ export function ProductForm({ productId }: { productId?: string }) {
         const images = [...(p.product_images ?? [])]
           .sort((a: any, b: any) => Number(!!b.is_primary) - Number(!!a.is_primary) || (a.sort_order ?? 0) - (b.sort_order ?? 0))
           .map((i: any) => i.image_url as string);
+        setFormData((prev) => ({
+          ...prev,
+          catalogs: (p.catalog_products ?? []).map((c: any) => ({ catalogId: c.catalog_id, catalogPriceOverride: c.price_override === null || c.price_override === undefined ? "" : String(c.price_override) })),
+        }));
         if (p.stock) {
           setStockSummary(p.stock);
           setStockMode(p.stock.tracked ? "tracked" : "unlimited");
@@ -313,6 +327,7 @@ export function ProductForm({ productId }: { productId?: string }) {
               threeDModelUrl: formData.threeDModelUrl,
               status: formData.status,
               imageUrls: images,
+              catalogs: formData.catalogs.filter((c) => c.catalogId !== "").map((c) => ({ catalogId: c.catalogId, catalogPriceOverride: c.catalogPriceOverride })),
               ...(stockDirty ? { stock: stockPayload() } : {}),
             }),
           })
@@ -459,7 +474,7 @@ export function ProductForm({ productId }: { productId?: string }) {
               />
             </div>
 
-            {!isEdit && (
+            {(
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium text-primary">Catalog Assignments (Optional)</label>

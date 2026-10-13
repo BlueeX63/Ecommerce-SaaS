@@ -153,6 +153,30 @@ export function QuantumProvider({ children , initialCustomData, basePath: basePa
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Keep the cart and wishlist across refreshes (per store, in this browser).
+  const [persisted, setPersisted] = useState(false);
+  useEffect(() => {
+    try {
+      const savedCart = localStorage.getItem(`quantum-cart:${basePath}`);
+      const savedWishlist = localStorage.getItem(`quantum-wishlist:${basePath}`);
+      if (savedCart) setCart(JSON.parse(savedCart));
+      if (savedWishlist) setWishlist(JSON.parse(savedWishlist));
+    } catch {
+      // unreadable saved data - start with an empty cart
+    }
+    setPersisted(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!persisted) return;
+    try {
+      localStorage.setItem(`quantum-cart:${basePath}`, JSON.stringify(cart));
+      localStorage.setItem(`quantum-wishlist:${basePath}`, JSON.stringify(wishlist));
+    } catch {
+      // storage full / unavailable
+    }
+  }, [cart, wishlist, persisted, basePath]);
+
   const addToCart = (product: QuantumProduct) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);

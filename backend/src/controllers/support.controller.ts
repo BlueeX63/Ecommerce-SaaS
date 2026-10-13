@@ -4,7 +4,7 @@ import { db } from '../lib/supabase.js';
 import { badRequest, notFound, pageMeta, pagination, parse, str, uuid } from '../lib/http.js';
 import { optionalText } from '../lib/validation.js';
 import { tenantCtx } from '../middleware/auth.js';
-import { addressSchema, editWindow, phoneValue, staffRespond } from '../services/order-support.js';
+import { addressSchema, editWindow, phoneValue, refreshEta, staffRespond } from '../services/order-support.js';
 import { applyRefundAction, refundActionSchema, type RefundRow } from '../services/refunds.js';
 
 const REQUEST_STATUSES = ['OPEN', 'AI_RESOLVED', 'ESCALATED', 'RESOLVED', 'CLOSED'] as const;
@@ -144,5 +144,18 @@ export async function updateShipping(req: Request, res: Response) {
 
   const { error } = await db.from('orders').update(update).eq('order_id', id).eq('tenant_id', tenantId);
   if (error) throw error;
+
+  // A new place to deliver to means a new delivery date.
+  if (body.line1 !== undefined || body.city !== undefined || body.state !== undefined || body.postalCode !== undefined) {
+    const { data: fresh } = await db
+      .from('orders')
+      .select('order_id, created_date, fulfillment_warehouse_id, shipping_city, shipping_state, shipping_postal_code, shipping_country')
+      .eq('order_id', id)
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    if (fresh) {
+      await refreshEta(tenantId, fresh as any, { city: fresh.shipping_city, state: fresh.shipping_state, postalCode: fresh.shipping_postal_code }).catch((e) => console.error('[orders] eta refresh failed', e));
+    }
+  }
   res.json({ message: 'Delivery details updated' });
 }

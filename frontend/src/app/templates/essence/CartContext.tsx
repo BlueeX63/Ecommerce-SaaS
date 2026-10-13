@@ -100,6 +100,9 @@ export function CartProvider({ children , initialCustomData , basePath = '/templ
   const [couponError, setCouponError] = useState<string | null>(null);
 
   const [reviews, setReviews] = useState<Review[]>([]);
+  // Saving must wait until the saved cart has been read back, or the empty initial state overwrites it
+  // (React Strict Mode runs effects twice in development, which made refreshes empty the cart).
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const savedCart = localStorage.getItem("essence-preview-cart");
@@ -126,13 +129,15 @@ export function CartProvider({ children , initialCustomData , basePath = '/templ
         console.error("Failed to parse reviews data", e);
       }
     }
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     localStorage.setItem("essence-preview-cart", JSON.stringify(items));
     localStorage.setItem("essence-preview-wishlist", JSON.stringify(wishlist));
     localStorage.setItem("essence-reviews", JSON.stringify(reviews));
-  }, [items, wishlist, reviews]);
+  }, [items, wishlist, reviews, hydrated]);
 
   const addToCart = (product: Product) => {
     setItems((prev) => {

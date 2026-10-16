@@ -10,12 +10,18 @@ import { geocode } from '../services/geo.js';
 import { getStockByProduct } from '../services/fulfillment.js';
 import { updateOrder } from '../services/order-updates.js';
 import { adjustStock, setStock, stockVariantFor } from '../services/stock.js';
+import { logActivity, type Actor } from '../services/activity.js';
+import { notifyAdmin } from '../services/notifications.js';
+import { OPEN_STATUSES, assertCanHandle, claimOrder, evaluateFit, moveOrder, resolveNeeds, unclaimOrder, type RawLine } from '../services/order-assignment.js';
 
 /** Authenticated employee (set by requireEmployee). */
 function me(req: Request) {
   if (!req.employee) throw unauthorized();
   return req.employee;
 }
+
+const actorOf = (employee: { employeeId: string; fullName: string }): Actor => ({ type: 'EMPLOYEE', employeeId: employee.employeeId, name: employee.fullName });
+const warehouseOf = (employee: { warehouseId: string; warehouseName: string }) => ({ id: employee.warehouseId, name: employee.warehouseName });
 
 // ---------------------------------------------------------------------------------------------
 // Auth
@@ -79,21 +85,19 @@ export async function session(req: Request, res: Response) {
 // ---------------------------------------------------------------------------------------------
 
 export async function overview(req: Request, res: Response) {
-  const { tenantId, warehouseId } = me(req);
+  const { tenantId, warehouseId, employeeId } = me(req);
 
-  const count = async (statuses: string[]) => {
-    const { count } = await db
-      .from('orders')
-      .select('order_id', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .eq('fulfillment_warehouse_id', warehouseId)
-      .in('status', statuses);
-    return count ?? 0;
-  };
+  // Head-only counts: the database counts, no rows travel.
+  const count = (build: (q: any) => any) =>
+    build(db.from('orders').select('order_id', { count: 'exact', head: true }).eq('tenant_id', tenantId)).then((r: { count: number | null }) => r.count ?? 0);
+  const mine = (q: any) => q.eq('fulfillment_warehouse_id', warehouseId);
 
-  const [toPack, toDeliver, stockRows, recent] = await Promise.all([
-    count(['PENDING', 'PROCESSING']),
-    count(['SHIPPED']),
+  const [toPack, toDeliver, available, unclaimed, claimedByMe, stockRows, recent] = await Promise.all([
+    count((q) => mine(q).in('status', OPEN_STATUSES)),
+    count((q) => mine(q).eq('status', 'SHIPPED')),
+    count((q) => q.is('fulfillment_warehouse_id', null).in('status', OPEN_STATUSES)),
+    count((q) => mine(q).in('status', OPEN_STATUSES).is('claimed_by_employee_id', null)),
+    count((q) => mine(q).in('status', OPEN_STATUSES).eq('claimed_by_employee_id', employeeId)),
     db
       .from('inventory')
       .select('quantity_available, quantity_reserved, low_stock_threshold, product_variants!inner(product_id, products!inner(product_name))')
@@ -104,7 +108,7 @@ export async function overview(req: Request, res: Response) {
       .select('order_id, order_number, status, payment_status, grand_total, currency, created_date, shipping_name')
       .eq('tenant_id', tenantId)
       .eq('fulfillment_warehouse_id', warehouseId)
-      .in('status', ['PENDING', 'PROCESSING'])
+      .in('status', OPEN_STATUSES)
       .order('created_date', { ascending: true })
       .limit(6),
   ]);
@@ -115,14 +119,24 @@ export async function overview(req: Request, res: Response) {
     tracked += 1;
     const variant: any = Array.isArray(row.product_variants) ? row.product_variants[0] : row.product_variants;
     const product: any = Array.isArray(variant?.products) ? variant.products[0] : variant?.products;
-    const available = Math.max(0, (row.quantity_available ?? 0) - (row.quantity_reserved ?? 0));
-    if (available <= (row.low_stock_threshold ?? 5)) {
-      alerts.push({ productId: variant?.product_id, name: product?.product_name ?? 'Product', available, kind: available === 0 ? 'out' : 'low' });
+    const stock = Math.max(0, (row.quantity_available ?? 0) - (row.quantity_reserved ?? 0));
+    if (stock <= (row.low_stock_threshold ?? 5)) {
+      alerts.push({ productId: variant?.product_id, name: product?.product_name ?? 'Product', available: stock, kind: stock === 0 ? 'out' : 'low' });
     }
   }
   alerts.sort((a, b) => a.available - b.available);
 
-  res.json({ toPack, toDeliver, trackedProducts: tracked, stockAlerts: alerts.slice(0, 10), outOfStock: alerts.filter((a) => a.kind === 'out').length, oldestOrders: recent.data ?? [] });
+  res.json({
+    toPack,
+    toDeliver,
+    available,
+    unclaimed,
+    claimedByMe,
+    trackedProducts: tracked,
+    stockAlerts: alerts.slice(0, 10),
+    outOfStock: alerts.filter((a) => a.kind === 'out').length,
+    oldestOrders: recent.data ?? [],
+  });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -178,18 +192,32 @@ export async function updateStock(req: Request, res: Response) {
   const body = parse(stockSchema, req.body);
   const { tenantId, warehouseId } = employee;
 
-  const { data: product } = await db.from('products').select('product_id').eq('product_id', body.productId).eq('tenant_id', tenantId).maybeSingle();
+  const { data: product } = await db.from('products').select('product_id, product_name').eq('product_id', body.productId).eq('tenant_id', tenantId).maybeSingle();
   if (!product) throw notFound('Product not found');
 
-  const actor = { label: `Employee: ${employee.fullName}` };
+  const actor = { employeeId: employee.employeeId, name: employee.fullName, label: `Employee: ${employee.fullName}` };
+  let result;
   if (body.mode === 'set') {
     if (body.quantity < 0) throw badRequest('Stock cannot be negative');
-    await setStock({ tenantId, warehouseId, productId: body.productId, quantity: body.quantity, reason: body.reason, actor });
+    result = await setStock({ tenantId, warehouseId, productId: body.productId, quantity: body.quantity, reason: body.reason, actor });
   } else {
     if (body.quantity === 0) throw badRequest('Enter how many units to add or remove');
-    await adjustStock({ tenantId, warehouseId, variantId: await stockVariantFor(tenantId, body.productId), change: body.quantity, reason: body.reason, actor });
+    result = await adjustStock({ tenantId, warehouseId, variantId: await stockVariantFor(tenantId, body.productId), productId: body.productId, change: body.quantity, reason: body.reason, actor });
   }
-  res.json({ message: 'Stock updated' });
+
+  if (result.change !== 0) {
+    void logActivity({
+      tenantId,
+      actor: actorOf(employee),
+      action: body.mode === 'set' ? 'STOCK_SET' : 'STOCK_ADJUST',
+      warehouse: warehouseOf(employee),
+      product: { id: product.product_id, name: product.product_name },
+      before: result.before,
+      after: result.after,
+      note: body.reason ?? null,
+    });
+  }
+  res.json({ message: 'Stock updated', quantity: result.after });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -197,7 +225,8 @@ export async function updateStock(req: Request, res: Response) {
 // ---------------------------------------------------------------------------------------------
 
 export async function updateWarehouse(req: Request, res: Response) {
-  const { tenantId, warehouseId } = me(req);
+  const employee = me(req);
+  const { tenantId, warehouseId } = employee;
   const body = parse(
     z.object({
       warehouseName: z.string().trim().min(1).max(100).optional(),
@@ -242,6 +271,15 @@ export async function updateWarehouse(req: Request, res: Response) {
 
   const { data, error } = await db.from('warehouses').update(update).eq('warehouse_id', warehouseId).eq('tenant_id', tenantId).select(WAREHOUSE_COLUMNS).single();
   if (error) throw error;
+
+  const changes = Object.fromEntries(
+    Object.keys(update)
+      .filter((key) => key !== 'latitude' && key !== 'longitude' && String(current[key] ?? '') !== String(update[key] ?? ''))
+      .map((key) => [key, { from: current[key] ?? null, to: update[key] }]),
+  );
+  if (Object.keys(changes).length > 0) {
+    void logActivity({ tenantId, actor: actorOf(employee), action: 'WAREHOUSE_UPDATED', warehouse: { id: warehouseId, name: data.warehouse_name }, details: { changes } });
+  }
   res.json({ message: 'Warehouse updated', data });
 }
 
@@ -249,25 +287,117 @@ export async function updateWarehouse(req: Request, res: Response) {
 // Orders this warehouse is handling
 // ---------------------------------------------------------------------------------------------
 
+const ORDER_LIST_COLUMNS =
+  'order_id, order_number, status, payment_status, payment_method, grand_total, currency, created_date, estimated_delivery_date, shipping_name, shipping_phone, shipping_address_line_1, shipping_landmark, shipping_city, shipping_state, shipping_postal_code, claimed_by_employee_id, claimed_date, claimed_by:warehouse_employees!claimed_by_employee_id(full_name), order_items(order_item_id, product_name, quantity)';
+
 export async function listOrders(req: Request, res: Response) {
-  const { tenantId, warehouseId } = me(req);
+  const { tenantId, warehouseId, employeeId } = me(req);
   const page = pagination(req.query, 20, 50);
   const status = str(req.query.status);
 
-  let query = db
-    .from('orders')
-    .select(
-      'order_id, order_number, status, payment_status, payment_method, grand_total, currency, created_date, estimated_delivery_date, shipping_name, shipping_phone, shipping_address_line_1, shipping_landmark, shipping_city, shipping_state, shipping_postal_code, order_items(order_item_id, product_name, quantity)',
-      { count: 'exact' },
-    )
-    .eq('tenant_id', tenantId)
-    .eq('fulfillment_warehouse_id', warehouseId);
-  if (status === 'OPEN') query = query.in('status', ['PENDING', 'PROCESSING']);
+  let query = db.from('orders').select(ORDER_LIST_COLUMNS, { count: 'exact' }).eq('tenant_id', tenantId).eq('fulfillment_warehouse_id', warehouseId);
+  if (status === 'OPEN') query = query.in('status', OPEN_STATUSES);
+  // "My orders": open orders I am handling. "Unclaimed": open orders nobody has picked up yet.
+  else if (status === 'MINE') query = query.in('status', OPEN_STATUSES).eq('claimed_by_employee_id', employeeId);
+  else if (status === 'UNCLAIMED') query = query.in('status', OPEN_STATUSES).is('claimed_by_employee_id', null);
   else if (status && ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(status)) query = query.eq('status', status);
 
   const { data, error, count } = await query.order('created_date', { ascending: false }).range(page.offset, page.offset + page.limit - 1);
   if (error) throw error;
-  res.json({ data, meta: pageMeta(count, page) });
+  res.json({ data: (data ?? []).map((o: any) => ({ ...o, claimed_by_me: o.claimed_by_employee_id === employeeId })), meta: pageMeta(count, page) });
+}
+
+/**
+ * Orders nobody is responsible for yet, with whether THIS warehouse can fulfil each in full. Taking one assigns it to
+ * this warehouse and takes the stock from it (see takeOrder). Orders the warehouse cannot cover are listed but
+ * can't be taken, and say which item falls short.
+ */
+export async function availableOrders(req: Request, res: Response) {
+  const { tenantId, warehouseId } = me(req);
+
+  const { data, error, count } = await db
+    .from('orders')
+    .select(
+      'order_id, order_number, status, payment_status, payment_method, grand_total, currency, created_date, estimated_delivery_date, shipping_name, shipping_city, shipping_state, shipping_postal_code, order_items(order_item_id, product_id, product_name, sku, quantity)',
+      { count: 'exact' },
+    )
+    .eq('tenant_id', tenantId)
+    .is('fulfillment_warehouse_id', null)
+    .in('status', OPEN_STATUSES)
+    .order('created_date', { ascending: true })
+    .limit(50);
+  if (error) throw error;
+
+  const orders = data ?? [];
+  const needs = await resolveNeeds(tenantId, orders.map((o: any) => ({ order_id: o.order_id, order_items: o.order_items as RawLine[] })));
+  const fit = await evaluateFit(tenantId, needs, [warehouseId]);
+
+  const rows = orders.map((o: any) => {
+    const f = fit.get(o.order_id)?.get(warehouseId) ?? { canFulfil: true, shortages: [] };
+    return { ...o, order_items: o.order_items.map(({ order_item_id, product_name, quantity }: any) => ({ order_item_id, product_name, quantity })), canFulfil: f.canFulfil, shortages: f.shortages };
+  });
+  // Orders this warehouse can actually take come first; each group keeps oldest-first.
+  rows.sort((a, b) => Number(b.canFulfil) - Number(a.canFulfil));
+  res.json({ data: rows, meta: { total: count ?? rows.length, shown: rows.length } });
+}
+
+/** Take an unassigned order: it becomes this warehouse's, the stock comes off this warehouse's shelves, and it is yours. */
+export async function takeOrder(req: Request, res: Response) {
+  const employee = me(req);
+  const orderId = uuid(req.params.id);
+  const moved = await moveOrder({
+    tenantId: employee.tenantId,
+    orderId,
+    toWarehouseId: employee.warehouseId,
+    expectedFrom: null,
+    claim: true,
+    actor: actorOf(employee),
+  });
+  res.json({ message: `${moved.order_number} is now yours to fulfil`, orderNumber: moved.order_number, stockMoved: moved.stock_moved });
+}
+
+/** Pick up an order already assigned to this warehouse, so teammates know it's being handled. */
+export async function claim(req: Request, res: Response) {
+  const employee = me(req);
+  const result = await claimOrder(employee.tenantId, employee, uuid(req.params.id));
+  res.json({ message: result.already ? 'You are already handling this order' : 'Order claimed' });
+}
+
+export async function unclaim(req: Request, res: Response) {
+  const employee = me(req);
+  await unclaimOrder(employee.tenantId, employee, uuid(req.params.id));
+  res.json({ message: 'Order released to your team' });
+}
+
+/**
+ * The warehouse can't fulfil an order assigned to it (e.g. the shelf is empty). Hand it back: its stock returns to
+ * this warehouse's count, another warehouse with stock can take it, and the store owner is notified.
+ */
+export async function handBack(req: Request, res: Response) {
+  const employee = me(req);
+  const orderId = uuid(req.params.id);
+  const { reason } = parse(z.object({ reason: z.string().trim().min(3, 'Tell the store owner why').max(300) }), req.body);
+
+  const { data: order } = await db
+    .from('orders')
+    .select('order_number, status, claimed_by_employee_id')
+    .eq('order_id', orderId)
+    .eq('tenant_id', employee.tenantId)
+    .eq('fulfillment_warehouse_id', employee.warehouseId)
+    .maybeSingle();
+  if (!order) throw notFound('Order not found');
+  if (order.claimed_by_employee_id && order.claimed_by_employee_id !== employee.employeeId) throw new ApiError(409, 'A colleague is handling this order. Ask them to hand it back.');
+
+  await moveOrder({ tenantId: employee.tenantId, orderId, toWarehouseId: null, expectedFrom: employee.warehouseId, actor: actorOf(employee), note: reason });
+  void notifyAdmin({
+    tenantId: employee.tenantId,
+    type: 'order_handed_back',
+    title: `${order.order_number} was handed back by ${employee.warehouseName}`,
+    body: `${employee.fullName}: ${reason}`,
+    warehouseId: employee.warehouseId,
+    dedupeKey: `handback:${orderId}`,
+  });
+  res.json({ message: `${order.order_number} is back in the open pool` });
 }
 
 // Employees run fulfilment: they cannot issue refunds or process returns - those stay with the merchant.
@@ -277,15 +407,28 @@ const employeeOrderPatch = z.object({
 });
 
 export async function updateOrderStatus(req: Request, res: Response) {
-  const { tenantId, warehouseId } = me(req);
+  const employee = me(req);
+  const { tenantId, warehouseId } = employee;
   const patch = parse(employeeOrderPatch, req.body);
   const orderId = uuid(req.params.id);
 
-  const { data: current } = await db.from('orders').select('status, payment_status').eq('order_id', orderId).eq('tenant_id', tenantId).eq('fulfillment_warehouse_id', warehouseId).maybeSingle();
+  const { data: current } = await db
+    .from('orders')
+    .select('order_number, status, payment_status')
+    .eq('order_id', orderId)
+    .eq('tenant_id', tenantId)
+    .eq('fulfillment_warehouse_id', warehouseId)
+    .maybeSingle();
   if (!current) throw notFound('Order not found');
   if (['REFUNDED', 'RETURN_REQUESTED'].includes(current.status)) throw badRequest('This order is with the store owner for a return or refund.');
   if (current.payment_status === 'REFUNDED') throw badRequest('This order has been refunded.');
 
+  // Someone else's order is theirs to update; an unclaimed one becomes yours.
+  await assertCanHandle(tenantId, employee, orderId);
   await updateOrder({ tenantId, orderId, warehouseId, patch });
+
+  const base = { tenantId, actor: actorOf(employee), warehouse: warehouseOf(employee), order: { id: orderId, number: current.order_number } };
+  if (patch.status && patch.status !== current.status) void logActivity({ ...base, action: 'ORDER_STATUS', details: { from: current.status, to: patch.status } });
+  if (patch.paymentStatus && patch.paymentStatus !== current.payment_status) void logActivity({ ...base, action: 'ORDER_PAYMENT', details: { from: current.payment_status, to: patch.paymentStatus } });
   res.json({ message: 'Order updated' });
 }

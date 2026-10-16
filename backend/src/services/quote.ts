@@ -116,7 +116,7 @@ export async function buildQuote(input: QuoteInput): Promise<Quote> {
   let discountCents = 0;
   let coupon: CouponRow | null = null;
   if (input.couponCode) {
-    const result = await evaluateCoupon(tenantId, input.couponCode, subtotalCents);
+    const result = await evaluateCoupon(tenantId, input.couponCode, subtotalCents, input.customer.customer_id);
     if (!result.ok) throw result.error;
     coupon = result.coupon;
     discountCents = result.discountCents;

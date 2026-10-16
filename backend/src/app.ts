@@ -3,6 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './lib/http.js';
+import { requireMerchant } from './middleware/auth.js';
 import { csrfGuard, noStore } from './middleware/security.js';
 import { aiRouter } from './routes/ai.js';
 import { internalAiRouter } from './routes/internal-ai.js';
@@ -46,6 +47,9 @@ export function createApp() {
   app.use('/api/webhooks', webhookRouter);
 
   app.use(cookieParser());
+  // Creating a store sends the editor's content, which may include the pictures chosen there as base64 (they are moved
+  // to image storage server-side). Allow a larger body on exactly those routes, and only for signed-in merchants.
+  app.use(['/api/v1/tenant/provision', '/api/v1/store/create'], requireMerchant, express.json({ limit: '12mb' }));
   app.use(express.json({ limit: '2mb' }));
   app.use('/api', noStore, csrfGuard);
 

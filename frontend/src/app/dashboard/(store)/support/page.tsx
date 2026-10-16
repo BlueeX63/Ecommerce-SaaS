@@ -347,12 +347,12 @@ function RequestDetail({ request, onUpdated, onClose }: { request: SupportReques
             else setEditing(false);
           }}
         >
-          <input aria-label="Phone" placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm sm:col-span-2" />
-          <input aria-label="Street address" placeholder="Street address" value={form.line1} onChange={(e) => setForm({ ...form, line1: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm sm:col-span-2" />
-          <input aria-label="Landmark" placeholder="Landmark" value={form.landmark} onChange={(e) => setForm({ ...form, landmark: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm" />
-          <input aria-label="PIN code" placeholder="PIN code" value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm" />
-          <input aria-label="City" placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm" />
-          <input aria-label="State" placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm" />
+          <input aria-label="Phone" autoComplete="off" placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm sm:col-span-2" />
+          <input aria-label="Street address" autoComplete="off" placeholder="Street address" value={form.line1} onChange={(e) => setForm({ ...form, line1: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm sm:col-span-2" />
+          <input aria-label="Landmark" autoComplete="off" placeholder="Landmark" value={form.landmark} onChange={(e) => setForm({ ...form, landmark: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm" />
+          <input aria-label="PIN code" autoComplete="off" placeholder="PIN code" value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm" />
+          <input aria-label="City" autoComplete="off" placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm" />
+          <input aria-label="State" autoComplete="off" placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="px-3 py-2 bg-black/[0.02] border border-black/[0.08] rounded-lg text-sm" />
           <div className="sm:col-span-2 flex justify-end">
             <button type="submit" disabled={busy === "edit"} className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2">
               {busy === "edit" && <Loader2 className="w-4 h-4 animate-spin" />} Save &amp; resolve

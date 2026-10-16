@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Save, Layout, Type, Image as ImageIcon, AlignLef
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { TEMPLATE_SCHEMAS, FieldType, FieldDef, TabDef } from "./schemas";
+import { blobToDataUrl, formatBytes, isLogoField, prepareImage } from "@/lib/image-prep";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -273,6 +274,7 @@ export function CustomizationWizardContent() {
                       value={formData[field.name]}
                       onChange={handleFieldChange}
                       onFocus={() => focusField(field, formData[field.name])}
+                      isLogo={isLogoField(field)}
                     />
                   );
                 }
@@ -419,45 +421,110 @@ function Field({ label, icon, fieldKey, value, onChange, onFocus, placeholder, i
   );
 }
 
-function ImageUploadField({ label, icon, fieldKey, value, onChange, onFocus }: any) {
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onChange(fieldKey, reader.result as string);
-      };
-      reader.readAsDataURL(file);
+function ImageUploadField({ label, icon, fieldKey, value, onChange, onFocus, isLogo }: any) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Pictures are resized and compressed here: a raw photo is several MB, which made the whole store too large to deploy.
+  const handleFile = async (file?: File) => {
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const { blob, width, height } = await prepareImage(file, isLogo ? "logo" : "photo");
+      onChange(fieldKey, await blobToDataUrl(blob));
+      setInfo(`${width} × ${height} px · ${formatBytes(blob.size)}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That image could not be used.");
+    } finally {
+      setBusy(false);
     }
+  };
+
+  const remove = () => {
+    onChange(fieldKey, "");
+    setInfo(null);
+    setError(null);
   };
 
   return (
     <div className="group flex flex-col gap-3 p-5 rounded-2xl bg-white/[0.02] border border-white/5 transition-colors hover:bg-white/[0.04]">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 font-accent text-xs uppercase tracking-widest text-white/70">
           <span className="text-white/30 group-hover:text-accent transition-colors">{icon}</span>
           {label}
         </label>
       </div>
-      <div className="relative group/upload">
-        <input 
-          type="file" 
-          accept="image/*" 
-          onChange={handleFileChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-        />
-        <div onMouseEnter={onFocus} className="w-full h-32 bg-black/40 border border-white/10 border-dashed rounded-xl flex flex-col items-center justify-center font-body text-white/30 text-xs overflow-hidden relative transition-all group-hover/upload:border-accent/50 group-hover/upload:text-white/50 group-hover/upload:bg-accent/5">
-          {value ? (
-            <>
-              <img src={value} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity group-hover/upload:opacity-100 group-hover/upload:mix-blend-normal transition-all" />
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/upload:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                <span className="text-white font-bold tracking-widest uppercase">Replace Image</span>
-              </div>
-            </>
+      {isLogo && (
+        <p className="-mt-1 text-xs text-white/35">
+          Shown about 32 px tall in your header. A wide PNG or SVG with a transparent background (around 480 × 160 px) looks best. Bigger images are resized for you.
+        </p>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          handleFile(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        onMouseEnter={onFocus}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          handleFile(e.dataTransfer.files?.[0]);
+        }}
+        disabled={busy}
+        aria-label={value ? `Replace ${label}` : `Upload ${label}`}
+        className={cn(
+          "relative w-full overflow-hidden rounded-xl border border-dashed font-body text-xs transition-all flex items-center justify-center",
+          isLogo ? "h-28" : "h-32",
+          dragging ? "border-accent bg-accent/10 text-white" : "border-white/10 bg-black/40 text-white/30 hover:border-accent/50 hover:text-white/60",
+        )}
+      >
+        {busy ? (
+          <Loader2 className="w-5 h-5 animate-spin text-white/60" />
+        ) : value ? (
+          isLogo ? (
+            // A logo is never cropped: it sits whole on a light tile, the way it will look on most headers.
+            <span className="absolute inset-2 rounded-lg bg-[linear-gradient(45deg,#e8e8e8_25%,transparent_25%,transparent_75%,#e8e8e8_75%),linear-gradient(45deg,#e8e8e8_25%,#fff_25%,#fff_75%,#e8e8e8_75%)] bg-[length:16px_16px] bg-[position:0_0,8px_8px] flex items-center justify-center p-2">
+              <img src={value} alt="" className="max-h-full max-w-full object-contain" />
+            </span>
           ) : (
-            <span>Click or drag image here</span>
-          )}
-        </div>
+            <img src={value} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )
+        ) : (
+          <span>{isLogo ? "Click or drop your logo here" : "Click or drag image here"}</span>
+        )}
+      </button>
+
+      <div className="flex items-center justify-between gap-3 min-h-[1.5rem]">
+        <span className="text-[11px] text-white/35 truncate">{error ? <span className="text-red-400">{error}</span> : info}</span>
+        {value && !busy && (
+          <div className="flex items-center gap-2 shrink-0">
+            <button type="button" onClick={() => inputRef.current?.click()} className="px-3 py-1.5 rounded-lg border border-white/10 text-[11px] font-accent uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/5 transition-colors">
+              Replace
+            </button>
+            <button type="button" onClick={remove} className="px-3 py-1.5 rounded-lg border border-red-500/30 text-[11px] font-accent uppercase tracking-widest text-red-300 hover:bg-red-500/10 transition-colors">
+              {isLogo ? "Remove logo" : "Use default"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -10,13 +10,22 @@ import { setSessionTenant } from '../lib/session.js';
 import { tenantCtx } from '../middleware/auth.js';
 import { getEntitlements, hasFeature, upgradeMessage } from '../services/entitlements.js';
 import { invalidateTenantCache } from '../services/tenants.js';
+import { isInlineImage, offloadInlineImages } from '../services/media.js';
 import { MAX_CUSTOMIZATION_BYTES, TEMPLATE_IDS } from '../services/templates.js';
 
 export const templateSchema = z.enum(TEMPLATE_IDS);
 export const brandNameSchema = z.string().trim().min(1, 'Store name is required').max(100);
 
-export function assertCustomizationSize(value: unknown) {
-  if (JSON.stringify(value).length > MAX_CUSTOMIZATION_BYTES) throw badRequest('Customization data is too large');
+/**
+ * `ignoreInlineImages` measures the content as it will be stored once its base64 pictures have been moved to image
+ * storage (see offloadInlineImages), so a store full of photos is not refused for the weight of pictures that will
+ * not be stored in it. Call it again without the flag on the final content.
+ */
+export function assertCustomizationSize(value: unknown, opts: { ignoreInlineImages?: boolean } = {}) {
+  const size = JSON.stringify(value, (_key, v) => (opts.ignoreInlineImages && isInlineImage(v) ? '' : v)).length;
+  if (size > MAX_CUSTOMIZATION_BYTES) {
+    throw badRequest(`Your store content is too large (${Math.round(size / 1024)} KB, the limit is ${MAX_CUSTOMIZATION_BYTES / 1024} KB). Shorten some of the text or use smaller images.`);
+  }
 }
 
 /** Throws unless the merchant has an active plan with room for another store; returns their entitlements. */
@@ -292,10 +301,10 @@ export async function provision(req: Request, res: Response) {
     }),
     req.body,
   );
-  assertCustomizationSize(formData);
+  assertCustomizationSize(formData, { ignoreInlineImages: true });
   await assertStoreQuota(session.userId);
 
-  const customization: Record<string, any> = sanitizeCustomization(formData);
+  let customization: Record<string, any> = sanitizeCustomization(formData);
   const brandName = String(customization.brandName).trim();
   const base = slugify(brandName, 40) || 'store';
 
@@ -313,6 +322,10 @@ export async function provision(req: Request, res: Response) {
   if (!tenant) throw new ApiError(500, 'Could not allocate a store address. Please try again.');
 
   try {
+    // Pictures chosen in the editor arrive inline; keep only their URLs in the stored content.
+    customization = await offloadInlineImages(tenant.tenant_id, customization);
+    assertCustomizationSize(customization);
+
     const { error: brandingError } = await db.from('tenant_branding').upsert(
       {
         tenant_id: tenant.tenant_id,

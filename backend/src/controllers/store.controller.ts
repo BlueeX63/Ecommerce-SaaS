@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../lib/supabase.js';
 import { ApiError, badRequest, forbidden, notFound, parse, str, uuid } from '../lib/http.js';
 import { optionalText, optionalUuid } from '../lib/validation.js';
-import { evaluateCoupon } from '../services/pricing.js';
+import { evaluateCoupon, releaseRedemptionForOrder } from '../services/pricing.js';
 import { addToCart, assertActiveProduct, MAX_QTY_PER_LINE } from '../services/cart.js';
 import { placeOrder } from '../services/orders.js';
 import { requireStoreTenant } from '../services/tenants.js';
@@ -266,6 +266,7 @@ export async function cancelOrder(req: Request, res: Response) {
   if (!cancelled?.length) throw badRequest('This order was just updated. Please refresh and try again.');
 
   await restockOrder(tenantId, orderId).catch((e) => console.error('[orders] restock failed', e));
+  await releaseRedemptionForOrder(tenantId, orderId);
   const refund = await queueRefundForCancelledOrder(tenantId, order).catch((e) => {
     console.error('[orders] refund queue failed', e);
     return null;
@@ -577,7 +578,9 @@ export async function validateCoupon(req: Request, res: Response) {
   const body = parse(z.object({ code: z.string().trim().min(1, 'Code is required').max(50), slug: z.string().max(253).optional() }), req.body);
   const tenantId = await storeIdFor(req, body.slug);
 
-  const result = await evaluateCoupon(tenantId, body.code, 0);
+  // A signed-in shopper learns straight away whether they have already used the code.
+  const customerId = req.shopper && req.shopper.tenantId === tenantId ? req.shopper.customerId : null;
+  const result = await evaluateCoupon(tenantId, body.code, 0, customerId);
   if (!result.ok) throw result.error;
 
   res.json({ success: true, discount_type: result.coupon.discount_type, discount_amount: result.coupon.discount_amount });

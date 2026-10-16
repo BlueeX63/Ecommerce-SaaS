@@ -11,7 +11,9 @@ import { assertTenantOwner, tenantCtx } from '../middleware/auth.js';
 import { getEntitlements, hasFeature, upgradeMessage } from '../services/entitlements.js';
 import { getCustomization, getPaymentMethodsSettings, invalidateTenantCache } from '../services/tenants.js';
 import { checkoutSettingsSchema, getCheckoutSettings, mergeCheckoutSettings } from '../services/checkout-settings.js';
-import { MAX_CUSTOMIZATION_BYTES, TEMPLATE_IDS } from '../services/templates.js';
+import { offloadInlineImages } from '../services/media.js';
+import { TEMPLATE_IDS } from '../services/templates.js';
+import { assertCustomizationSize } from './tenant.controller.js';
 
 const VERIFY_HOST_PREFIX = '_monolith-verify';
 const PENDING_DOMAIN_KEY = 'custom_domain_pending';
@@ -153,13 +155,13 @@ export async function saveSettings(req: Request, res: Response) {
   const { tenantId, userId } = tenantCtx(req);
   const body = parse(settingsSchema, req.body);
 
-  if (JSON.stringify(body).length > MAX_CUSTOMIZATION_BYTES) throw badRequest('Settings payload is too large');
+  assertCustomizationSize(body, { ignoreInlineImages: true });
 
   const existing = await readCustomization(tenantId);
   const { data: tenant } = await db.from('tenant').select('custom_domain').eq('tenant_id', tenantId).maybeSingle();
   if (!tenant) throw notFound('Store not found');
 
-  const incoming = sanitizeCustomization(body.formData ?? {});
+  const incoming = await offloadInlineImages(tenantId, sanitizeCustomization(body.formData ?? {}));
   const { customDomain, ...formRest } = incoming as Record<string, unknown>;
 
   let pending: { domain: string; token: string } | null = null;
@@ -176,6 +178,7 @@ export async function saveSettings(req: Request, res: Response) {
     formData: { ...(existing.formData ?? {}), ...formRest },
   };
   delete next.formData.customDomain;
+  assertCustomizationSize(next);
 
   const { error } = await db.from('tenant_settings').upsert(
     { tenant_id: tenantId, setting_key: 'customization', setting_value: JSON.stringify(next) },

@@ -5,6 +5,7 @@ import { badRequest, parse } from '../lib/http.js';
 import { isValidStoreSlug, sanitizeCustomization } from '../lib/sanitize.js';
 import { setSessionTenant } from '../lib/session.js';
 import { assertTenantOwner, tenantCtx } from '../middleware/auth.js';
+import { offloadInlineImages } from '../services/media.js';
 import { invalidateTenantCache } from '../services/tenants.js';
 import { assertCustomizationSize, assertStoreQuota, brandNameSchema, templateSchema } from './tenant.controller.js';
 
@@ -27,13 +28,13 @@ export async function create(req: Request, res: Response) {
   if (!isValidStoreSlug(slug)) {
     throw badRequest('Subdomain must be 3-50 characters (letters, numbers, hyphens) and cannot be a reserved name.');
   }
-  if (customizationData) assertCustomizationSize(customizationData);
+  if (customizationData) assertCustomizationSize(customizationData, { ignoreInlineImages: true });
   await assertStoreQuota(session.userId);
 
   const { data: existing } = await db.from('tenant').select('tenant_id').eq('code', slug).maybeSingle();
   if (existing) throw badRequest('Subdomain is already taken.');
 
-  const customization = sanitizeCustomization(customizationData ?? { brandName: name });
+  let customization = sanitizeCustomization(customizationData ?? { brandName: name });
 
   const { data: tenant, error: tenantError } = await db
     .from('tenant')
@@ -44,6 +45,9 @@ export async function create(req: Request, res: Response) {
   if (tenantError || !tenant) throw tenantError;
 
   try {
+    customization = await offloadInlineImages(tenant.tenant_id, customization);
+    assertCustomizationSize(customization);
+
     const { error: settingsError } = await db.from('tenant_settings').upsert(
       {
         tenant_id: tenant.tenant_id,

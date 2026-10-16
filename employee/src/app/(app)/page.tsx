@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Package, PackageCheck, Truck } from "lucide-react";
+import { AlertTriangle, ArrowRight, Hand, Inbox, Package, PackageCheck, Truck } from "lucide-react";
 import { Bone, LoadingRegion, PageHeader, StatusBadge } from "@/components/ui";
 
 interface Overview {
   toPack: number;
   toDeliver: number;
+  available: number;
+  unclaimed: number;
+  claimedByMe: number;
   trackedProducts: number;
   outOfStock: number;
   stockAlerts: Array<{ productId: string; name: string; available: number; kind: "out" | "low" }>;
@@ -55,9 +58,12 @@ export default function OverviewPage() {
         </LoadingRegion>
       ) : data ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <Stat href="/orders" icon={<PackageCheck className="w-5 h-5" />} label="Orders to pack" value={data.toPack} tone={data.toPack > 0 ? "text-accent" : "text-primary"} />
-            <Stat href="/orders" icon={<Truck className="w-5 h-5" />} label="Out for delivery" value={data.toDeliver} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            <Stat href="/orders?tab=open" icon={<PackageCheck className="w-5 h-5" />} label="Orders to pack" value={data.toPack} tone={data.toPack > 0 ? "text-accent" : "text-primary"} />
+            <Stat href="/orders?tab=unclaimed" icon={<Hand className="w-5 h-5" />} label="Nobody is handling yet" value={data.unclaimed} tone={data.unclaimed > 0 ? "text-amber-700" : "text-primary"} />
+            <Stat href="/orders?tab=mine" icon={<PackageCheck className="w-5 h-5" />} label="Handled by me" value={data.claimedByMe} />
+            <Stat href="/orders?tab=available" icon={<Inbox className="w-5 h-5" />} label="Open orders to take" value={data.available} tone={data.available > 0 ? "text-accent" : "text-primary"} />
+            <Stat href="/orders?tab=shipped" icon={<Truck className="w-5 h-5" />} label="Out for delivery" value={data.toDeliver} />
             <Stat href="/products" icon={<AlertTriangle className="w-5 h-5" />} label="Out of stock here" value={data.outOfStock} tone={data.outOfStock > 0 ? "text-red-600" : "text-primary"} />
           </div>
 

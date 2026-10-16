@@ -85,3 +85,57 @@ export async function fetchTenantImage(url: string): Promise<{ buffer: Buffer; t
   if (!type || !ALLOWED_IMAGE_TYPES.includes(type)) throw new ApiError(400, 'Unsupported image type');
   return { buffer, type };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Inline (base64) images in store content
+// ---------------------------------------------------------------------------------------------
+
+const INLINE_IMAGE = /^\s*data:image\/(?:png|jpe?g|gif|webp|avif);base64,([a-z0-9+/=\s]+)$/i;
+
+export const isInlineImage = (value: unknown): value is string => typeof value === 'string' && INLINE_IMAGE.test(value);
+
+/**
+ * The store editor can hand over images as base64 `data:` strings (the store does not exist yet, so there is nowhere
+ * to upload them). Storing those inside the customization JSON would make it enormous, so they are moved to the
+ * store's image folder and replaced by their URL. Identical images are uploaded once. Without Cloudinary configured
+ * (local development) the data stays inline and the caller's size check decides whether it fits.
+ */
+export async function offloadInlineImages<T>(tenantId: string, content: T): Promise<T> {
+  if (!env.CLOUDINARY_CLOUD_NAME) return content;
+
+  const found = new Set<string>();
+  const collect = (value: unknown, depth: number) => {
+    if (depth > 8) return;
+    if (isInlineImage(value)) found.add(value);
+    else if (Array.isArray(value)) value.forEach((v) => collect(v, depth + 1));
+    else if (value && typeof value === 'object') Object.values(value as Record<string, unknown>).forEach((v) => collect(v, depth + 1));
+  };
+  collect(content, 0);
+  if (found.size === 0) return content;
+
+  const urls = new Map<string, string>();
+  const queue = [...found];
+  const worker = async () => {
+    for (let image = queue.shift(); image !== undefined; image = queue.shift()) {
+      const buffer = Buffer.from(INLINE_IMAGE.exec(image)![1].replace(/\s+/g, ''), 'base64');
+      const type = sniffImageType(buffer);
+      if (!type || !ALLOWED_IMAGE_TYPES.includes(type)) throw new ApiError(400, 'One of your images is not a valid picture. Please choose a different file.');
+      if (buffer.length > MAX_IMAGE_BYTES) throw new ApiError(400, 'One of your images is too large. Please choose one under 10 MB.');
+      try {
+        urls.set(image, (await uploadTenantImage(tenantId, buffer, 'storefront')).url);
+      } catch {
+        throw new ApiError(502, 'We could not save one of your images. Please try again.');
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, found.size) }, worker));
+
+  const replace = (value: unknown, depth: number): unknown => {
+    if (isInlineImage(value)) return urls.get(value) ?? '';
+    if (depth > 8) return value;
+    if (Array.isArray(value)) return value.map((v) => replace(v, depth + 1));
+    if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, replace(v, depth + 1)]));
+    return value;
+  };
+  return replace(content, 0) as T;
+}

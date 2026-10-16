@@ -1,11 +1,22 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/supabase.js';
-import { badRequest, notFound, pageMeta, pagination, parse, uuid } from '../lib/http.js';
+import { badRequest, escapeLike, notFound, pageMeta, pagination, parse, str, uuid } from '../lib/http.js';
 import { optionalText, optionalUuid, requiredMoney } from '../lib/validation.js';
 import { tenantCtx } from '../middleware/auth.js';
 import { assertOwnedOrNull, assertVariantOwned } from '../services/ownership.js';
 import { updateOrder } from '../services/order-updates.js';
+import {
+  DEFAULT_NEARBY_KM,
+  RELATED_MATCHES,
+  applyDelayed,
+  delayDays,
+  loadReference,
+  orderCounts,
+  relatedCounts,
+  relatedFilter,
+  type RelatedMatch,
+} from '../services/order-search.js';
 
 // Must match the `orders.status` CHECK constraint exactly - see migrations/011_delivery_and_coupons.sql,
 // which replaces the narrower constraint from 006_orders.sql and adds RETURN_REQUESTED. The DB rejects
@@ -71,25 +82,119 @@ async function assertOrderInTenant(orderId: string, tenantId: string) {
   if (!data) throw notFound('Order not found');
 }
 
+/**
+ * Pictures for order lines. Lines remember their product, so that is used when present (it survives renames);
+ * older lines fall back to matching by name.
+ */
+async function itemImages(tenantId: string, items: Array<{ product_id?: string | null; product_name: string }>) {
+  const ids = [...new Set(items.map((i) => i.product_id).filter((id): id is string => !!id))];
+  const byId = new Map<string, string>();
+  if (ids.length) {
+    const { data } = await db.from('products').select('product_id, product_images(image_url, is_primary, sort_order)').eq('tenant_id', tenantId).in('product_id', ids);
+    for (const p of data ?? []) {
+      const images = [...((p as any).product_images ?? [])].sort((x, y) => Number(!!y.is_primary) - Number(!!x.is_primary) || (x.sort_order ?? 0) - (y.sort_order ?? 0));
+      if (images[0]?.image_url) byId.set(p.product_id, images[0].image_url);
+    }
+  }
+  const byName = await imagesByProductName(tenantId, items.filter((i) => !i.product_id || !byId.has(i.product_id)).map((i) => i.product_name));
+  return (item: { product_id?: string | null; product_name: string }) => (item.product_id ? byId.get(item.product_id) : undefined) ?? withImage(byName, item.product_name);
+}
+
+const csv = (value: unknown, allowed: readonly string[], label: string): string[] | undefined => {
+  const parts = str(value)?.split(',').map((v) => v.trim().toUpperCase()).filter(Boolean);
+  if (!parts?.length) return undefined;
+  if (parts.some((v) => !allowed.includes(v))) throw badRequest(`Unknown ${label} filter`);
+  return parts;
+};
+
+const LIST_SELECT =
+  '*, customers(first_name, last_name, email), dealers(company_name), warehouses(warehouse_name, city), claimed_by:warehouse_employees!claimed_by_employee_id(full_name), order_items(product_id, product_name, quantity)';
+
+/**
+ * The orders list. Filters (all optional, combinable):
+ *   status=PENDING,SHIPPED  paymentStatus=UNPAID  delayed=true   q=<order no. / name / phone>
+ *   related=<order id>&match=person|address|nearby[&radiusKm=3]   (orders of the same person / address / area)
+ */
 export async function list(req: Request, res: Response) {
   const { tenantId } = tenantCtx(req);
   const page = pagination(req.query);
 
-  const { data, error, count } = await db
-    .from('orders')
-    .select('*, customers(first_name, last_name, email), dealers(company_name), warehouses(warehouse_name, city), order_items(product_name, quantity)', { count: 'exact' })
-    .eq('tenant_id', tenantId)
-    .order('created_date', { ascending: false })
-    .range(page.offset, page.offset + page.limit - 1);
-  if (error) throw error;
+  const statuses = csv(req.query.status, ORDER_STATUS.options, 'status');
+  const payments = csv(req.query.paymentStatus, PAYMENT_STATUS.options, 'payment status');
+  const delayed = str(req.query.delayed) === 'true';
+  const search = str(req.query.q)?.replace(/[,()*%]/g, ' ').trim().slice(0, 100);
 
-  const images = await imagesByProductName(tenantId, (data ?? []).flatMap((o: any) => (o.order_items ?? []).map((i: any) => i.product_name)));
-  const rows = (data ?? []).map((o: any) => ({
-    ...o,
-    order_items: (o.order_items ?? []).map((i: any) => ({ ...i, image_url: withImage(images, i.product_name) })),
-  }));
+  const relatedId = str(req.query.related);
+  const match = str(req.query.match) as RelatedMatch | undefined;
+  if (relatedId && !(match && RELATED_MATCHES.includes(match))) throw badRequest('Choose person, address or nearby');
+  const radiusKm = Math.min(50, Math.max(0.5, Number(str(req.query.radiusKm)) || DEFAULT_NEARBY_KM));
+  const reference = relatedId ? await loadReference(tenantId, uuid(relatedId, 'related')) : null;
+  const related = reference && match ? relatedFilter(reference, match, radiusKm) : null;
 
-  res.json({ data: rows, meta: pageMeta(count, page) });
+  let query = db.from('orders').select(LIST_SELECT, { count: 'exact' }).eq('tenant_id', tenantId);
+  if (statuses) query = query.in('status', statuses);
+  if (payments) query = query.in('payment_status', payments);
+  if (delayed) query = applyDelayed(query);
+  if (search) {
+    const like = `%${escapeLike(search)}%`;
+    query = query.or(`order_number.ilike.${like},shipping_name.ilike.${like},shipping_phone.ilike.${like}`);
+  }
+  if (related) query = related.apply(query);
+  // Most overdue first when looking at delayed orders; otherwise newest first.
+  query = delayed ? query.order('estimated_delivery_date', { ascending: true }) : query.order('created_date', { ascending: false });
+
+  let data: any[] | null;
+  let count: number | null;
+  const distances = new Map<string, number | null>();
+  if (related?.post) {
+    // "Nearby" needs an exact distance check the database cannot do, so take the (small) candidate set and page it here.
+    const { data: candidates, error } = await query.limit(500);
+    if (error) throw error;
+    const kept = (candidates ?? []).filter((row: any) => {
+      const verdict = related.post!(row);
+      if (verdict.keep) distances.set(row.order_id, verdict.distanceKm);
+      return verdict.keep;
+    });
+    count = kept.length;
+    data = kept.slice(page.offset, page.offset + page.limit);
+  } else {
+    const result = await query.range(page.offset, page.offset + page.limit - 1);
+    if (result.error) throw result.error;
+    data = result.data;
+    count = result.count;
+  }
+
+  const imageOf = await itemImages(tenantId, (data ?? []).flatMap((o: any) => o.order_items ?? []));
+  const now = Date.now();
+  const rows = (data ?? []).map((o: any) => {
+    const late = delayDays(o, now);
+    return {
+      ...o,
+      delay_days: late,
+      is_delayed: late > 0,
+      distance_km: distances.get(o.order_id) ?? null,
+      order_items: (o.order_items ?? []).map((i: any) => ({ ...i, image_url: imageOf(i) })),
+    };
+  });
+
+  res.json({
+    data: rows,
+    meta: pageMeta(count, page),
+    ...(reference ? { related: { match, radiusKm, orderId: reference.order_id, orderNumber: reference.order_number, name: reference.shipping_name } } : {}),
+  });
+}
+
+/** Counts for the filter chips: total, per status, per payment status and delayed. */
+export async function summary(req: Request, res: Response) {
+  const { tenantId } = tenantCtx(req);
+  res.json(await orderCounts(tenantId));
+}
+
+/** How many other orders the same person / same address / same area has (for the buttons on the order page). */
+export async function relatedSummary(req: Request, res: Response) {
+  const { tenantId } = tenantCtx(req);
+  const reference = await loadReference(tenantId, uuid(req.params.id));
+  res.json({ nearbyRadiusKm: DEFAULT_NEARBY_KM, counts: await relatedCounts(tenantId, reference) });
 }
 
 export async function getById(req: Request, res: Response) {
@@ -99,7 +204,7 @@ export async function getById(req: Request, res: Response) {
   const { data: order, error } = await db
     .from('orders')
     .select(
-      '*, customers(customer_id, first_name, last_name, email, phone_number, company_name), dealers(*), order_items(*), fulfillments(*), warehouses(warehouse_id, warehouse_name, city, state_province)',
+      '*, customers(customer_id, first_name, last_name, email, phone_number, company_name), dealers(*), order_items(*), fulfillments(*), warehouses(warehouse_id, warehouse_name, city, state_province), claimed_by:warehouse_employees!claimed_by_employee_id(full_name)',
     )
     .eq('order_id', id)
     .eq('tenant_id', tenantId)
@@ -107,8 +212,11 @@ export async function getById(req: Request, res: Response) {
   if (error) throw error;
   if (!order) throw notFound('Order not found');
 
-  const images = await imagesByProductName(tenantId, (order.order_items ?? []).map((i: any) => i.product_name));
-  res.json({ data: { ...order, order_items: (order.order_items ?? []).map((i: any) => ({ ...i, image_url: withImage(images, i.product_name) })) } });
+  const imageOf = await itemImages(tenantId, order.order_items ?? []);
+  const late = delayDays(order);
+  res.json({
+    data: { ...order, delay_days: late, is_delayed: late > 0, order_items: (order.order_items ?? []).map((i: any) => ({ ...i, image_url: imageOf(i) })) },
+  });
 }
 
 export async function create(req: Request, res: Response) {

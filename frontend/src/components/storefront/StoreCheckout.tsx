@@ -360,26 +360,26 @@ export function StoreCheckout({
                 </div>
 
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  {field("name", "Full name", <input id="co-name" autoComplete="name" value={form.name} onChange={set("name")} className={inputClass} placeholder="Jane Doe" />)}
-                  {field("phone", "Phone number", <input id="co-phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set("phone")} className={inputClass} placeholder="+91 98765 43210" />)}
+                  {field("name", "Full name", <input id="co-name" name="name" autoComplete="name" value={form.name} onChange={set("name")} className={inputClass} placeholder="Jane Doe" />)}
+                  {field("phone", "Phone number", <input id="co-phone" name="tel" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set("phone")} className={inputClass} placeholder="+91 98765 43210" />)}
                 </div>
-                {field("address", "Street address", <textarea id="co-address" rows={2} autoComplete="street-address" value={form.address} onChange={set("address")} className={`${inputClass} resize-none`} placeholder="Flat / house no., building, street, area" />)}
+                {field("address", "Street address", <textarea id="co-address" name="address-line1" rows={2} autoComplete="address-line1" value={form.address} onChange={set("address")} className={`${inputClass} resize-none`} placeholder="Flat / house no., building, street, area" />)}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="co-landmark" className={`text-[11px] font-bold uppercase tracking-widest ${theme.label}`}>
                     Landmark <span className="font-normal normal-case tracking-normal opacity-60">(optional)</span>
                   </label>
-                  <input id="co-landmark" value={form.landmark} onChange={set("landmark")} className={inputClass} placeholder="e.g. Near Central Park" />
+                  <input id="co-landmark" name="landmark" autoComplete="off" value={form.landmark} onChange={set("landmark")} className={inputClass} placeholder="e.g. Near Central Park" />
                 </div>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                  {field("zip", "PIN / postal code", <input id="co-zip" inputMode="numeric" autoComplete="postal-code" value={form.zip} onChange={set("zip")} className={inputClass} placeholder="400001" />)}
-                  {field("city", "City", <input id="co-city" autoComplete="address-level2" value={form.city} onChange={set("city")} className={inputClass} placeholder="Mumbai" />)}
-                  {field("state", "State", <input id="co-state" autoComplete="address-level1" value={form.state} onChange={set("state")} className={inputClass} placeholder="Maharashtra" />)}
+                  {field("zip", "PIN / postal code", <input id="co-zip" name="postal-code" inputMode="numeric" autoComplete="postal-code" value={form.zip} onChange={set("zip")} className={inputClass} placeholder="400001" />)}
+                  {field("city", "City", <input id="co-city" name="address-level2" autoComplete="address-level2" value={form.city} onChange={set("city")} className={inputClass} placeholder="Mumbai" />)}
+                  {field("state", "State", <input id="co-state" name="address-level1" autoComplete="address-level1" value={form.state} onChange={set("state")} className={inputClass} placeholder="Maharashtra" />)}
                 </div>
                 <div className="flex flex-col gap-1.5 sm:max-w-xs">
                   <label htmlFor="co-country" className={`text-[11px] font-bold uppercase tracking-widest ${theme.label}`}>
                     Country
                   </label>
-                  <input id="co-country" autoComplete="country-name" value={form.country} onChange={set("country")} className={inputClass} />
+                  <input id="co-country" name="country-name" autoComplete="country-name" value={form.country} onChange={set("country")} className={inputClass} />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">

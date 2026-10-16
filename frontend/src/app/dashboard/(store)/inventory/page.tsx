@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, MapPin, Box, X, Pencil, Power, Users, Route } from "lucide-react";
+import { Plus, Search, MapPin, Box, X, Pencil, Power, Users, Route, Activity } from "lucide-react";
 import { WarehouseEmployeesModal } from "@/components/dashboard/WarehouseEmployeesModal";
 import { WarehouseRoutesModal } from "@/components/dashboard/WarehouseRoutesModal";
+import { EmployeeActivity } from "@/components/dashboard/EmployeeActivity";
 import { CustomSelect } from "@/components/CustomSelect";
 
 import { TableSkeletonRows } from "@/components/dashboard/Skeletons";
@@ -43,6 +44,7 @@ export default function InventoryPage() {
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<"stock" | "activity">("stock");
 
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
@@ -410,6 +412,27 @@ export default function InventoryPage() {
       )}
       {routesFor && <WarehouseRoutesModal warehouseId={routesFor.warehouse_id} warehouseName={routesFor.warehouse_name} onClose={() => setRoutesFor(null)} />}
 
+      <div className="flex gap-2" role="tablist">
+        {([
+          ["stock", "Stock & locations", Box],
+          ["activity", "Employee activity", Activity],
+        ] as const).map(([id, label, Icon]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === id ? "bg-black text-white" : "bg-surface border border-black/10 text-secondary hover:text-primary"}`}
+          >
+            <Icon className="w-4 h-4" /> {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "activity" ? (
+        <EmployeeActivity warehouses={warehouses.map((w) => ({ value: w.warehouse_id, label: w.warehouse_name }))} />
+      ) : (
+        <>
       <div className="bg-surface rounded-2xl border border-black/[0.04] shadow-sm overflow-hidden">
         <div className="p-4 border-b border-black/[0.04] flex justify-between items-center bg-black/[0.01]">
           <h3 className="font-medium text-primary">Warehouse Locations</h3>
@@ -542,6 +565,8 @@ export default function InventoryPage() {
           </table>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

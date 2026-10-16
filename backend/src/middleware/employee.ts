@@ -14,7 +14,7 @@ export const requireEmployee: RequestHandler = async (req, _res, next) => {
 
     const { data: employee } = await db
       .from('warehouse_employees')
-      .select('employee_id, tenant_id, warehouse_id, full_name, email, is_active, token_version, warehouses!inner(is_active)')
+      .select('employee_id, tenant_id, warehouse_id, full_name, email, is_active, token_version, warehouses!inner(is_active, warehouse_name)')
       .eq('employee_id', token.employeeId)
       .maybeSingle();
 
@@ -25,6 +25,7 @@ export const requireEmployee: RequestHandler = async (req, _res, next) => {
       employeeId: employee.employee_id,
       tenantId: employee.tenant_id,
       warehouseId: employee.warehouse_id,
+      warehouseName: warehouse?.warehouse_name ?? '',
       fullName: employee.full_name,
       email: employee.email,
     };

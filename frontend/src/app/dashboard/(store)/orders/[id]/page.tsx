@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Package, User, Truck, Tag, CreditCard, MapPin, StickyNote, Loader2, Plus, Building2, RotateCcw, Banknote, Pencil, Phone, Warehouse,
+  ArrowLeft, Package, User, Truck, Tag, CreditCard, MapPin, StickyNote, Loader2, Plus, Building2, RotateCcw, Banknote, Pencil, Phone, Warehouse, UserCheck,
 } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 import { useCurrency } from "@/components/dashboard/CurrencyProvider";
+import { AssignWarehouseModal } from "@/components/dashboard/AssignWarehouseModal";
 
 import { DetailSkeleton, LoadingRegion } from "@/components/dashboard/Skeletons";
 interface OrderItem {
@@ -42,6 +43,7 @@ interface OrderDetail {
   discount_total: number;
   grand_total: number;
   warehouses: { warehouse_id: string; warehouse_name: string; city: string | null; state_province: string | null } | null;
+  claimed_by: { full_name: string } | null;
   payment_method: string | null;
   tax_inclusive: boolean | null;
   tax_breakdown: Array<{ label: string; ratePercent: number; amount: number }> | null;
@@ -136,6 +138,7 @@ export default function OrderDetailPage() {
   const [editingShipping, setEditingShipping] = useState(false);
   const [shipForm, setShipForm] = useState({ name: "", phone: "", line1: "", landmark: "", city: "", state: "", postalCode: "" });
   const [isSavingShipping, setIsSavingShipping] = useState(false);
+  const [showAssign, setShowAssign] = useState(false);
 
   const fetchOrder = async () => {
     try {
@@ -467,10 +470,22 @@ export default function OrderDetailPage() {
               <>
                 <p className="text-sm font-medium text-primary">{order.warehouses.warehouse_name}</p>
                 <p className="text-xs text-secondary mt-0.5">{[order.warehouses.city, order.warehouses.state_province].filter(Boolean).join(", ")}</p>
-                <p className="text-xs text-secondary mt-2">The nearest warehouse with stock. Its team can update this order&apos;s status.</p>
+                {order.claimed_by && (
+                  <p className="text-xs text-secondary mt-2 flex items-center gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Being handled by <strong className="font-medium text-primary">{order.claimed_by.full_name}</strong></p>
+                )}
+                <p className="text-xs text-secondary mt-2">Chosen as the nearest warehouse with stock. Its team can update this order&apos;s status.</p>
               </>
             ) : (
-              <p className="text-sm text-secondary">No warehouse assigned — the items in this order don&apos;t have tracked stock.</p>
+              <p className="text-sm text-secondary">
+                {["PENDING", "PROCESSING"].includes(order.status)
+                  ? "Not assigned yet. Choose a warehouse with the items in stock, or leave it open for any warehouse's team to take."
+                  : "No warehouse handled this order."}
+              </p>
+            )}
+            {["PENDING", "PROCESSING"].includes(order.status) && (
+              <button type="button" onClick={() => setShowAssign(true)} className="mt-3 px-3.5 py-2 bg-white border border-black/10 rounded-lg text-sm font-medium text-primary hover:bg-black/5 flex items-center gap-2">
+                <Warehouse className="w-4 h-4" /> {order.warehouses ? "Change warehouse" : "Assign warehouse"}
+              </button>
             )}
           </InfoCard>
 
@@ -488,6 +503,7 @@ export default function OrderDetailPage() {
                 ] as const).map(([key, label]) => (
                   <input
                     key={key}
+                    autoComplete="off"
                     aria-label={label}
                     placeholder={label}
                     value={shipForm[key]}
@@ -548,6 +564,7 @@ export default function OrderDetailPage() {
           </InfoCard>
         </div>
       </div>
+      {showAssign && <AssignWarehouseModal orderId={orderId} onClose={() => setShowAssign(false)} onChanged={fetchOrder} />}
     </div>
   );
 }

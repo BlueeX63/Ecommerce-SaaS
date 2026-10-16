@@ -2,6 +2,7 @@ import { db } from '../lib/supabase.js';
 import { badRequest, notFound } from '../lib/http.js';
 import { invalidateEtaCaches } from './eta.js';
 import { restockOrder } from './fulfillment.js';
+import { releaseRedemptionForOrder } from './pricing.js';
 import { queueRefundForCancelledOrder } from './refunds.js';
 
 export interface OrderPatch {
@@ -52,6 +53,7 @@ export async function updateOrder(opts: { tenantId: string; orderId: string; pat
 
   if (patch.status === 'CANCELLED' && before.status !== 'CANCELLED') {
     await restockOrder(tenantId, orderId).catch((e) => console.error('[orders] restock failed', e));
+    await releaseRedemptionForOrder(tenantId, orderId);
     await queueRefundForCancelledOrder(tenantId, data).catch((e) => console.error('[orders] refund queue failed', e));
   }
   if (patch.status === 'DELIVERED' && data.fulfillment_warehouse_id) void invalidateEtaCaches(data.fulfillment_warehouse_id);

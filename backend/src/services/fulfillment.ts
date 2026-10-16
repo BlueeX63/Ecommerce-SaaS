@@ -1,6 +1,7 @@
 import { db } from '../lib/supabase.js';
 import { fetchWithCache, kvDel } from '../lib/kv.js';
 import { ApiError } from '../lib/http.js';
+import { callRpc } from '../lib/rpc.js';
 import type { CheckoutSettings } from './checkout-settings.js';
 import { buildEta, refineEta, type Eta, type EtaFactors } from './eta.js';
 import { syncOutOfStockAlerts } from './notifications.js';
@@ -216,111 +217,35 @@ export async function planFulfillment(
 // ---------------------------------------------------------------------------------------------
 
 /**
- * Takes the ordered quantities out of the planned warehouse. Each row is updated only if nobody else changed it in
- * the meantime (optimistic concurrency); on any failure everything already taken is put back and a 409 is thrown.
+ * Takes the ordered quantities out of the planned warehouses. One atomic database call (`allocate_order_stock`):
+ * the stock rows are locked, every line is checked and deducted, and if any line cannot be covered nothing is taken.
  */
 export async function allocateStock(tenantId: string, orderId: string, plan: FulfillmentPlan): Promise<void> {
-  const taken: Array<{ inventoryId: string; qty: number }> = [];
-
-  const rollback = async () => {
-    for (const t of taken) {
-      const { data: current } = await db.from('inventory').select('quantity_available').eq('inventory_id', t.inventoryId).maybeSingle();
-      if (current) await db.from('inventory').update({ quantity_available: current.quantity_available + t.qty }).eq('inventory_id', t.inventoryId);
-    }
-  };
+  const lines = plan.lines
+    .filter((line) => line.tracked && line.warehouseId)
+    .map((line) => ({ product_id: line.productId, warehouse_id: line.warehouseId, quantity: line.quantity }));
+  if (lines.length === 0) return;
 
   try {
-    for (const line of plan.lines) {
-      if (!line.tracked || !line.warehouseId) continue;
-      let remaining = line.quantity;
-
-      for (let attempt = 0; attempt < 3 && remaining > 0; attempt++) {
-        const stock = (await getStockByProduct(tenantId, [line.productId])).get(line.productId) ?? [];
-        const rows = stock.filter((r) => r.warehouseId === line.warehouseId && r.available > 0).sort((a, b) => b.available - a.available);
-
-        for (const row of rows) {
-          if (remaining <= 0) break;
-          const take = Math.min(remaining, row.available);
-          const { data: current } = await db
-            .from('inventory')
-            .select('quantity_available')
-            .eq('inventory_id', row.inventoryId)
-            .eq('tenant_id', tenantId)
-            .maybeSingle();
-          if (!current || current.quantity_available < take) continue;
-
-          const { data: updated } = await db
-            .from('inventory')
-            .update({ quantity_available: current.quantity_available - take, last_updated: new Date().toISOString() })
-            .eq('inventory_id', row.inventoryId)
-            .eq('tenant_id', tenantId)
-            .eq('quantity_available', current.quantity_available)
-            .select('inventory_id');
-          if (!updated?.length) continue; // lost the race - re-read on the next attempt
-
-          taken.push({ inventoryId: row.inventoryId, qty: take });
-          remaining -= take;
-          await db.from('inventory_transactions').insert({
-            tenant_id: tenantId,
-            inventory_id: row.inventoryId,
-            transaction_type: 'SALES_ORDER',
-            quantity_change: -take,
-            reference_id: orderId,
-            notes: 'Stock allocated to online order',
-          });
-        }
-      }
-
-      if (remaining > 0) throw new ApiError(409, 'An item in your order just went out of stock. Please review your cart.');
-    }
+    await callRpc('allocate_order_stock', { p_tenant: tenantId, p_order: orderId, p_lines: lines });
   } catch (error) {
-    await rollback();
+    if (error instanceof ApiError && error.code === 'INSUFFICIENT_STOCK') {
+      throw new ApiError(409, 'An item in your order just went out of stock. Please review your cart.');
+    }
     throw error;
   } finally {
     void invalidateStockCache(tenantId);
-    void syncOutOfStockAlerts(tenantId, plan.lines.filter((l) => l.tracked).map((l) => l.productId));
+    void syncOutOfStockAlerts(tenantId, lines.map((l) => l.product_id));
   }
 }
 
-/** Puts stock for a cancelled order back. Safe to call more than once. */
+/**
+ * Puts back whatever an order still holds, wherever it currently is (it may have been moved between warehouses).
+ * Net-based and safe to call more than once.
+ */
 export async function restockOrder(tenantId: string, orderId: string): Promise<void> {
+  await callRpc('release_order_stock', { p_tenant: tenantId, p_order: orderId });
   void invalidateStockCache(tenantId);
-  const { data: movements } = await db
-    .from('inventory_transactions')
-    .select('inventory_id, quantity_change, transaction_type')
-    .eq('tenant_id', tenantId)
-    .eq('reference_id', orderId)
-    .in('transaction_type', ['SALES_ORDER', 'RETURN']);
-
-  const sales = (movements ?? []).filter((m) => m.transaction_type === 'SALES_ORDER');
-  const returns = (movements ?? []).filter((m) => m.transaction_type === 'RETURN');
-  if (sales.length === 0 || returns.length > 0) return;
-
-  for (const m of sales) {
-    const qty = Math.abs(m.quantity_change);
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const { data: current } = await db.from('inventory').select('quantity_available').eq('inventory_id', m.inventory_id).eq('tenant_id', tenantId).maybeSingle();
-      if (!current) break;
-      const { data: updated } = await db
-        .from('inventory')
-        .update({ quantity_available: current.quantity_available + qty, last_updated: new Date().toISOString() })
-        .eq('inventory_id', m.inventory_id)
-        .eq('tenant_id', tenantId)
-        .eq('quantity_available', current.quantity_available)
-        .select('inventory_id');
-      if (updated?.length) {
-        await db.from('inventory_transactions').insert({
-          tenant_id: tenantId,
-          inventory_id: m.inventory_id,
-          transaction_type: 'RETURN',
-          quantity_change: qty,
-          reference_id: orderId,
-          notes: 'Stock returned: order cancelled',
-        });
-        break;
-      }
-    }
-  }
 }
 
 /** Creates (or returns) the single default variant used to hold stock for a product without options. */

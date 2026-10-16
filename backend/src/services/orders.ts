@@ -7,7 +7,7 @@ import { dispatchWebhookEvent } from './webhooks.js';
 import { allocateStock } from './fulfillment.js';
 import { syncOutOfStockAlerts } from './notifications.js';
 import { buildQuote } from './quote.js';
-import { consumeCoupon, fromCents, releaseCoupon, type OrderLineInput } from './pricing.js';
+import { attachRedemptionToOrder, claimCouponForCustomer, consumeCoupon, fromCents, releaseCoupon, releaseCouponForCustomer, type OrderLineInput } from './pricing.js';
 
 export interface ShippingAddress {
   line1: string;
@@ -95,6 +95,13 @@ export async function placeOrder(input: PlaceOrderInput) {
   if (coupon) {
     if (!(await consumeCoupon(coupon.coupon_id))) throw new ApiError(400, 'Coupon usage limit reached');
     couponId = coupon.coupon_id;
+    try {
+      // The database allows one redemption per shopper and code, so a second checkout started at the same moment loses here.
+      await claimCouponForCustomer(tenantId, coupon.coupon_id, customer.customer_id);
+    } catch (error) {
+      await releaseCoupon(coupon.coupon_id).catch(() => undefined);
+      throw error;
+    }
   }
 
   try {
@@ -154,10 +161,12 @@ export async function placeOrder(input: PlaceOrderInput) {
       else if (error?.code !== '23505') throw error;
     }
     if (!order) throw new ApiError(500, 'Could not create the order. Please try again.');
+    if (couponId) await attachRedemptionToOrder(couponId, customer.customer_id, order.order_id);
 
     const { error: itemsError } = await db.from('order_items').insert(
       priced.map((line) => ({
         order_id: order.order_id,
+        product_id: line.productId,
         product_name: line.name,
         sku: line.sku,
         quantity: line.quantity,
@@ -196,7 +205,10 @@ export async function placeOrder(input: PlaceOrderInput) {
       deliveryMinDate: quote.delivery.minDate,
     };
   } catch (error) {
-    if (couponId) await releaseCoupon(couponId).catch(() => undefined);
+    if (couponId) {
+      await releaseCoupon(couponId).catch(() => undefined);
+      await releaseCouponForCustomer(couponId, customer.customer_id).catch(() => undefined);
+    }
     throw error;
   }
 }

@@ -16,6 +16,7 @@ export interface EmployeeContext {
   employeeId: string;
   tenantId: string;
   warehouseId: string;
+  warehouseName: string;
   fullName: string;
   email: string;
 }

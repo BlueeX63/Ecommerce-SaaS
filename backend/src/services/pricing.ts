@@ -22,7 +22,7 @@ export interface CouponRow {
 export type CouponResult = { ok: true; coupon: CouponRow; discountCents: number } | { ok: false; error: ApiError };
 
 /** Looks a coupon up and computes its discount against `subtotalCents`. Never trusts client-supplied amounts. */
-export async function evaluateCoupon(tenantId: string, rawCode: string, subtotalCents: number): Promise<CouponResult> {
+export async function evaluateCoupon(tenantId: string, rawCode: string, subtotalCents: number, customerId?: string | null): Promise<CouponResult> {
   const code = rawCode.trim().toUpperCase();
   const { data: coupon } = await db
     .from('coupons')
@@ -38,6 +38,11 @@ export async function evaluateCoupon(tenantId: string, rawCode: string, subtotal
   if (coupon.max_uses !== null && coupon.times_used >= coupon.max_uses) {
     return { ok: false, error: new ApiError(400, 'Coupon usage limit reached') };
   }
+  // One use per shopper. (Placing the order enforces this again atomically; this is the early, friendly answer.)
+  if (customerId) {
+    const { data: used } = await db.from('coupon_redemptions').select('redemption_id').eq('coupon_id', coupon.coupon_id).eq('customer_id', customerId).maybeSingle();
+    if (used) return { ok: false, error: new ApiError(400, 'You have already used this promo code.', undefined, 'COUPON_ALREADY_USED') };
+  }
 
   const raw =
     coupon.discount_type === 'PERCENTAGE'
@@ -45,6 +50,32 @@ export async function evaluateCoupon(tenantId: string, rawCode: string, subtotal
       : toCents(coupon.discount_amount);
 
   return { ok: true, coupon: coupon as CouponRow, discountCents: Math.max(0, Math.min(raw, subtotalCents)) };
+}
+
+/**
+ * Reserves a coupon for one shopper. A UNIQUE (coupon, customer) constraint decides, so two checkouts started at the
+ * same moment cannot both get the discount. Throws if this shopper has already used the code.
+ */
+export async function claimCouponForCustomer(tenantId: string, couponId: string, customerId: string): Promise<void> {
+  const { error } = await db.from('coupon_redemptions').insert({ tenant_id: tenantId, coupon_id: couponId, customer_id: customerId });
+  if (error?.code === '23505') throw new ApiError(400, 'You have already used this promo code.', undefined, 'COUPON_ALREADY_USED');
+  if (error) throw error;
+}
+
+/** Ties the reservation to the order it was used on. */
+export async function attachRedemptionToOrder(couponId: string, customerId: string, orderId: string): Promise<void> {
+  await db.from('coupon_redemptions').update({ order_id: orderId }).eq('coupon_id', couponId).eq('customer_id', customerId);
+}
+
+/** Gives the code back to the shopper (the order failed before it was created). */
+export async function releaseCouponForCustomer(couponId: string, customerId: string): Promise<void> {
+  await db.from('coupon_redemptions').delete().eq('coupon_id', couponId).eq('customer_id', customerId);
+}
+
+/** A cancelled order never delivered its discount, so the shopper may use the code again. */
+export async function releaseRedemptionForOrder(tenantId: string, orderId: string): Promise<void> {
+  const { error } = await db.from('coupon_redemptions').delete().eq('tenant_id', tenantId).eq('order_id', orderId);
+  if (error) console.error('[coupons] could not free the promo code of a cancelled order', error.code);
 }
 
 /** Atomically (optimistic concurrency) records one use of a coupon. Returns false if the limit was reached. */

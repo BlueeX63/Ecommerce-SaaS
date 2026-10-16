@@ -259,7 +259,9 @@ function Navbar({ initialCustomData }: { initialCustomData?: any }) {
   );
 }
 
-function Footer({ initialCustomData, basePath }: { initialCustomData?: any, basePath?: string }) {
+function Footer({ initialCustomData }: { initialCustomData?: any }) {
+  // The provider knows where this storefront lives: /templates/<name> in the preview, /store/<slug> or a subdomain live.
+  const { basePath } = useShop();
   const customData = useCustomization(initialCustomData);
   
   const footerText = customData?.formData?.footerText || "Defining the future of premium aesthetics. Engineered for the modern individual who refuses to compromise on quality and design.";

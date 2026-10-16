@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './lib/http.js';
 import { csrfGuard, noStore } from './middleware/security.js';
 import { aiRouter } from './routes/ai.js';
+import { internalAiRouter } from './routes/internal-ai.js';
 import { apiKeysRouter } from './routes/api-keys.js';
 import { authRouter } from './routes/auth.js';
 import { billingRouter, billingV1Router, devBillingRouter, webhookRouter } from './routes/billing.js';
@@ -47,6 +48,10 @@ export function createApp() {
   app.use(cookieParser());
   app.use(express.json({ limit: '2mb' }));
   app.use('/api', noStore, csrfGuard);
+
+  // Machine-to-machine: the AI service executes store tools here with a per-request signed token. Outside /api
+  // on purpose (no cookies, no CSRF guard); every route verifies that token itself.
+  app.use('/internal/ai', internalAiRouter);
 
   // Auth & billing
   app.use('/api/auth', oauthRouter);

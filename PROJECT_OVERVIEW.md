@@ -46,7 +46,7 @@ split; see §13 below for the current state.
 | Inventory / warehouses / invoices / payments / dealers | Schema + API + pages exist; depth varies |
 | Team, roles/RBAC | Schema + seed data + helper exist; role/permission checks partially enforced (see §13) |
 | API keys, webhooks (merchant-facing) | Schema + placeholder pages only |
-| **AI image features** | **Not found in the codebase** — see §9 |
+| **AI features** | Separate `ai-service/` microservice (LangGraph) — see §9 |
 
 ---
 
@@ -346,10 +346,14 @@ The Minimalist template can show a product's 3D model (`three_d_model_url`) usin
 
 ## 9. AI Integration — Current State
 
-**No AI feature exists in the code.** A search across both projects and their env files found no AI/LLM/
-vision SDK or API keys (no OpenAI, Gemini, Anthropic, Replicate, remove.bg, Stability, etc.).
+AI runs in its own microservice, [ai-service/](ai-service/README.md) (Python, FastAPI, **LangGraph**). It alone
+holds the Anthropic/OpenAI keys; the Node API keeps auth, plans, per-store quotas and tenant data, and calls the
+service over HTTP with a shared bearer token (`AI_SERVICE_URL`, `AI_SERVICE_TOKEN`). Browser-facing endpoints are
+unchanged: `/api/v1/ai/*` (product copy, product images), `/api/v1/public/stores/:slug/ai/*` (assistant chat, voice
+session, voice tools) and the order-help chat. Store tools (search, add to cart) still execute in the Node API via
+`POST /internal/ai/tools/:name`, authorised by a short-lived signed token naming one store and shopper.
 
-What exists around images today:
+Image upload:
 
 - `POST /api/v1/upload` ([backend/src/routes/upload.ts](backend/src/routes/upload.ts)) — authenticated,
   rate-limited (10/min/user), accepts JPEG/PNG/WebP/GIF/AVIF up to 10 MB, **verifies the file's actual magic

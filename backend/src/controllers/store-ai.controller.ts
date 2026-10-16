@@ -4,7 +4,7 @@ import { ApiError, parse } from '../lib/http.js';
 import { requireStoreTenant } from '../services/tenants.js';
 import { assertStoreAiEnabled } from '../middleware/ai.js';
 import { consumeAiQuota } from '../services/ai/quota.js';
-import { createVoiceSession, streamStoreChat, type ChatEvent } from '../services/ai/store-assistant.js';
+import { createVoiceSession, openStoreChat, relayChatEvents, type ChatEvent } from '../services/ai/store-assistant.js';
 import { runStoreTool } from '../services/ai/store-tools.js';
 import type { StoreToolContext } from '../services/ai/store-tools.js';
 
@@ -40,20 +40,23 @@ export async function chat(req: Request, res: Response) {
   const body = parse(chatSchema, req.body);
   await consumeAiQuota(ctx.tenantId, 'text');
 
+  const controller = new AbortController();
+  res.on('close', () => controller.abort());
+
+  // Start the run first: if the AI service is unconfigured or down, the shopper gets a normal error response.
+  const stream = await openStoreChat({ ctx, storeName, history: body.messages, signal: controller.signal });
+
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
-  const controller = new AbortController();
-  res.on('close', () => controller.abort());
-
   const send = (event: ChatEvent) => {
     if (!controller.signal.aborted) res.write(`data: ${JSON.stringify(event)}\n\n`);
   };
 
-  await streamStoreChat({ ctx, storeName, history: body.messages, signal: controller.signal, send });
+  await relayChatEvents(stream, send, controller.signal);
   res.end();
 }
 

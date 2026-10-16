@@ -11,6 +11,7 @@ import { createSession, revokeUserSessions } from '../lib/session.js';
 import { getEntitlements, invalidateEntitlements } from '../services/entitlements.js';
 import { decodePlanId, encodePlanId, FEATURE_ADDONS, isValidPlanTier, PLAN_TIERS } from '../services/plans.js';
 import type { PlanTierId } from '../services/plans.js';
+import { aiStatus } from '../services/ai/ai-service.js';
 import { getAuditLog, listActivityPage, listRecentActivity, logSuperAdminAction } from '../services/super-admin-audit.js';
 
 const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : null;
@@ -460,7 +461,8 @@ export async function listOrders(req: Request, res: Response) {
 // System status - which integrations are configured. Booleans only, never a secret value.
 // ---------------------------------------------------------------------------------------------
 
-export function getSystemStatus(_req: Request, res: Response) {
+export async function getSystemStatus(_req: Request, res: Response) {
+  const ai = await aiStatus();
   res.json({
     environment: env.NODE_ENV,
     rootDomain: env.ROOT_DOMAIN ?? null,
@@ -471,7 +473,8 @@ export function getSystemStatus(_req: Request, res: Response) {
       cloudinary: Boolean(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET),
       smtp: Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
       firebase: Boolean(env.FIREBASE_PROJECT_ID && env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY),
-      ai: Boolean(env.ANTHROPIC_API_KEY && env.OPENAI_API_KEY),
+      // The AI service is reachable and holds both provider keys (text/Anthropic and image+voice/OpenAI).
+      ai: ai.reachable && ai.text && ai.image && ai.voice,
     },
     devFlags: {
       allowDummyOtp: Boolean(env.ALLOW_DUMMY_OTP),

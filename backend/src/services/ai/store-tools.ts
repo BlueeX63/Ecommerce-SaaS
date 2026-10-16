@@ -19,6 +19,8 @@ interface StoreTool {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  /** Lookups that change nothing can run concurrently; everything else runs one at a time, in order. */
+  readOnly: boolean;
   execute(ctx: StoreToolContext, rawInput: unknown): Promise<unknown>;
 }
 
@@ -28,6 +30,7 @@ function defineTool<S extends z.ZodType>(def: {
   name: string;
   description: string;
   schema: S;
+  readOnly?: boolean;
   run: (ctx: StoreToolContext, input: z.output<S>) => Promise<unknown>;
 }): StoreTool {
   const json = z.toJSONSchema(def.schema) as Record<string, unknown>;
@@ -36,6 +39,7 @@ function defineTool<S extends z.ZodType>(def: {
     name: def.name,
     description: def.description,
     inputSchema: json,
+    readOnly: def.readOnly ?? false,
     async execute(ctx, rawInput) {
       const parsed = def.schema.safeParse(rawInput ?? {});
       if (!parsed.success) return { error: 'INVALID_ARGUMENTS', message: 'The request was missing or had invalid details.' };
@@ -138,6 +142,7 @@ async function loadProductDetail(tenantId: string, productId: string): Promise<P
 
 const searchProducts = defineTool({
   name: 'search_products',
+  readOnly: true,
   description: 'Search this store\'s active products by name. Returns up to 8 matches with prices.',
   schema: z.object({ query: z.string().trim().min(1).max(100) }),
   async run({ tenantId }, { query }) {
@@ -165,6 +170,7 @@ const searchProducts = defineTool({
 
 const getProduct = defineTool({
   name: 'get_product',
+  readOnly: true,
   description:
     'Get full details of one product: description, price, its options (such as size or colour) and every variant with price and availability. Call this before adding a product that has variants.',
   schema: z.object({ product_id: uuid }),
@@ -228,6 +234,7 @@ const addToCartTool = defineTool({
 
 const getCart = defineTool({
   name: 'get_cart',
+  readOnly: true,
   description: 'List what is currently in the shopper\'s cart.',
   schema: z.object({}),
   async run({ tenantId, customerId }) {
@@ -275,12 +282,10 @@ export function runStoreTool(ctx: StoreToolContext, name: string, rawInput: unkn
   return tool.execute(ctx, rawInput);
 }
 
-/** Tool definitions in the shape the Anthropic Messages API expects. */
-export function anthropicToolDefinitions() {
-  return TOOLS.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema as { type: 'object'; properties?: Record<string, unknown> } }));
-}
-
-/** Tool definitions in the shape the OpenAI Realtime API expects (function tools in the session config). */
-export function realtimeToolDefinitions() {
-  return TOOLS.map((t) => ({ type: 'function' as const, name: t.name, description: t.description, parameters: t.inputSchema }));
+/**
+ * The tool list handed to the AI service, which advertises it to the model (text chat and voice agent). The
+ * schemas live only here, so what the model is told and what `execute` accepts can never drift apart.
+ */
+export function toolManifest() {
+  return TOOLS.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema, read_only: t.readOnly }));
 }

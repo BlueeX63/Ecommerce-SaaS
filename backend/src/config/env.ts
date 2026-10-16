@@ -63,14 +63,15 @@ const schema = z.object({
   SUPER_ADMINS_JSON: optionalString,
 
   /**
-   * AI features (product copy, product images, store assistant chat and voice agent). Keys stay on the server:
-   * the browser only ever receives short-lived, session-scoped tokens. Endpoints answer 503 while unset.
+   * AI features (product copy, product images, store assistant chat and voice agent) run in the separate
+   * `ai-service` (Python / LangGraph), which alone holds the provider keys. The browser never talks to it; this
+   * API authenticates to it with AI_SERVICE_TOKEN. AI endpoints answer 503 while AI_SERVICE_URL is unset.
    */
-  ANTHROPIC_API_KEY: optionalString,
-  OPENAI_API_KEY: optionalString,
-  AI_TEXT_MODEL: z.string().trim().min(1).default('claude-sonnet-5-5'),
-  AI_IMAGE_MODEL: z.string().trim().min(1).default('gpt-image-2'),
-  AI_REALTIME_MODEL: z.string().trim().min(1).default('gpt-realtime-2.1'),
+  AI_SERVICE_URL: z.string().url().optional().or(z.literal('').transform(() => undefined)),
+  AI_SERVICE_TOKEN: optionalString,
+}).refine((v) => !v.AI_SERVICE_URL || (v.AI_SERVICE_TOKEN && v.AI_SERVICE_TOKEN.length >= 32), {
+  path: ['AI_SERVICE_TOKEN'],
+  message: 'AI_SERVICE_TOKEN (at least 32 characters) is required when AI_SERVICE_URL is set',
 });
 
 const parsed = schema.safeParse(process.env);

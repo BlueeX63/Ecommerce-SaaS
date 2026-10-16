@@ -13,7 +13,8 @@ export type TokenPurpose =
   | 'team-invite'
   | 'super-admin-session'
   | 'employee-session'
-  | 'impersonation-ticket';
+  | 'impersonation-ticket'
+  | 'ai-tool';
 
 const keyCache = new Map<TokenPurpose, Uint8Array>();
 

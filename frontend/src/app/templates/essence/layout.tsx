@@ -48,7 +48,7 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
           <div className="flex-shrink-0 px-2 md:px-4 flex justify-center">
             <Link href={basePath || "/"} className="font-heading text-2xl md:text-4xl tracking-tighter text-[#4A3F35]">
               <div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Droplet className="w-6 h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Droplet className="w-6 h-6" />}
                 <span>{brandName}</span>
               </div>
             </Link>
@@ -174,7 +174,7 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
     <footer className="bg-[#332B25] text-[#F3EDE2] py-24 px-8 mt-auto">
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-8">
         <div className="md:col-span-4">
-          <div className="font-heading text-4xl tracking-tighter mb-6">{tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : tBrandName}</div>
+          <div className="font-heading text-4xl tracking-tighter mb-6">{tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : tBrandName}</div>
           <p className="text-[#F3EDE2]/60 text-sm leading-relaxed max-w-sm font-serif italic">
             {footerText}
           </p>

@@ -75,7 +75,7 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
           
           <Link href={basePath || '/'} className={`font-heading text-3xl tracking-tighter absolute left-1/2 -translate-x-1/2 text-[#111111] transition-opacity duration-300 z-10 ${isSearchOpen ? 'opacity-0 sm:opacity-100 pointer-events-none sm:pointer-events-auto' : 'opacity-100'}`}>
             <div className="flex items-center gap-2">
-              {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <Hexagon className="w-6 h-6" />}
+              {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Hexagon className="w-6 h-6" />}
               <span>{tBrandName}</span>
             </div>
           </Link>
@@ -165,7 +165,7 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
             <div className="flex items-center justify-between p-6 border-b border-black/10">
               <span className="font-heading text-2xl tracking-tighter text-[#111111]">
                 <div className="flex items-center gap-2">
-                  {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <Hexagon className="w-6 h-6" />}
+                  {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Hexagon className="w-6 h-6" />}
                   <span>{tBrandName}</span>
                 </div>
               </span>
@@ -243,7 +243,7 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
         <div>
           <div className="flex items-center gap-2 font-heading text-2xl tracking-tighter mb-2 text-[#111111] uppercase">
-            {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : <Hexagon className="w-6 h-6" />}
+            {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Hexagon className="w-6 h-6" />}
             <span>{tBrandName}</span>
           </div>
           <p className="text-sm text-black/50 max-w-xs">{footerText}</p>

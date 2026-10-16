@@ -103,7 +103,7 @@ function HorizonNavigation({ initialCustomData, basePath }: any) {
           
           <Link href={basePath || "/"} className="flex items-center gap-3 group z-50 relative pointer-events-auto" style={{ cursor: "none" }}>
             <div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Sun className="w-6 h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Sun className="w-6 h-6" />}
                 <span className={`text-2xl font-medium tracking-widest text-black uppercase ${outfit.className}`}>{brandName.charAt(0)}<span className="text-black/40">{brandName.slice(1)}</span></span>
               </div>
           </Link>

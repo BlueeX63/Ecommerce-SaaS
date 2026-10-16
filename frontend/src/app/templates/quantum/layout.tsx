@@ -58,56 +58,52 @@ function QuantumNavigation({ initialCustomData, basePath }: { initialCustomData?
   return (
     <>
       <AnnouncementBar text={pickText(customData?.formData, "announcementText", "")} className="bg-[#111111] text-white" />
-      <header 
+      <header
         className={`fixed top-[var(--announce-h,0px)] inset-x-0 z-50 transition-all duration-700 ${
-          isScrolled 
-            ? "py-4 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)]" 
-            : "py-8 bg-transparent"
+          isScrolled
+            ? "py-3 md:py-4 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)]"
+            : "py-4 md:py-8 bg-transparent"
         }`}
       >
-        <div className="max-w-[1600px] mx-auto px-6 md:px-12 flex items-center justify-between">
-          
-          <Link href={basePath || "/"} className="flex items-center gap-3 group z-50 relative">
-            <div className="relative flex items-center justify-center w-10 h-10 overflow-hidden rounded-full bg-[#121212] group-hover:bg-[#111111] transition-colors duration-500">
-              <Infinity className="w-5 h-5 text-white" />
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#FF4500]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            </div>
-            <span className={`text-2xl font-bold tracking-tight text-[#121212] ${playfair.className}`}>
-              <div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Atom className="w-6 h-6" />}
-                <span>{brandName}</span>
+        {/* Brand | centred navigation | icons. A real three-part layout (not an absolutely centred nav), so the parts can
+            never run into each other; the navigation collapses into the menu below the lg breakpoint. */}
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-3 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-8">
+          <Link href={basePath || "/"} className="flex items-center gap-2.5 group z-50 relative min-w-0 lg:justify-self-start" aria-label={brandName}>
+            {logoUrl ? (
+              <img src={logoUrl} alt="" className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain shrink-0" />
+            ) : (
+              <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 shrink-0 overflow-hidden rounded-full bg-[#121212] group-hover:bg-[#111111] transition-colors duration-500">
+                <Infinity className="w-5 h-5 text-white" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#FF4500]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
-            </span>
+            )}
+            <span className={`truncate text-xl sm:text-2xl font-bold tracking-tight text-[#121212] ${logoUrl ? "hidden sm:inline" : ""} ${playfair.className}`}>{brandName}</span>
           </Link>
 
-          <nav className="hidden md:flex items-center justify-center absolute left-1/2 -translate-x-1/2 gap-12">
+          <nav className="hidden lg:flex items-center justify-center gap-10 xl:gap-12" aria-label="Main">
             {navLinks.map((link, i) => {
               const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
               return (
-                <Link 
+                <Link
                   key={link.name}
                   href={link.href}
-                  className={`text-sm font-medium tracking-wide transition-all relative group ${inter.className} ${isActive ? 'text-[#121212]' : 'text-gray-500 hover:text-[#121212]'}`}
+                  className={`text-sm font-medium tracking-wide whitespace-nowrap transition-all relative group ${inter.className} ${isActive ? "text-[#121212]" : "text-gray-500 hover:text-[#121212]"}`}
                 >
-                  <motion.span
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                  >
+                  <motion.span initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }}>
                     {link.name}
                   </motion.span>
-                  <span className={`absolute -bottom-2 left-1/2 -translate-x-1/2 h-[2px] bg-[#111111] transition-all duration-300 ease-out ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`} />
+                  <span className={`absolute -bottom-2 left-1/2 -translate-x-1/2 h-[2px] bg-[#111111] transition-all duration-300 ease-out ${isActive ? "w-full" : "w-0 group-hover:w-full"}`} />
                 </Link>
               );
             })}
           </nav>
 
-          <div className="flex items-center gap-6 z-50 relative">
-            <Link href={`${basePath}/profile`} className="hidden md:flex relative group p-2">
+          <div className="flex items-center gap-1 sm:gap-3 lg:gap-5 z-50 relative shrink-0 lg:justify-self-end">
+            <Link href={`${basePath}/profile`} className="hidden lg:flex relative group p-2" aria-label="Profile">
               <User className="w-5 h-5 text-gray-500 group-hover:text-[#111111] transition-colors" />
             </Link>
 
-            <Link href={`${basePath}/wishlist`} className="hidden md:flex relative group p-2">
+            <Link href={`${basePath}/wishlist`} className="hidden lg:flex relative group p-2" aria-label="Wishlist">
               <Heart className="w-5 h-5 text-gray-500 group-hover:text-[#FF4500] transition-colors" />
               {wishlist.length > 0 && (
                 <span className="absolute top-0 right-0 w-4 h-4 bg-[#FF4500] text-white text-[10px] font-bold flex items-center justify-center rounded-full">
@@ -116,10 +112,7 @@ function QuantumNavigation({ initialCustomData, basePath }: { initialCustomData?
               )}
             </Link>
 
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              className="relative group flex items-center p-2"
-            >
+            <button onClick={() => setIsCartOpen(true)} className="relative group flex items-center p-2" aria-label={`Cart, ${cartItemsCount} item${cartItemsCount === 1 ? "" : "s"}`}>
               <ShoppingBag className="w-5 h-5 text-gray-500 group-hover:text-[#111111] transition-colors" />
               {cartItemsCount > 0 && (
                 <span className="absolute top-0 right-0 w-4 h-4 bg-[#111111] text-white text-[10px] font-bold flex items-center justify-center rounded-full">
@@ -128,9 +121,11 @@ function QuantumNavigation({ initialCustomData, basePath }: { initialCustomData?
               )}
             </button>
 
-            <button 
-              className="md:hidden text-[#121212]"
+            <button
+              className="lg:hidden p-2 text-[#121212]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -145,7 +140,7 @@ function QuantumNavigation({ initialCustomData, basePath }: { initialCustomData?
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-40 bg-[#F9F9FB] pt-24 px-6 flex flex-col items-center md:hidden"
+            className="fixed inset-0 z-40 bg-[#F9F9FB] pt-24 px-6 flex flex-col items-center lg:hidden overflow-y-auto"
           >
             <div className="flex flex-col items-center gap-8 text-3xl font-bold text-[#121212] mt-12">
               {navLinks.map((link) => (
@@ -291,7 +286,7 @@ function QuantumFooter({ initialCustomData, basePath }: { initialCustomData?: an
             <Link href={basePath || "/"} className="flex items-center gap-2 mb-8">
               <Infinity className="w-6 h-6 text-[#111111]" />
               <span className={`text-2xl font-bold tracking-tight text-[#121212] ${playfair.className}`}><div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Atom className="w-6 h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Atom className="w-6 h-6" />}
                 <span>{brandName}</span>
               </div></span>
             </Link>

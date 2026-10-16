@@ -122,16 +122,16 @@ function OrdersView() {
   const radiusKm = params.get("radiusKm") ?? "";
   const page = Math.max(1, Number(params.get("page")) || 1);
 
-  const go = useCallback(
-    (patch: Record<string, string | null>, keepPage = false) => {
-      const next = new URLSearchParams(params.toString());
-      for (const [k, v] of Object.entries(patch)) (v === null || v === "" ? next.delete(k) : next.set(k, v));
-      if (!keepPage && !("page" in patch)) next.delete("page");
-      const qs = next.toString();
-      router.replace(qs ? `?${qs}` : "?", { scroll: false });
-    },
-    [params, router],
-  );
+  const go = (patch: Record<string, string | null>, keepPage = false) => {
+    const next = new URLSearchParams(params.toString());
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null || v === "") next.delete(k);
+      else next.set(k, v);
+    }
+    if (!keepPage && !("page" in patch)) next.delete("page");
+    const qs = next.toString();
+    router.replace(qs ? `?${qs}` : "?", { scroll: false });
+  };
 
   const apiQuery = new URLSearchParams({ page: String(page), limit: String(PAGE_LIMIT) });
   if (status) apiQuery.set("status", status);

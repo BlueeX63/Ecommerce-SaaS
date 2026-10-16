@@ -59,7 +59,7 @@ function Header({ initialCustomData, basePath }: { initialCustomData?: any, base
             <div className="flex items-center gap-2 sm:gap-4 md:gap-6 lg:gap-12">
               <Link href={basePath || "/"} className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-[#402c21] flex-shrink-0">
                 <div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-6 sm:h-8 w-auto object-contain" /> : <Leaf className="w-5 h-5 md:w-6 md:h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-6 sm:h-8 w-auto max-w-[130px] sm:max-w-[200px] object-contain" /> : <Leaf className="w-5 h-5 md:w-6 md:h-6" />}
                 <span>{brandName}</span>
               </div>
               </Link>
@@ -200,7 +200,7 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
     <footer className="bg-[#402c21] text-[#fdfbf7] py-20 px-6 mt-auto border-t border-[#fdfbf7]/10">
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="md:col-span-1">
-          <div className="font-serif text-3xl font-bold tracking-tight mb-4">{tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : tBrandName}</div>
+          <div className="font-serif text-3xl font-bold tracking-tight mb-4">{tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : tBrandName}</div>
           <p className="text-[#fdfbf7]/70 text-sm leading-relaxed font-medium">
             {footerText}
           </p>

@@ -96,7 +96,7 @@ export default function QuantumHome({ initialProducts, initialCustomData }: any)
       />
 
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden px-6 pt-20">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-6 pt-28 pb-16 md:pt-20 md:pb-0">
         <div className="absolute inset-0 z-0 flex items-center justify-center opacity-30 pointer-events-none">
           <motion.div 
             animate={{ 

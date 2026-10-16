@@ -157,7 +157,7 @@ function Navigation({ initialCustomData, basePath }: { initialCustomData?: any; 
             className="font-serif text-2xl md:text-3xl tracking-tight uppercase text-white"
           >
             <div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Square className="w-6 h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Square className="w-6 h-6" />}
                 <span>{brandName}</span>
               </div>
           </Link>
@@ -280,7 +280,7 @@ function Footer({ initialCustomData, basePath }: { initialCustomData?: any, base
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div>
               <Link href={basePath || "/"} className="font-serif text-4xl tracking-tight uppercase text-white block mb-8">
-                {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : tBrandName}
+                {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : tBrandName}
               </Link>
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 leading-loose max-w-xs">
                 {footerText.split('\\n').map((line: string, i: number) => (

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Package, User, Truck, Tag, CreditCard, MapPin, StickyNote, Loader2, Plus, Building2, RotateCcw, Banknote, Pencil, Phone, Warehouse, UserCheck,
+  ArrowLeft, Package, User, Truck, Tag, CreditCard, MapPin, StickyNote, Loader2, Plus, Building2, RotateCcw, Banknote, Pencil, Phone, Warehouse, UserCheck, AlertTriangle, Ban, Copy, Users, Home,
 } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 import { useCurrency } from "@/components/dashboard/CurrencyProvider";
@@ -44,6 +44,8 @@ interface OrderDetail {
   grand_total: number;
   warehouses: { warehouse_id: string; warehouse_name: string; city: string | null; state_province: string | null } | null;
   claimed_by: { full_name: string } | null;
+  delay_days: number;
+  is_delayed: boolean;
   payment_method: string | null;
   tax_inclusive: boolean | null;
   tax_breakdown: Array<{ label: string; ratePercent: number; amount: number }> | null;
@@ -139,6 +141,8 @@ export default function OrderDetailPage() {
   const [shipForm, setShipForm] = useState({ name: "", phone: "", line1: "", landmark: "", city: "", state: "", postalCode: "" });
   const [isSavingShipping, setIsSavingShipping] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
+  const [related, setRelated] = useState<{ nearbyRadiusKm: number; counts: { person: number; address: number; nearby: number } } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const fetchOrder = async () => {
     try {
@@ -155,6 +159,17 @@ export default function OrderDetailPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    let ignore = false;
+    fetch(`/api/v1/orders/${orderId}/related`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => !ignore && body && setRelated(body))
+      .catch(() => undefined);
+    return () => {
+      ignore = true;
+    };
+  }, [orderId]);
 
   const fetchRefunds = async () => {
     try {
@@ -272,7 +287,31 @@ export default function OrderDetailPage() {
 
   const notes = parseNotes(order.notes);
   const customerName = order.customers ? `${order.customers.first_name} ${order.customers.last_name}`.trim() : order.dealers?.company_name || "Guest";
-  const shippingLines = [order.shipping_address_line_1, [order.shipping_city, order.shipping_state].filter(Boolean).join(", "), order.shipping_postal_code, order.shipping_country].filter(Boolean);
+  // Every part of the address, labelled, so nothing is hidden or run together. Missing parts say so.
+  const addressRows: Array<[string, string | null]> = [
+    ["Recipient", order.shipping_name],
+    ["Phone", order.shipping_phone],
+    ["Street address", order.shipping_address_line_1],
+    ["Landmark", order.shipping_landmark],
+    ["City", order.shipping_city],
+    ["State", order.shipping_state],
+    ["PIN / postal code", order.shipping_postal_code],
+    ["Country", order.shipping_country],
+  ];
+  const fullAddress = [order.shipping_name, order.shipping_phone, order.shipping_address_line_1, order.shipping_landmark && `Landmark: ${order.shipping_landmark}`, [order.shipping_city, order.shipping_state, order.shipping_postal_code].filter(Boolean).join(", "), order.shipping_country]
+    .filter(Boolean)
+    .join("\n");
+  const hasAddress = addressRows.some(([, v]) => !!v);
+  const accountDiffers = !!order.shipping_name && !!order.customers && order.shipping_name.trim().toLowerCase() !== customerName.trim().toLowerCase();
+  const copyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(fullAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard unavailable: the address stays selectable on screen
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16">
@@ -294,6 +333,26 @@ export default function OrderDetailPage() {
       </div>
 
       {error && <div className="p-4 bg-red-50 text-red-600 text-sm rounded-xl border border-red-100">{error}</div>}
+
+      {order.is_delayed && (
+        <div role="alert" className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-amber-900">Delivery is {order.delay_days} day{order.delay_days === 1 ? "" : "s"} late</p>
+            <p className="text-sm text-amber-800 mt-0.5">
+              Promised by {order.estimated_delivery_date ? new Date(order.estimated_delivery_date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"}, still {order.status.toLowerCase().replace(/_/g, " ")}.
+              {order.warehouses ? ` Handled by ${order.warehouses.warehouse_name}.` : " No warehouse is handling it yet. Assign one below."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {order.status === "CANCELLED" && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-800">
+          <Ban className="w-5 h-5 shrink-0" />
+          <p className="font-medium">This order was cancelled.</p>
+        </div>
+      )}
 
       {order.status === "RETURN_REQUESTED" && notes.returnRequest && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
@@ -520,13 +579,24 @@ export default function OrderDetailPage() {
               </form>
             ) : (
               <>
-                <div className="text-sm text-secondary space-y-0.5">
-                  {order.shipping_name && <p className="text-primary font-medium">{order.shipping_name}</p>}
-                  {shippingLines.map((line, i) => <p key={i}>{line}</p>)}
-                  {order.shipping_landmark && <p>Landmark: {order.shipping_landmark}</p>}
-                  {order.shipping_phone && <p className="flex items-center gap-1.5 pt-1"><Phone className="w-3.5 h-3.5" /> {order.shipping_phone}</p>}
-                  {shippingLines.length === 0 && !order.shipping_phone && <p>No delivery details recorded.</p>}
-                </div>
+                {hasAddress ? (
+                  <dl className="grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-2 text-sm">
+                    {addressRows.map(([name, value]) => (
+                      <div key={name} className="contents">
+                        <dt className="text-secondary">{name}</dt>
+                        <dd className={value ? (name === "Recipient" ? "font-medium text-primary" : "text-primary") : "text-secondary/60 italic"}>{value || "Not provided"}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="text-sm text-secondary">No delivery details recorded.</p>
+                )}
+                {accountDiffers && <p className="mt-3 text-xs text-secondary">Ordered from the account of <span className="font-medium text-primary">{customerName}</span>.</p>}
+                {hasAddress && (
+                  <button type="button" onClick={copyAddress} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-secondary hover:text-primary">
+                    <Copy className="w-3 h-3" /> {copied ? "Copied" : "Copy address"}
+                  </button>
+                )}
                 {order.estimated_delivery_date && !["DELIVERED", "CANCELLED", "REFUNDED"].includes(order.status) && (
                   <p className="mt-3 pt-3 border-t border-black/[0.06] text-sm text-secondary flex items-center gap-2">
                     <Truck className="w-3.5 h-3.5 shrink-0" /> Estimated delivery by <span className="font-medium text-primary">{new Date(order.estimated_delivery_date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</span>
@@ -539,6 +609,34 @@ export default function OrderDetailPage() {
                 )}
               </>
             )}
+          </InfoCard>
+
+          <InfoCard icon={<Users className="w-4 h-4" />} title="Related orders">
+            <div className="space-y-2">
+              {([
+                ["person", "Same person", "Orders from this customer", User],
+                ["address", "Same address", "Delivered to this exact address", Home],
+                ["nearby", "Nearby", `Within ${related?.nearbyRadiusKm ?? 3} km or the same postal area`, MapPin],
+              ] as const).map(([match, title, hint, Icon]) => {
+                const n = related?.counts[match];
+                const disabled = n === 0;
+                return (
+                  <Link
+                    key={match}
+                    href={`/dashboard/orders?related=${orderId}&match=${match}`}
+                    aria-disabled={disabled}
+                    className={`flex items-center gap-3 rounded-lg border border-black/[0.06] px-3 py-2.5 text-sm transition-colors ${disabled ? "pointer-events-none opacity-50" : "hover:bg-black/[0.03]"}`}
+                  >
+                    <Icon className="w-4 h-4 text-secondary shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium text-primary">{title}</span>
+                      <span className="block text-xs text-secondary truncate">{hint}</span>
+                    </span>
+                    <span className="tabular-nums text-xs font-semibold text-primary">{n === undefined ? "…" : n === 0 ? "None" : `${n} other${n === 1 ? "" : "s"}`}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </InfoCard>
 
           <InfoCard icon={<CreditCard className="w-4 h-4" />} title="Payment">

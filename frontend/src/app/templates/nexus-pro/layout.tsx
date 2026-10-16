@@ -170,7 +170,7 @@ function Navbar({ initialCustomData }: { initialCustomData?: any }) {
             </button>
             <Link href={basePath || "/"} className="text-2xl font-black tracking-tighter uppercase text-white hover:text-[#d4af37] transition-colors">
               <div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Layers className="w-6 h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Layers className="w-6 h-6" />}
                 <span>{brandName}</span>
               </div><span className="text-[#d4af37]">.</span>
             </Link>
@@ -228,7 +228,7 @@ function Navbar({ initialCustomData }: { initialCustomData?: any }) {
             <div className="flex justify-between items-center mb-12">
               <Link href={basePath || "/"} onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-black tracking-tighter uppercase text-white">
                 <div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Layers className="w-6 h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Layers className="w-6 h-6" />}
                 <span>{brandName}</span>
               </div><span className="text-[#d4af37]">.</span>
               </Link>
@@ -280,7 +280,7 @@ function Footer({ initialCustomData }: { initialCustomData?: any }) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-20">
           <div className="col-span-1 md:col-span-1">
             <Link href={basePath || "/"} className="text-3xl font-black tracking-tighter uppercase mb-6 block">
-              {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto object-contain" /> : tBrandName}<span className="text-[#d4af37]">.</span>
+              {tLogoUrl ? <img src={tLogoUrl} alt={tBrandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : tBrandName}<span className="text-[#d4af37]">.</span>
             </Link>
             <p className="text-sm text-white/50 leading-relaxed mb-8 max-w-xs">
               {footerText}

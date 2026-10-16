@@ -66,7 +66,7 @@ function VelocityNavigation({ initialCustomData }: { initialCustomData?: any } =
             <Zap className="w-8 h-8 text-[#00f0ff] group-hover:text-[#ff003c] transition-colors duration-500" />
             <span className={`text-2xl font-black uppercase tracking-tighter text-white ${orbitron.className}`}>
               <div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Zap className="w-6 h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Zap className="w-6 h-6" />}
                 <span>{brandName}</span>
               </div>
             </span>
@@ -226,7 +226,7 @@ function VelocityFooter({ initialCustomData, basePath }: { initialCustomData?: a
             <Link href={basePath || "/"} className="flex items-center gap-2 mb-6">
               <Zap className="w-6 h-6 text-[#00f0ff]" />
               <span className={`text-xl font-black uppercase tracking-tighter text-white ${orbitron.className}`}><div className="flex items-center gap-2">
-                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" /> : <Zap className="w-6 h-6" />}
+                {logoUrl ? <img src={logoUrl} alt={brandName} className="h-8 w-auto max-w-[150px] sm:max-w-[200px] object-contain" /> : <Zap className="w-6 h-6" />}
                 <span>{brandName}</span>
               </div></span>
             </Link>
